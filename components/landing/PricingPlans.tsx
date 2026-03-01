@@ -113,16 +113,18 @@ export default function PricingPlans() {
           {localizedPlans.map((plan, idx) => {
             let baseBg = '';
             let hoverBg = 'hover:bg-gradient-to-br hover:from-emerald-500 hover:to-emerald-700 hover:text-white';
-            let textColor = 'text-white';
+            let textColor = isDark ? 'text-white' : 'text-slate-900';
+            let subTextColor = isDark ? 'text-white/70' : 'text-slate-600';
+            let descColor = isDark ? 'text-white/80' : 'text-slate-700';
             let borderColor = '';
             if (plan.color === 'silver') {
-              baseBg = isDark ? 'bg-gradient-to-br from-slate-600 via-slate-700 to-slate-800' : 'bg-gradient-to-br from-zinc-300 via-zinc-400 to-zinc-500';
-              borderColor = isDark ? 'border-slate-600' : 'border-zinc-400';
+              baseBg = isDark ? 'bg-gradient-to-br from-slate-600 via-slate-700 to-slate-800' : 'bg-gradient-to-br from-zinc-100 via-zinc-200 to-zinc-300';
+              borderColor = isDark ? 'border-slate-600' : 'border-zinc-300';
             } else if (plan.color === 'gold') {
-              baseBg = isDark ? 'bg-gradient-to-br from-slate-600 via-slate-700 to-slate-800' : 'bg-gradient-to-br from-yellow-300 via-yellow-400 to-yellow-500';
-              borderColor = isDark ? 'border-slate-600' : 'border-yellow-400';
+              baseBg = isDark ? 'bg-gradient-to-br from-slate-600 via-slate-700 to-slate-800' : 'bg-gradient-to-br from-amber-50 via-yellow-100 to-amber-200';
+              borderColor = isDark ? 'border-slate-600' : 'border-amber-300';
             } else if (plan.color === 'platinum') {
-              baseBg = isDark ? 'bg-gradient-to-br from-slate-600 via-slate-700 to-slate-800' : 'bg-gradient-to-br from-blue-200 via-zinc-200 to-blue-400';
+              baseBg = isDark ? 'bg-gradient-to-br from-slate-600 via-slate-700 to-slate-800' : 'bg-gradient-to-br from-blue-50 via-slate-100 to-blue-200';
               borderColor = isDark ? 'border-slate-600' : 'border-blue-300';
             }
             return (
@@ -139,25 +141,25 @@ export default function PricingPlans() {
                     {t('Most Popular')}
                   </div>
                 )}
-                <h3 className="text-2xl font-bold mb-2 text-white">{plan.name}</h3>
+                <h3 className={`text-2xl font-bold mb-2 ${textColor}`}>{plan.name}</h3>
                 <div className="flex items-baseline gap-1 mb-4">
-                  <span className="text-4xl font-black text-white">
+                  <span className={`text-4xl font-black ${textColor}`}>
                     {isQuarterly && !plan.isCustom 
                       ? `$${Math.round(parseInt(plan.price.replace(/\D/g, '')) * 0.9 * 3).toLocaleString()}`
                       : plan.price}
                   </span>
-                  <span className="text-white/70">
+                  <span className={subTextColor}>
                     {!plan.isCustom ? (isQuarterly ? t('/quarter') : plan.period) : ''}
                   </span>
                 </div>
-                <p className="mb-6 text-white/80">
+                <p className={`mb-6 ${descColor}`}>
                   {plan.description}
                 </p>
                 <ul className="space-y-3 mb-8">
                   {plan.features.map((feature, i) => (
                     <li key={i} className="flex items-start gap-3">
-                      <Check className="w-5 h-5 flex-shrink-0 text-emerald-200" />
-                      <span className="text-white/80">{feature}</span>
+                      <Check className={`w-5 h-5 flex-shrink-0 ${isDark ? 'text-emerald-200' : 'text-emerald-500'}`} />
+                      <span className={descColor}>{feature}</span>
                     </li>
                   ))}
                 </ul>

@@ -1,0 +1,190 @@
+{
+  "name": "AI Chatbot Lead Capture & Qualification",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "chatbot-lead",
+        "options": { "rawBody": false }
+      },
+      "id": "webhook-chat",
+      "name": "Chat Widget Message",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://api.openai.com/v1/chat/completions",
+        "method": "POST",
+        "authentication": "genericHeader",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"model\": \"gpt-4o-mini\",\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"You are a friendly healthcare practice assistant. Your job is to: 1) Answer common questions about services, hours, and insurance accepted. 2) Qualify leads by asking about their needs. 3) Collect contact info for callbacks. 4) Extract: patient_name, phone, email, service_interest, urgency (low/medium/high), insurance_type. Be warm, professional, and HIPAA-aware — never ask for SSN or full medical history in chat. Respond in JSON format with fields: response_text, extracted_data, is_qualified, needs_human.\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"{{ $json.message }}\"\n    }\n  ],\n  \"temperature\": 0.7\n}",
+        "options": {}
+      },
+      "id": "ai-respond",
+      "name": "AI Generate Response",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [470, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "const aiResponse = JSON.parse($input.first().json.choices[0].message.content);\nreturn [{\n  json: {\n    response_text: aiResponse.response_text,\n    patient_name: aiResponse.extracted_data?.patient_name || null,\n    phone: aiResponse.extracted_data?.phone || null,\n    email: aiResponse.extracted_data?.email || null,\n    service_interest: aiResponse.extracted_data?.service_interest || null,\n    urgency: aiResponse.extracted_data?.urgency || 'low',\n    insurance_type: aiResponse.extracted_data?.insurance_type || null,\n    is_qualified: aiResponse.is_qualified || false,\n    needs_human: aiResponse.needs_human || false,\n    session_id: $input.first().json.session_id,\n    timestamp: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "parse-ai",
+      "name": "Parse AI Response",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [690, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.is_qualified }}",
+              "operation": "equal",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "is-qualified",
+      "name": "Lead Qualified?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [910, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://api.yourcrm.com/leads",
+        "method": "POST",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "name", "value": "={{ $json.patient_name }}" },
+            { "name": "phone", "value": "={{ $json.phone }}" },
+            { "name": "email", "value": "={{ $json.email }}" },
+            { "name": "service", "value": "={{ $json.service_interest }}" },
+            { "name": "urgency", "value": "={{ $json.urgency }}" },
+            { "name": "source", "value": "Website Chatbot" },
+            { "name": "insurance", "value": "={{ $json.insurance_type }}" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "create-lead",
+      "name": "Create CRM Lead",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [1130, 200]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.urgency }}",
+              "operation": "equal",
+              "value2": "high"
+            }
+          ]
+        }
+      },
+      "id": "is-urgent",
+      "name": "Urgent?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [1350, 200]
+    },
+    {
+      "parameters": {
+        "channel": "#urgent-leads",
+        "text": "🚨 URGENT Lead from Chat:\n• Name: {{ $json.patient_name }}\n• Phone: {{ $json.phone }}\n• Service: {{ $json.service_interest }}\n• Insurance: {{ $json.insurance_type }}\n\nPlease call back within 15 minutes!",
+        "otherOptions": {}
+      },
+      "id": "urgent-slack",
+      "name": "Urgent Slack Alert",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2,
+      "position": [1570, 100]
+    },
+    {
+      "parameters": {
+        "fromEmail": "chat@yourclinic.com",
+        "toEmail": "={{ $json.email }}",
+        "subject": "Thanks for reaching out, {{ $json.patient_name }}!",
+        "html": "<div style='font-family: Arial; max-width: 600px;'><h2>We received your inquiry!</h2><p>Hi {{ $json.patient_name }},</p><p>Thank you for your interest in {{ $json.service_interest }}. A member of our team will be in touch {{ $json.urgency === 'high' ? 'within 15 minutes' : 'within 24 hours' }}.</p><p>In the meantime, feel free to call us directly at <strong>(555) 123-4567</strong>.</p></div>"
+      },
+      "id": "send-followup",
+      "name": "Send Follow-up Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 1,
+      "position": [1570, 300]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": { "__rl": true, "value": "YOUR_SPREADSHEET_ID" },
+        "sheetName": "Chat Leads",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Name": "={{ $json.patient_name }}",
+            "Phone": "={{ $json.phone }}",
+            "Email": "={{ $json.email }}",
+            "Service": "={{ $json.service_interest }}",
+            "Urgency": "={{ $json.urgency }}",
+            "Qualified": "={{ $json.is_qualified }}",
+            "Source": "Chatbot",
+            "Timestamp": "={{ $now.toISO() }}"
+          }
+        }
+      },
+      "id": "log-lead",
+      "name": "Log Chat Lead",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [1350, 450]
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.response_text }}"
+      },
+      "id": "respond-chat",
+      "name": "Respond to Chat",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1130, 450]
+    }
+  ],
+  "connections": {
+    "Chat Widget Message": { "main": [[{ "node": "AI Generate Response", "type": "main", "index": 0 }]] },
+    "AI Generate Response": { "main": [[{ "node": "Parse AI Response", "type": "main", "index": 0 }]] },
+    "Parse AI Response": { "main": [[{ "node": "Lead Qualified?", "type": "main", "index": 0 }]] },
+    "Lead Qualified?": {
+      "main": [
+        [{ "node": "Create CRM Lead", "type": "main", "index": 0 }],
+        [{ "node": "Respond to Chat", "type": "main", "index": 0 }]
+      ]
+    },
+    "Create CRM Lead": { "main": [[{ "node": "Urgent?", "type": "main", "index": 0 }]] },
+    "Urgent?": {
+      "main": [
+        [{ "node": "Urgent Slack Alert", "type": "main", "index": 0 }],
+        [{ "node": "Send Follow-up Email", "type": "main", "index": 0 }]
+      ]
+    },
+    "Urgent Slack Alert": { "main": [[{ "node": "Send Follow-up Email", "type": "main", "index": 0 }]] },
+    "Send Follow-up Email": { "main": [[{ "node": "Log Chat Lead", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" },
+  "meta": {
+    "templateCredsSetupCompleted": false,
+    "instanceId": "nextgen-chatbot-lead-capture"
+  },
+  "tags": [{ "name": "Healthcare" }, { "name": "AI" }, { "name": "Chatbot" }, { "name": "Lead Generation" }]
+}

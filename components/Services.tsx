@@ -159,7 +159,6 @@ export default function Services({ compact = false, showImages = true }: Service
                   <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/0 to-emerald-500/0 group-hover:from-emerald-500/5 group-hover:to-emerald-500/10 transition-all duration-300" />
                   
                   <div className="relative z-10">
-                    <div className="text-4xl mb-4">{service.icon}</div>
                     <h3 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-emerald-600 transition-colors">
                       {service.title}
                     </h3>
@@ -188,7 +187,7 @@ export default function Services({ compact = false, showImages = true }: Service
           viewport={{ once: true }}
           className="text-center mb-20"
         >
-          <h1 className="text-5xl font-extrabold text-gray-900">Our Services</h1>
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-gray-900">Our Services</h1>
           <p className="mt-6 text-xl text-gray-600 max-w-3xl mx-auto">
             Everything your healthcare practice needs to own the digital space.
           </p>
@@ -219,7 +218,6 @@ export default function Services({ compact = false, showImages = true }: Service
 
                 {/* Content */}
                 <div className="p-8">
-                  <div className="text-5xl mb-4">{service.icon}</div>
                   <h3 className="text-2xl font-bold text-gray-900 mb-3 group-hover:text-emerald-600 transition-colors">
                     {service.title}
                   </h3>

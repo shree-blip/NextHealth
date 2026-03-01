@@ -15,6 +15,7 @@ import {
   FaTelegram,
   FaDiscord,
 } from 'react-icons/fa6';
+import { FaGoogle, FaMeta, FaShieldHalved } from 'react-icons/fa6';
 import { useSitePreferences } from '@/components/SitePreferencesProvider';
 
 const socialRainIcons = [
@@ -84,7 +85,7 @@ export default function HeroNew() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7 }}
           >
-            <h1 className={`text-4xl sm:text-5xl lg:text-6xl font-black leading-tight tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
+            <h1 className={`text-5xl sm:text-6xl lg:text-7xl font-black leading-tight tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
               {t('We market healthcare.')}<br />
               <span className="text-emerald-400">{t('Relentlessly.')}</span>
             </h1>
@@ -95,15 +96,15 @@ export default function HeroNew() {
             {/* Trust Badges */}
             <div className="mt-8 flex flex-wrap items-center gap-4">
               <div className={`flex items-center gap-2 backdrop-blur px-4 py-2 rounded-full ${isDark ? 'bg-white/10' : 'bg-slate-900/10'}`}>
-                <img src="/2.png" alt="Google Partner" className="h-6 w-6 object-contain" />
+                <FaGoogle className="h-5 w-5 text-[#4285F4]" />
                 <span className={`text-sm font-medium ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('Google Partner')}</span>
               </div>
               <div className={`flex items-center gap-2 backdrop-blur px-4 py-2 rounded-full ${isDark ? 'bg-white/10' : 'bg-slate-900/10'}`}>
-                <img src="/3.png" alt="Meta Certified" className="h-6 w-6 object-contain" />
+                <FaMeta className="h-5 w-5 text-[#0082FB]" />
                 <span className={`text-sm font-medium ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('Meta Certified')}</span>
               </div>
               <div className={`flex items-center gap-2 backdrop-blur px-4 py-2 rounded-full ${isDark ? 'bg-white/10' : 'bg-slate-900/10'}`}>
-                <img src="/4.png" alt="HIPAA Aware" className="h-6 w-6 object-contain" />
+                <FaShieldHalved className="h-5 w-5 text-emerald-500" />
                 <span className={`text-sm font-medium ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('HIPAA Aware')}</span>
               </div>
             </div>

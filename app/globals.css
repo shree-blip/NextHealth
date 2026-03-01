@@ -198,15 +198,32 @@ html.theme-light .bg-gray-50 {
   color: #0f172a !important;
 }
 
-html.theme-light .text-white {
+/*
+ * SCOPED text overrides – only convert text colors when inside a background
+ * that is also being converted to light.  This prevents brand-coloured
+ * sections (emerald, gradients, overlays) from losing their white text.
+ */
+html.theme-light :is(.bg-slate-900, .bg-gray-900) .text-white,
+html.theme-light :is(.bg-slate-900, .bg-gray-900).text-white,
+html.theme-light :is(.bg-slate-800, .bg-gray-800) .text-white,
+html.theme-light :is(.bg-slate-800, .bg-gray-800).text-white {
   color: #0f172a !important;
 }
 
-html.theme-light .text-slate-300,
-html.theme-light .text-slate-400,
-html.theme-light .text-gray-300,
-html.theme-light .text-gray-400 {
-  color: #0f172a !important;
+html.theme-light :is(.bg-slate-900, .bg-gray-900, .bg-slate-800, .bg-gray-800) .text-slate-300,
+html.theme-light :is(.bg-slate-900, .bg-gray-900, .bg-slate-800, .bg-gray-800) .text-slate-400,
+html.theme-light :is(.bg-slate-900, .bg-gray-900, .bg-slate-800, .bg-gray-800) .text-gray-300,
+html.theme-light :is(.bg-slate-900, .bg-gray-900, .bg-slate-800, .bg-gray-800) .text-gray-400 {
+  color: #475569 !important;
+}
+
+html.theme-light :is(.bg-slate-900, .bg-gray-900, .bg-slate-800, .bg-gray-800) .border-white,
+html.theme-light :is(.bg-slate-900, .bg-gray-900, .bg-slate-800, .bg-gray-800).border-white {
+  border-color: #e2e8f0 !important;
+}
+
+html.theme-light :is(.bg-slate-900, .bg-gray-900, .bg-slate-800, .bg-gray-800) .text-slate-500 {
+  color: #64748b !important;
 }
 
 html.theme-light input,
@@ -220,10 +237,6 @@ html.theme-light select {
 html.theme-light input::placeholder,
 html.theme-light textarea::placeholder {
   color: #94a3b8;
-}
-
-html.theme-light .border-white {
-  border-color: #0f172a !important;
 }
 
 /* Ensure light theme buttons and forms are readable */

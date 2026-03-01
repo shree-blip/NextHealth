@@ -140,16 +140,16 @@ export default function PricingPage() {
             {plans.map((plan, index) => {
               let baseBg = '';
               let hoverBg = 'hover:bg-gradient-to-br hover:from-emerald-500 hover:to-emerald-700 hover:text-white';
-              let textColor = 'text-black';
+              let textColor = 'text-slate-900';
               let borderColor = '';
               if (plan.color === 'silver') {
-                baseBg = 'bg-gradient-to-br from-zinc-300 via-zinc-400 to-zinc-500';
-                borderColor = 'border-zinc-400';
+                baseBg = 'bg-gradient-to-br from-zinc-100 via-zinc-200 to-zinc-300';
+                borderColor = 'border-zinc-300';
               } else if (plan.color === 'gold') {
-                baseBg = 'bg-gradient-to-br from-yellow-300 via-yellow-400 to-yellow-500';
-                borderColor = 'border-yellow-400';
+                baseBg = 'bg-gradient-to-br from-amber-50 via-yellow-100 to-amber-200';
+                borderColor = 'border-amber-300';
               } else if (plan.color === 'platinum') {
-                baseBg = 'bg-gradient-to-br from-blue-200 via-zinc-200 to-blue-400';
+                baseBg = 'bg-gradient-to-br from-blue-50 via-slate-100 to-blue-200';
                 borderColor = 'border-blue-300';
               }
               return (
@@ -164,21 +164,21 @@ export default function PricingPage() {
                     </div>
                   )}
                   <div className="mb-8">
-                    <plan.icon className="h-12 w-12 mb-6 text-white/80" />
+                    <plan.icon className="h-12 w-12 mb-6 text-slate-600" />
                     <h3 className="text-2xl font-bold mb-2">{plan.name}</h3>
-                    <p className="text-white/80 text-sm leading-relaxed">{plan.description}</p>
+                    <p className="text-slate-600 text-sm leading-relaxed">{plan.description}</p>
                   </div>
                   <div className="mb-8">
                     <div className="flex items-baseline gap-1">
                       <span className="text-4xl font-bold">$</span>
                       <span className="text-6xl font-bold tracking-tighter">{plan.price}</span>
-                      {plan.price !== 'Custom' && <span className="text-white/70">/mo</span>}
+                      {plan.price !== 'Custom' && <span className="text-slate-500">/mo</span>}
                     </div>
                   </div>
                   <ul className="space-y-4 mb-10 flex-grow">
                     {plan.features.map((feature, i) => (
-                      <li key={i} className="flex items-start gap-3 text-sm text-white/80">
-                        <Check className="h-5 w-5 text-emerald-200 shrink-0" />
+                      <li key={i} className="flex items-start gap-3 text-sm text-slate-700">
+                        <Check className="h-5 w-5 text-emerald-600 shrink-0" />
                         <span className="leading-relaxed">{feature}</span>
                       </li>
                     ))}

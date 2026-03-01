@@ -60,7 +60,8 @@ function FlipCard({ audience, index }: { audience: AudienceCard, index: number }
 }
 
 export default function WhoWeServe() {
-  const { t } = useSitePreferences();
+  const { t, theme } = useSitePreferences();
+  const isDark = theme === 'dark';
 
   const audiences = [
     {
@@ -84,7 +85,7 @@ export default function WhoWeServe() {
   ];
 
   return (
-    <section className="py-24 bg-slate-900">
+    <section className={`py-24 ${isDark ? 'bg-slate-900' : 'bg-white'}`}>
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -92,8 +93,8 @@ export default function WhoWeServe() {
           viewport={{ once: true }}
           className="text-center mb-16"
         >
-          <h2 className="text-4xl font-black text-white mb-4">{t('Who we serve')}</h2>
-          <p className="text-xl text-slate-400 max-w-2xl mx-auto">
+          <h2 className={`text-4xl font-black mb-4 ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('Who we serve')}</h2>
+          <p className={`text-xl max-w-2xl mx-auto ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
             {t('We exclusively serve healthcare practices that want to dominate their market.')}
           </p>
         </motion.div>

@@ -13,7 +13,7 @@ export default function Hero() {
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
           >
-            <h1 className="text-4xl sm:text-5xl font-extrabold text-white leading-tight">
+            <h1 className="text-5xl sm:text-6xl lg:text-7xl font-extrabold text-white leading-tight">
               Your Partner in <span className="text-yellow-300">UX Design</span>, Software &amp; <span className="text-yellow-300">AI</span> Development
             </h1>
             <p className="mt-6 text-lg text-white">

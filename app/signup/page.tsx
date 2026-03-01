@@ -5,6 +5,8 @@ import { motion } from 'framer-motion';
 import { Activity, Mail, Lock, User, ArrowRight, Loader2, Zap, Check } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
+import Navbar from '@/components/Navbar';
+import Footer from '@/components/Footer';
 
 const plans = [
   {
@@ -75,7 +77,7 @@ function SignupContent() {
       const authRes = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, role: 'client' }),
+        body: JSON.stringify({ email, password }),
       });
 
       if (!authRes.ok) {
@@ -111,9 +113,11 @@ function SignupContent() {
   };
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4 relative overflow-hidden">
-      <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-emerald-500/15 blur-[140px] rounded-full animate-pulse" />
-      <div className="absolute bottom-0 right-1/4 w-[400px] h-[400px] bg-blue-500/10 blur-[120px] rounded-full" />
+    <>
+      <Navbar />
+      <main className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4 relative overflow-hidden pt-32">
+        <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-emerald-500/15 blur-[140px] rounded-full animate-pulse" />
+        <div className="absolute bottom-0 right-1/4 w-[400px] h-[400px] bg-blue-500/10 blur-[120px] rounded-full" />
 
       <div className="w-full max-w-5xl relative z-10">
         <motion.div
@@ -122,8 +126,11 @@ function SignupContent() {
           className="text-center mb-12"
         >
           <Link href="/" className="inline-flex items-center gap-2 mb-6">
-            <Activity className="h-10 w-10 text-emerald-500" />
-            <span className="text-2xl font-bold tracking-tighter text-white">NEXTGEN</span>
+            <img
+              src="/Client-review-image/nextgen_footerlogo.png"
+              alt="NextGen Marketing Agency"
+              className="h-12 w-auto object-contain"
+            />
           </Link>
           <h1 className="text-4xl font-black text-white mb-3">
             {step === 'plan' ? 'Choose Your Plan' : 'Create Your Account'}
@@ -259,5 +266,7 @@ function SignupContent() {
         )}
       </div>
     </main>
+    <Footer />
+    </>
   );
 }

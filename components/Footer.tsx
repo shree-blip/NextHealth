@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { MapPin, Mail, Phone, Activity, Linkedin, Instagram, Facebook } from 'lucide-react';
+import { MapPin, Mail, Linkedin, Instagram, Facebook } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
 import { useSitePreferences } from '@/components/SitePreferencesProvider';
@@ -9,31 +9,57 @@ import { useSitePreferences } from '@/components/SitePreferencesProvider';
 export default function Footer() {
   const [email, setEmail] = useState('');
   const [subscribed, setSubscribed] = useState(false);
-  const { t } = useSitePreferences();
+  const [loading, setLoading] = useState(false);
+  const { t, theme } = useSitePreferences();
+  const isDark = theme === 'dark';
 
-  const handleSubscribe = (e: React.FormEvent) => {
+  const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
-    // In production, send to API
-    console.log('Subscribed:', email);
-    setSubscribed(true);
+    setLoading(true);
+
+    try {
+      const response = await fetch('/api/newsletter', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, source: 'footer' }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setSubscribed(true);
+        setEmail('');
+      } else {
+        console.error('Subscription error:', data.error);
+        alert(data.error || 'Failed to subscribe');
+      }
+    } catch (error) {
+      console.error('Subscription error:', error);
+      alert('Failed to subscribe. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <footer className="border-t border-slate-200 bg-slate-900 pt-20 pb-10">
+    <footer className={`border-t pt-20 pb-10 ${isDark ? 'border-slate-800 bg-slate-900' : 'border-slate-200 bg-slate-50'}`}>
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
           <div className="col-span-1 md:col-span-2">
-            <Link href="/" className="flex items-center gap-2 mb-6">
-              <Activity className="h-8 w-8 text-emerald-500" />
-              <span className="text-xl font-bold tracking-tighter text-white">NEXTGEN</span>
+            <Link href="/" className="flex items-center gap-3 mb-6">
+              <img
+                src="/Client-review-image/nextgen_footerlogo.png"
+                alt="NextGen Marketing Agency"
+                className="h-14 w-auto object-contain"
+              />
             </Link>
-            <p className="text-slate-400 max-w-sm mb-8 leading-relaxed">
+            <p className={`max-w-sm mb-8 leading-relaxed ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
               {t('Premium digital marketing for ERs, MedSpas, and urgent care centers.')}
             </p>
             
             {/* Email Signup */}
             <div className="mb-8">
-              <h4 className="text-white font-bold mb-3">{t('Get weekly marketing tips')}</h4>
+              <h4 className={`font-bold mb-3 ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('Get weekly marketing tips')}</h4>
               {subscribed ? (
                 <p className="text-emerald-400">{t('Thanks for subscribing!')}</p>
               ) : (
@@ -44,45 +70,44 @@ export default function Footer() {
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder={t('Enter your email')}
                     required
-                    className="flex-1 px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white placeholder-slate-500 focus:border-emerald-500 outline-none"
+                    className={`flex-1 px-4 py-2 rounded-lg border outline-none focus:border-emerald-500 ${isDark ? 'bg-slate-800 border-slate-700 text-white placeholder-slate-500' : 'bg-white border-slate-300 text-slate-900 placeholder-slate-400'}`}
                   />
-                  <button type="submit" className="px-4 py-2 bg-emerald-500 text-black font-bold rounded-lg hover:bg-emerald-400 transition-colors">
-                    {t('Join')}
+                  <button type="submit" disabled={loading} className="px-4 py-2 bg-emerald-500 text-black font-bold rounded-lg hover:bg-emerald-400 transition-colors disabled:opacity-50">
+                    {loading ? t('...') : t('Join')}
                   </button>
                 </form>
               )}
             </div>
 
             <div className="flex gap-4">
-              <Link href="https://instagram.com" className="p-2 rounded-full bg-slate-800 hover:bg-slate-700 transition-colors"><Instagram className="h-5 w-5 text-white" /></Link>
-              <Link href="https://linkedin.com" className="p-2 rounded-full bg-slate-800 hover:bg-slate-700 transition-colors"><Linkedin className="h-5 w-5 text-white" /></Link>
-              <Link href="https://facebook.com" className="p-2 rounded-full bg-slate-800 hover:bg-slate-700 transition-colors"><Facebook className="h-5 w-5 text-white" /></Link>
+              <Link href="https://instagram.com" className={`p-2 rounded-full transition-colors ${isDark ? 'bg-slate-800 hover:bg-slate-700' : 'bg-slate-200 hover:bg-slate-300'}`}><Instagram className={`h-5 w-5 ${isDark ? 'text-white' : 'text-slate-700'}`} /></Link>
+              <Link href="https://linkedin.com" className={`p-2 rounded-full transition-colors ${isDark ? 'bg-slate-800 hover:bg-slate-700' : 'bg-slate-200 hover:bg-slate-300'}`}><Linkedin className={`h-5 w-5 ${isDark ? 'text-white' : 'text-slate-700'}`} /></Link>
+              <Link href="https://facebook.com" className={`p-2 rounded-full transition-colors ${isDark ? 'bg-slate-800 hover:bg-slate-700' : 'bg-slate-200 hover:bg-slate-300'}`}><Facebook className={`h-5 w-5 ${isDark ? 'text-white' : 'text-slate-700'}`} /></Link>
             </div>
           </div>
 
           <div>
-            <h4 className="font-bold mb-6 uppercase text-xs tracking-widest text-slate-500">{t('Quick Links')}</h4>
+            <h4 className={`font-bold mb-6 uppercase text-xs tracking-widest ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{t('Quick Links')}</h4>
             <ul className="space-y-4">
-              <li><Link href="/services" className="text-slate-400 hover:text-white transition-colors">{t('Services')}</Link></li>
-              <li><Link href="/about" className="text-slate-400 hover:text-white transition-colors">{t('About')}</Link></li>
-              <li><Link href="/case-studies" className="text-slate-400 hover:text-white transition-colors">{t('Case Studies')}</Link></li>
-              <li><Link href="/pricing" className="text-slate-400 hover:text-white transition-colors">{t('Pricing')}</Link></li>
-              <li><Link href="/contact" className="text-slate-400 hover:text-white transition-colors">{t('Contact')}</Link></li>
+              <li><Link href="/services" className={`transition-colors ${isDark ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-emerald-600'}`}>{t('Services')}</Link></li>
+              <li><Link href="/about" className={`transition-colors ${isDark ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-emerald-600'}`}>{t('About')}</Link></li>
+              <li><Link href="/case-studies" className={`transition-colors ${isDark ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-emerald-600'}`}>{t('Case Studies')}</Link></li>
+              <li><Link href="/pricing" className={`transition-colors ${isDark ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-emerald-600'}`}>{t('Pricing')}</Link></li>
+              <li><Link href="/blog" className={`transition-colors ${isDark ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-emerald-600'}`}>{t('Blog')}</Link></li>
+              <li><Link href="/news" className={`transition-colors ${isDark ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-emerald-600'}`}>{t('Healthcare News')}</Link></li>
+              <li><Link href="/contact" className={`transition-colors ${isDark ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-emerald-600'}`}>{t('Contact')}</Link></li>
             </ul>
           </div>
 
           <div>
-            <h4 className="font-bold mb-6 uppercase text-xs tracking-widest text-slate-500">{t('Contact')}</h4>
+            <h4 className={`font-bold mb-6 uppercase text-xs tracking-widest ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{t('Contact')}</h4>
             <ul className="space-y-4">
-              <li className="flex items-start gap-3 text-slate-400">
+              <li className={`flex items-start gap-3 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
                 <MapPin className="h-5 w-5 text-emerald-500 shrink-0" />
                 <span>3001 Skyway Cir N<br />Irving, TX 75038</span>
               </li>
-              <li className="flex items-center gap-3 text-slate-400">
-                <Phone className="h-5 w-5 text-emerald-500 shrink-0" />
-                <span>(214) 555-0123</span>
-              </li>
-              <li className="flex items-center gap-3 text-slate-400">
+
+              <li className={`flex items-center gap-3 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
                 <Mail className="h-5 w-5 text-emerald-500 shrink-0" />
                 <span>hello@nextgenmarketing.agency</span>
               </li>
@@ -90,17 +115,14 @@ export default function Footer() {
           </div>
         </div>
 
-        <div className="border-t border-slate-800 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-slate-500">
+        <div className={`border-t pt-8 flex flex-col md:flex-row items-center justify-between gap-4 ${isDark ? 'border-slate-800' : 'border-slate-200'}`}>
+          <p className={isDark ? 'text-slate-500' : 'text-slate-500'}>
             © {new Date().getFullYear()} NextGen Marketing Agency. {t('All rights reserved.')}
           </p>
-          <p className="text-slate-500 text-sm">
-            {t('All campaigns comply with healthcare advertising regulations.')}
-          </p>
-          <div className="flex gap-8 text-slate-500">
-            <Link href="/privacy" className="hover:text-white transition-colors">{t('Privacy Policy')}</Link>
-            <Link href="/terms" className="hover:text-white transition-colors">{t('Terms of Service')}</Link>
-            <Link href="/hipaa" className="hover:text-white transition-colors">{t('HIPAA Compliance')}</Link>
+          <div className={`flex gap-8 text-sm ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>
+            <Link href="/privacy" className={`transition-colors ${isDark ? 'hover:text-white' : 'hover:text-emerald-600'}`}>{t('Privacy Policy')}</Link>
+            <Link href="/terms" className={`transition-colors ${isDark ? 'hover:text-white' : 'hover:text-emerald-600'}`}>{t('Terms of Service')}</Link>
+            <Link href="/hipaa" className={`transition-colors ${isDark ? 'hover:text-white' : 'hover:text-emerald-600'}`}>{t('HIPAA Compliance')}</Link>
           </div>
         </div>
       </div>

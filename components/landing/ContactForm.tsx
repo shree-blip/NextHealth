@@ -6,11 +6,43 @@ export default function ContactForm() {
   const [company, setCompany] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // placeholder: send data to API
-    alert('Submitted (demo only)');
+    setLoading(true);
+
+    try {
+      const response = await fetch('/api/contact-lead', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name,
+          email,
+          phone,
+          businessType: company,
+          source: 'contact-form',
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setSubmitted(true);
+        setName('');
+        setCompany('');
+        setEmail('');
+        setPhone('');
+      } else {
+        alert(data.error || 'Failed to submit form');
+      }
+    } catch (error) {
+      console.error('Contact form error:', error);
+      alert('Failed to submit. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

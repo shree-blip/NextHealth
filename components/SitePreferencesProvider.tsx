@@ -20,7 +20,7 @@ const THEME_KEY = 'site-theme';
 
 export function SitePreferencesProvider({ children }: { children: React.ReactNode }) {
   const [language, setLanguage] = useState<Language>('en');
-  const [theme, setTheme] = useState<Theme>('light');
+  const [theme, setTheme] = useState<Theme>('dark');
   const t = useCallback((text: string) => translateText(language, text), [language]);
 
   useEffect(() => {

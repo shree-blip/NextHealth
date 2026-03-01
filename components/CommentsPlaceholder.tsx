@@ -52,49 +52,49 @@ export default function CommentsPlaceholder() {
   };
 
   return (
-    <section className="mt-16">
-      <h2 className="text-xl font-semibold">Comments</h2>
+    <section className="mt-12 rounded-3xl border border-slate-200 bg-white shadow-sm p-6 sm:p-8">
+      <h2 className="text-2xl font-bold tracking-tight text-slate-900">Comments</h2>
       {comments.length === 0 ? (
-        <p className="text-sm text-slate-600">No comments yet.</p>
+        <p className="text-sm text-slate-600 mt-3">No comments yet.</p>
       ) : (
-        <ul className="space-y-4 mt-4">
+        <ul className="space-y-4 mt-5">
           {comments.map((c) => (
-            <li key={c.id} className="border-b pb-2">
-              <p className="text-sm font-semibold">{c.author}</p>
-              <p className="text-sm">{c.content}</p>
-              <p className="text-xs text-slate-500">{new Date(c.publishedAt).toLocaleString()}</p>
+            <li key={c.id} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <p className="text-sm font-semibold text-slate-900">{c.author}</p>
+              <p className="text-sm text-slate-700 mt-1">{c.content}</p>
+              <p className="text-xs text-slate-500 mt-2">{new Date(c.publishedAt).toLocaleString()}</p>
             </li>
           ))}
         </ul>
       )}
 
-      <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+      <form onSubmit={handleSubmit} className="mt-8 space-y-4">
         <div>
-          <label className="block text-sm font-medium">Name</label>
+          <label className="block text-sm font-medium text-slate-800">Name</label>
           <input
             value={author}
             onChange={(e) => setAuthor(e.target.value)}
-            className="mt-1 block w-full border rounded p-2"
+            className="mt-1 block w-full border border-slate-300 rounded-xl p-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
           />
         </div>
         <div>
-          <label className="block text-sm font-medium">Comment</label>
+          <label className="block text-sm font-medium text-slate-800">Comment</label>
           <textarea
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            className="mt-1 block w-full border rounded p-2"
+            className="mt-1 block w-full border border-slate-300 rounded-xl p-2.5 bg-white min-h-28 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
           />
         </div>
         <button
           type="submit"
           disabled={submitting}
-          className="px-4 py-2 bg-emerald-500 text-white rounded"
+          className="px-5 py-2.5 bg-emerald-500 text-white rounded-xl font-semibold hover:bg-emerald-600 transition-colors disabled:opacity-60"
         >
           {submitting ? 'Submitting...' : 'Post Comment'}
         </button>
       </form>
 
-      <p className="text-sm text-slate-600 mt-4">
+      <p className="text-sm text-slate-600 mt-5">
         Comments are created in pending state and must be approved via the admin
         dashboard before appearing.
       </p>

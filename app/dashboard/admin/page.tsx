@@ -15,12 +15,18 @@ import {
   Activity,
   Zap,
   FileText,
-  BarChart3
+  Newspaper,
+  BarChart3,
+  MessageSquare,
+  Mail,
+  Users
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { io, Socket } from 'socket.io-client';
 import AnalyticsForm from './analytics';
+import Navbar from '@/components/Navbar';
+import Footer from '@/components/Footer';
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -110,12 +116,17 @@ export default function AdminDashboard() {
   if (!user) return <div className="min-h-screen bg-slate-50 text-slate-900 flex items-center justify-center">Loading...</div>;
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 flex">
+    <>
+    <Navbar />
+    <div className="min-h-screen bg-slate-50 text-slate-900 flex pt-20">
       {/* Sidebar */}
       <aside className="w-64 border-r border-slate-100 flex flex-col p-6 hidden lg:flex">
         <Link href="/" className="flex items-center gap-2 mb-12">
-          <Activity className="h-8 w-8 text-emerald-500" />
-          <span className="text-xl font-bold tracking-tighter">ADMIN OS</span>
+          <img
+            src="/Client-review-image/nextgen_footerlogo.png"
+            alt="NextGen Marketing Agency"
+            className="h-10 w-auto object-contain"
+          />
         </Link>
 
         <nav className="space-y-2 flex-grow">
@@ -129,6 +140,22 @@ export default function AdminDashboard() {
           <Link href="/dashboard/admin/blog" className="w-full text-left flex items-center gap-3 p-3 rounded-xl transition-all text-slate-500 hover:text-slate-900 hover:bg-slate-100">
             <FileText className="h-5 w-5" />
             <span className="text-sm">Blog Management</span>
+          </Link>
+          <Link href="/dashboard/admin/news" className="w-full text-left flex items-center gap-3 p-3 rounded-xl transition-all text-slate-500 hover:text-slate-900 hover:bg-slate-100">
+            <Newspaper className="h-5 w-5" />
+            <span className="text-sm">News Management</span>
+          </Link>
+          <Link href="/dashboard/admin/chat-reports" className="w-full text-left flex items-center gap-3 p-3 rounded-xl transition-all text-slate-500 hover:text-slate-900 hover:bg-slate-100">
+            <MessageSquare className="h-5 w-5" />
+            <span className="text-sm">Chat Reports</span>
+          </Link>
+          <Link href="/dashboard/admin/leads" className="w-full text-left flex items-center gap-3 p-3 rounded-xl transition-all text-slate-500 hover:text-slate-900 hover:bg-slate-100">
+            <Users className="h-5 w-5" />
+            <span className="text-sm">Contact Leads</span>
+          </Link>
+          <Link href="/dashboard/admin/subscribers" className="w-full text-left flex items-center gap-3 p-3 rounded-xl transition-all text-slate-500 hover:text-slate-900 hover:bg-slate-100">
+            <Mail className="h-5 w-5" />
+            <span className="text-sm">Newsletter Subscribers</span>
           </Link>
         </nav>
 
@@ -156,6 +183,8 @@ export default function AdminDashboard() {
         />
       </main>
     </div>
+    <Footer />
+    </>
   );
 }
 

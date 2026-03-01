@@ -49,7 +49,15 @@ const PLAN_MAP: Record<string, { priceId: string; name: string; amount: number }
 app.prepare().then(() => {
   const server = express();
   server.use(cookieParser());
-  server.use(express.json());
+  // Only parse JSON for Express-handled routes; skip for Next.js App Router API routes
+  // to avoid consuming the request body stream before Next.js can read it
+  server.use((req, res, next) => {
+    const nextAppRoutes = ['/api/chat', '/api/posts', '/api/admin'];
+    if (nextAppRoutes.some((r) => req.path.startsWith(r))) {
+      return next();
+    }
+    express.json()(req, res, next);
+  });
 
   const httpServer = createServer(server);
   const io = new Server(httpServer, {
@@ -151,7 +159,7 @@ app.prepare().then(() => {
       const decoded = jwt.verify(token, JWT_SECRET) as any;
       const user = db.users.find(u => u.id === decoded.id);
       if (!user) return res.status(401).json({ error: 'User not found' });
-      res.json(user);
+      res.json({ id: user.id, email: user.email, name: user.name, role: user.role, avatar: user.avatar || null });
     } catch (e) {
       res.status(401).json({ error: 'Invalid token' });
     }
@@ -159,8 +167,8 @@ app.prepare().then(() => {
 
   server.post('/api/auth/logout', (req, res) => {
     res.clearCookie('auth_token', {
-      secure: true,
-      sameSite: 'none',
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
       httpOnly: true,
     });
     res.json({ success: true });
@@ -168,38 +176,39 @@ app.prepare().then(() => {
 
   // Email/Password Login
   server.post('/api/auth/login', (req, res) => {
-    const { email, password, role } = req.body;
+    const { email, password } = req.body;
     
     if (!email || !password) {
       return res.status(400).json({ error: 'Email and password required' });
     }
 
+    // Auto-detect role from email
+    const detectedRole = (email.includes('admin') || email === 'shree@focusyourfinance.com') ? 'admin' : 'client';
+
     // Find or create user
     let user = db.users.find(u => u.email === email);
     
     if (!user) {
-      // Create new user with demo password (in production, use proper hashing)
-      const userRole = email.includes('admin') || email === 'shree@focusyourfinance.com' ? 'admin' : (role || 'client');
       user = {
         id: Math.random().toString(36).substr(2, 9),
         email,
         name: email.split('@')[0],
-        role: userRole,
-        password // Store password (use bcrypt in production)
+        role: detectedRole,
+        avatar: null,
+        password
       };
       db.users.push(user);
-    } else {
-      // For demo purposes, accept any password
-      // In production, use bcrypt to compare password hash
     }
 
     // Generate JWT token
-    const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, { expiresIn: '1d' });
+    const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
 
     res.cookie('auth_token', token, {
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'none',
+      sameSite: 'lax',
       httpOnly: true,
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+      path: '/',
     });
 
     res.json({
@@ -207,10 +216,31 @@ app.prepare().then(() => {
         id: user.id,
         email: user.email,
         name: user.name,
-        role: user.role
+        role: user.role,
+        avatar: user.avatar || null,
       },
       success: true
     });
+  });
+
+  // Profile Update
+  server.patch('/api/auth/profile', (req, res) => {
+    const token = req.cookies.auth_token;
+    if (!token) return res.status(401).json({ error: 'Not authenticated' });
+
+    try {
+      const decoded = jwt.verify(token, JWT_SECRET) as any;
+      const user = db.users.find(u => u.id === decoded.id);
+      if (!user) return res.status(401).json({ error: 'User not found' });
+
+      const { name, avatar } = req.body;
+      if (name) user.name = name;
+      if (avatar !== undefined) user.avatar = avatar;
+
+      res.json({ id: user.id, email: user.email, name: user.name, role: user.role, avatar: user.avatar || null });
+    } catch (e) {
+      res.status(401).json({ error: 'Invalid token' });
+    }
   });
 
   // ————— Stripe Endpoints —————

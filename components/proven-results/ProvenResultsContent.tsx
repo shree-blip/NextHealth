@@ -26,7 +26,7 @@ export default function ProvenResultsContent() {
             transition={{ duration: 0.8 }}
             className="text-center"
           >
-            <h1 className="text-5xl md:text-7xl font-black mb-6 leading-tight">
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black mb-6 leading-tight">
               {t('Proven Results in ')}<span className="text-emerald-400">{t('Healthcare Marketing')}</span>
             </h1>
             <p className={`text-xl max-w-3xl mx-auto mb-8 ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>

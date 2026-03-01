@@ -1,0 +1,181 @@
+{
+  "name": "Insurance Verification & Pre-Auth Bot",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "verify-insurance",
+        "options": { "rawBody": false }
+      },
+      "id": "webhook-insurance",
+      "name": "New Patient Submitted",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://api.availity.com/availity/v1/coverages",
+        "method": "POST",
+        "authentication": "genericHeader",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "payerID", "value": "={{ $json.payer_id }}" },
+            { "name": "memberId", "value": "={{ $json.member_id }}" },
+            { "name": "dateOfBirth", "value": "={{ $json.dob }}" },
+            { "name": "firstName", "value": "={{ $json.first_name }}" },
+            { "name": "lastName", "value": "={{ $json.last_name }}" },
+            { "name": "serviceType", "value": "{{ $json.service_type }}" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "check-eligibility",
+      "name": "Check Insurance Eligibility",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [470, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.coverage_status }}",
+              "operation": "equal",
+              "value2": "active"
+            }
+          ]
+        }
+      },
+      "id": "is-active",
+      "name": "Coverage Active?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [690, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "const coverage = $input.first().json;\nreturn [{\n  json: {\n    patient_name: coverage.first_name + ' ' + coverage.last_name,\n    copay: coverage.copay_amount || 'N/A',\n    deductible: coverage.deductible_remaining || 'N/A',\n    coinsurance: coverage.coinsurance_pct || 'N/A',\n    in_network: coverage.in_network ? 'Yes' : 'No',\n    pre_auth_required: coverage.pre_auth_required || false,\n    max_benefit: coverage.annual_max_remaining || 'N/A',\n    coverage_details: JSON.stringify(coverage, null, 2)\n  }\n}];"
+      },
+      "id": "parse-benefits",
+      "name": "Parse Benefits",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [910, 200]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.pre_auth_required }}",
+              "operation": "equal",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "needs-preauth",
+      "name": "Pre-Auth Needed?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [1130, 200]
+    },
+    {
+      "parameters": {
+        "url": "https://api.yourehr.com/pre-auth-request",
+        "method": "POST",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "patient_name", "value": "={{ $json.patient_name }}" },
+            { "name": "service_type", "value": "={{ $json.service_type }}" },
+            { "name": "payer_id", "value": "={{ $json.payer_id }}" },
+            { "name": "diagnosis_code", "value": "={{ $json.diagnosis_code }}" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "submit-preauth",
+      "name": "Submit Pre-Auth Request",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [1350, 100]
+    },
+    {
+      "parameters": {
+        "channel": "#front-desk",
+        "text": "✅ Insurance Verified: {{ $json.patient_name }}\n• Copay: ${{ $json.copay }}\n• Deductible Remaining: ${{ $json.deductible }}\n• In-Network: {{ $json.in_network }}\n• Pre-Auth: {{ $json.pre_auth_required ? '⚠️ Required — auto-submitted' : '✅ Not needed' }}",
+        "otherOptions": {}
+      },
+      "id": "notify-frontdesk",
+      "name": "Notify Front Desk",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2,
+      "position": [1570, 200]
+    },
+    {
+      "parameters": {
+        "channel": "#billing",
+        "text": "❌ Insurance NOT Active: {{ $json.first_name }} {{ $json.last_name }}\nPayer: {{ $json.payer_id }}\nMember ID: {{ $json.member_id }}\n\nPlease follow up with patient before appointment.",
+        "otherOptions": {}
+      },
+      "id": "alert-inactive",
+      "name": "Alert Billing Team",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2,
+      "position": [910, 450]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": { "__rl": true, "value": "YOUR_SPREADSHEET_ID" },
+        "sheetName": "Verification Log",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Patient": "={{ $json.patient_name || $json.first_name + ' ' + $json.last_name }}",
+            "Payer": "={{ $json.payer_id }}",
+            "Status": "={{ $json.coverage_status === 'active' ? 'Active' : 'Inactive' }}",
+            "Copay": "={{ $json.copay || 'N/A' }}",
+            "Pre-Auth": "={{ $json.pre_auth_required ? 'Yes' : 'No' }}",
+            "Timestamp": "={{ $now.toISO() }}"
+          }
+        }
+      },
+      "id": "log-verification",
+      "name": "Log to Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [1570, 400]
+    }
+  ],
+  "connections": {
+    "New Patient Submitted": { "main": [[{ "node": "Check Insurance Eligibility", "type": "main", "index": 0 }]] },
+    "Check Insurance Eligibility": { "main": [[{ "node": "Coverage Active?", "type": "main", "index": 0 }]] },
+    "Coverage Active?": {
+      "main": [
+        [{ "node": "Parse Benefits", "type": "main", "index": 0 }],
+        [{ "node": "Alert Billing Team", "type": "main", "index": 0 }]
+      ]
+    },
+    "Parse Benefits": { "main": [[{ "node": "Pre-Auth Needed?", "type": "main", "index": 0 }]] },
+    "Pre-Auth Needed?": {
+      "main": [
+        [{ "node": "Submit Pre-Auth Request", "type": "main", "index": 0 }],
+        [{ "node": "Notify Front Desk", "type": "main", "index": 0 }]
+      ]
+    },
+    "Submit Pre-Auth Request": { "main": [[{ "node": "Notify Front Desk", "type": "main", "index": 0 }]] },
+    "Alert Billing Team": { "main": [[{ "node": "Log to Sheets", "type": "main", "index": 0 }]] },
+    "Notify Team on Slack": { "main": [[{ "node": "Log to Sheets", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" },
+  "meta": {
+    "templateCredsSetupCompleted": false,
+    "instanceId": "nextgen-insurance-verification"
+  },
+  "tags": [{ "name": "Healthcare" }, { "name": "Insurance" }, { "name": "Verification" }, { "name": "Billing" }]
+}

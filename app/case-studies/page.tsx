@@ -115,7 +115,7 @@ export default function CaseStudiesPage() {
       </section>
 
       {/* Stats Section */}
-      <section className="py-24 bg-slate-900 text-white">
+      <section className="py-24 bg-emerald-600 text-white">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <AnimatedStats />
         </div>

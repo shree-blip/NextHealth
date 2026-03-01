@@ -1,0 +1,148 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { ArrowLeft, Mail, Calendar, CheckCircle, XCircle } from 'lucide-react';
+
+interface Subscriber {
+  id: number;
+  email: string;
+  subscribedAt: string;
+  active: boolean;
+  source: string | null;
+}
+
+export default function NewsletterSubscribersPage() {
+  const router = useRouter();
+  const [subscribers, setSubscribers] = useState<Subscriber[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchSubscribers();
+  }, []);
+
+  const fetchSubscribers = async () => {
+    try {
+      const response = await fetch('/api/newsletter');
+      const data = await response.json();
+      setSubscribers(data.subscribers || []);
+    } catch (error) {
+      console.error('Failed to fetch subscribers:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-50 p-8">
+      <div className="max-w-7xl mx-auto">
+        <div className="mb-8">
+          <Link
+            href="/dashboard/admin"
+            className="inline-flex items-center gap-2 text-slate-600 hover:text-slate-900 mb-4"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to Dashboard
+          </Link>
+          <h1 className="text-4xl font-black text-slate-900">Newsletter Subscribers</h1>
+          <p className="text-slate-600 mt-2">Manage your email subscribers</p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-slate-600">Total Subscribers</p>
+                <p className="text-3xl font-black text-slate-900 mt-1">{subscribers.length}</p>
+              </div>
+              <Mail className="h-12 w-12 text-emerald-500" />
+            </div>
+          </div>
+          <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-slate-600">Active</p>
+                <p className="text-3xl font-black text-emerald-600 mt-1">
+                  {subscribers.filter(s => s.active).length}
+                </p>
+              </div>
+              <CheckCircle className="h-12 w-12 text-emerald-500" />
+            </div>
+          </div>
+          <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-slate-600">Inactive</p>
+                <p className="text-3xl font-black text-slate-400 mt-1">
+                  {subscribers.filter(s => !s.active).length}
+                </p>
+              </div>
+              <XCircle className="h-12 w-12 text-slate-400" />
+            </div>
+          </div>
+        </div>
+
+        {loading ? (
+          <div className="bg-white rounded-2xl p-12 text-center shadow-sm border border-slate-200">
+            <p className="text-slate-600">Loading subscribers...</p>
+          </div>
+        ) : subscribers.length === 0 ? (
+          <div className="bg-white rounded-2xl p-12 text-center shadow-sm border border-slate-200">
+            <Mail className="h-16 w-16 text-slate-300 mx-auto mb-4" />
+            <p className="text-slate-600">No subscribers yet</p>
+          </div>
+        ) : (
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <table className="w-full">
+              <thead className="bg-slate-50 border-b border-slate-200">
+                <tr>
+                  <th className="text-left py-4 px-6 text-sm font-bold text-slate-700 uppercase tracking-wider">Email</th>
+                  <th className="text-left py-4 px-6 text-sm font-bold text-slate-700 uppercase tracking-wider">Source</th>
+                  <th className="text-left py-4 px-6 text-sm font-bold text-slate-700 uppercase tracking-wider">Subscribed</th>
+                  <th className="text-left py-4 px-6 text-sm font-bold text-slate-700 uppercase tracking-wider">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-200">
+                {subscribers.map((subscriber) => (
+                  <tr key={subscriber.id} className="hover:bg-slate-50 transition-colors">
+                    <td className="py-4 px-6">
+                      <div className="flex items-center gap-2">
+                        <Mail className="h-4 w-4 text-slate-400" />
+                        <span className="font-medium text-slate-900">{subscriber.email}</span>
+                      </div>
+                    </td>
+                    <td className="py-4 px-6">
+                      <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                        {subscriber.source || 'unknown'}
+                      </span>
+                    </td>
+                    <td className="py-4 px-6">
+                      <div className="flex items-center gap-2 text-sm text-slate-600">
+                        <Calendar className="h-4 w-4" />
+                        {new Date(subscriber.subscribedAt).toLocaleDateString()}
+                      </div>
+                    </td>
+                    <td className="py-4 px-6">
+                      {subscriber.active ? (
+                        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
+                          <CheckCircle className="h-3 w-3" />
+                          Active
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-600">
+                          <XCircle className="h-3 w-3" />
+                          Inactive
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

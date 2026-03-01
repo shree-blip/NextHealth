@@ -1,0 +1,144 @@
+{
+  "name": "Healthcare Patient Intake Automation",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "patient-intake",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-intake",
+      "name": "Patient Intake Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.insurance_provider }}",
+              "operation": "isNotEmpty"
+            }
+          ]
+        }
+      },
+      "id": "check-insurance",
+      "name": "Has Insurance Info?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [470, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://api.yourehr.com/patients",
+        "method": "POST",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "first_name", "value": "={{ $json.first_name }}" },
+            { "name": "last_name", "value": "={{ $json.last_name }}" },
+            { "name": "email", "value": "={{ $json.email }}" },
+            { "name": "phone", "value": "={{ $json.phone }}" },
+            { "name": "dob", "value": "={{ $json.date_of_birth }}" },
+            { "name": "insurance_id", "value": "={{ $json.insurance_id }}" },
+            { "name": "insurance_provider", "value": "={{ $json.insurance_provider }}" },
+            { "name": "reason_for_visit", "value": "={{ $json.reason_for_visit }}" }
+          ]
+        },
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "id": "create-patient-ehr",
+      "name": "Create Patient in EHR",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [690, 200]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": { "__rl": true, "value": "YOUR_SPREADSHEET_ID" },
+        "sheetName": "Intake Log",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Name": "={{ $json.first_name }} {{ $json.last_name }}",
+            "Email": "={{ $json.email }}",
+            "Phone": "={{ $json.phone }}",
+            "Insurance": "={{ $json.insurance_provider }}",
+            "Reason": "={{ $json.reason_for_visit }}",
+            "Timestamp": "={{ $now.toISO() }}"
+          }
+        }
+      },
+      "id": "log-to-sheets",
+      "name": "Log to Google Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [910, 200]
+    },
+    {
+      "parameters": {
+        "fromEmail": "intake@yourclinic.com",
+        "toEmail": "={{ $json.email }}",
+        "subject": "Appointment Confirmation - {{ $json.first_name }}",
+        "html": "<h2>Welcome, {{ $json.first_name }}!</h2><p>Your intake form has been received. We look forward to seeing you at your appointment.</p><p><strong>Reason for Visit:</strong> {{ $json.reason_for_visit }}</p><p>Please bring a valid photo ID and your insurance card to your appointment.</p><p>— Your Healthcare Team</p>"
+      },
+      "id": "send-confirmation",
+      "name": "Send Confirmation Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 1,
+      "position": [1130, 200]
+    },
+    {
+      "parameters": {
+        "channel": "#new-patients",
+        "text": "🏥 New Patient Intake: {{ $json.first_name }} {{ $json.last_name }}\n📞 {{ $json.phone }}\n🩺 Reason: {{ $json.reason_for_visit }}\n💳 Insurance: {{ $json.insurance_provider || 'Self-Pay' }}"
+      },
+      "id": "notify-slack",
+      "name": "Notify Staff via Slack",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 1,
+      "position": [1130, 400]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{ \"status\": \"success\", \"message\": \"Intake form received successfully\" }"
+      },
+      "id": "respond-success",
+      "name": "Respond Success",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1350, 300]
+    }
+  ],
+  "connections": {
+    "Patient Intake Webhook": { "main": [[{ "node": "Has Insurance Info?", "type": "main", "index": 0 }]] },
+    "Has Insurance Info?": {
+      "main": [
+        [{ "node": "Create Patient in EHR", "type": "main", "index": 0 }],
+        [{ "node": "Create Patient in EHR", "type": "main", "index": 0 }]
+      ]
+    },
+    "Create Patient in EHR": { "main": [[{ "node": "Log to Google Sheets", "type": "main", "index": 0 }]] },
+    "Log to Google Sheets": {
+      "main": [[
+        { "node": "Send Confirmation Email", "type": "main", "index": 0 },
+        { "node": "Notify Staff via Slack", "type": "main", "index": 0 }
+      ]]
+    },
+    "Send Confirmation Email": { "main": [[{ "node": "Respond Success", "type": "main", "index": 0 }]] },
+    "Notify Staff via Slack": { "main": [[{ "node": "Respond Success", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" },
+  "meta": {
+    "templateCredsSetupCompleted": false,
+    "instanceId": "nextgen-healthcare-automation"
+  },
+  "tags": [{ "name": "Healthcare" }, { "name": "Patient Intake" }, { "name": "HIPAA" }]
+}

@@ -1,0 +1,146 @@
+{
+  "name": "Appointment Reminder & No-Show Recovery",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": { "interval": [{ "field": "hours", "hoursInterval": 1 }] }
+      },
+      "id": "schedule-trigger",
+      "name": "Check Every Hour",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://api.yourehr.com/appointments",
+        "method": "GET",
+        "qs": {
+          "date_range": "next_48_hours",
+          "status": "confirmed"
+        },
+        "options": {}
+      },
+      "id": "fetch-appointments",
+      "name": "Fetch Upcoming Appointments",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [470, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{ $json.hours_until_appointment }}",
+              "operation": "equal",
+              "value2": 24
+            }
+          ]
+        }
+      },
+      "id": "is-24-hours",
+      "name": "24hr Reminder?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [690, 200]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{ $json.hours_until_appointment }}",
+              "operation": "equal",
+              "value2": 2
+            }
+          ]
+        }
+      },
+      "id": "is-2-hours",
+      "name": "2hr Reminder?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [690, 450]
+    },
+    {
+      "parameters": {
+        "from": "+1YOUR_TWILIO_NUMBER",
+        "to": "={{ $json.patient_phone }}",
+        "message": "Hi {{ $json.patient_name }}! 📋 Reminder: You have an appointment tomorrow at {{ $json.appointment_time }} with {{ $json.provider_name }}. Reply CONFIRM to confirm or CANCEL to reschedule. — {{ $json.clinic_name }}"
+      },
+      "id": "sms-24hr",
+      "name": "Send 24hr SMS",
+      "type": "n8n-nodes-base.twilio",
+      "typeVersion": 1,
+      "position": [910, 150]
+    },
+    {
+      "parameters": {
+        "from": "+1YOUR_TWILIO_NUMBER",
+        "to": "={{ $json.patient_phone }}",
+        "message": "Hi {{ $json.patient_name }}! ⏰ Your appointment is in 2 hours at {{ $json.appointment_time }}. Please arrive 10 minutes early. See you soon! — {{ $json.clinic_name }}"
+      },
+      "id": "sms-2hr",
+      "name": "Send 2hr SMS",
+      "type": "n8n-nodes-base.twilio",
+      "typeVersion": 1,
+      "position": [910, 400]
+    },
+    {
+      "parameters": {
+        "fromEmail": "appointments@yourclinic.com",
+        "toEmail": "={{ $json.patient_email }}",
+        "subject": "Appointment Reminder — {{ $json.appointment_date }}",
+        "html": "<h2>Hi {{ $json.patient_name }},</h2><p>This is a friendly reminder about your upcoming appointment:</p><ul><li><strong>Date:</strong> {{ $json.appointment_date }}</li><li><strong>Time:</strong> {{ $json.appointment_time }}</li><li><strong>Provider:</strong> {{ $json.provider_name }}</li><li><strong>Location:</strong> {{ $json.clinic_address }}</li></ul><p>Please arrive 10 minutes early with your ID and insurance card.</p><p>Need to reschedule? <a href='{{ $json.reschedule_link }}'>Click here</a></p>"
+      },
+      "id": "email-reminder",
+      "name": "Send Email Reminder",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 1,
+      "position": [1130, 150]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": { "__rl": true, "value": "YOUR_SPREADSHEET_ID" },
+        "sheetName": "Reminder Log",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Patient": "={{ $json.patient_name }}",
+            "Appointment": "={{ $json.appointment_date }} {{ $json.appointment_time }}",
+            "Reminder Type": "={{ $json.hours_until_appointment }}hr",
+            "SMS Sent": "Yes",
+            "Timestamp": "={{ $now.toISO() }}"
+          }
+        }
+      },
+      "id": "log-reminders",
+      "name": "Log Reminders",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [1350, 300]
+    }
+  ],
+  "connections": {
+    "Check Every Hour": { "main": [[{ "node": "Fetch Upcoming Appointments", "type": "main", "index": 0 }]] },
+    "Fetch Upcoming Appointments": {
+      "main": [[
+        { "node": "24hr Reminder?", "type": "main", "index": 0 },
+        { "node": "2hr Reminder?", "type": "main", "index": 0 }
+      ]]
+    },
+    "24hr Reminder?": { "main": [[{ "node": "Send 24hr SMS", "type": "main", "index": 0 }]] },
+    "2hr Reminder?": { "main": [[{ "node": "Send 2hr SMS", "type": "main", "index": 0 }]] },
+    "Send 24hr SMS": { "main": [[{ "node": "Send Email Reminder", "type": "main", "index": 0 }]] },
+    "Send 2hr SMS": { "main": [[{ "node": "Log Reminders", "type": "main", "index": 0 }]] },
+    "Send Email Reminder": { "main": [[{ "node": "Log Reminders", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" },
+  "meta": {
+    "templateCredsSetupCompleted": false,
+    "instanceId": "nextgen-appointment-reminders"
+  },
+  "tags": [{ "name": "Healthcare" }, { "name": "Appointments" }, { "name": "SMS" }, { "name": "No-Show Prevention" }]
+}

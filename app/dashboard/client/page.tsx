@@ -29,6 +29,8 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { io, Socket } from 'socket.io-client';
 import ClientAnalyticsView from '@/components/ClientAnalyticsView';
+import Navbar from '@/components/Navbar';
+import Footer from '@/components/Footer';
 
 /* ─── Plan Definitions ─── */
 const PLANS = [
@@ -247,7 +249,9 @@ function ClientDashboard() {
   const currentPlanTier = PLANS.find(p => p.id === currentPlanId)?.tier || 0;
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 flex">
+    <>
+    <Navbar />
+    <div className="min-h-screen bg-slate-50 text-slate-900 flex pt-20">
       {/* Toast */}
       <AnimatePresence>
         {toast && <Toast type={toast.type} message={toast.message} onClose={() => setToast(null)} />}
@@ -256,8 +260,11 @@ function ClientDashboard() {
       {/* Sidebar */}
       <aside className="w-64 border-r border-slate-100 flex flex-col p-6 hidden lg:flex">
         <Link href="/" className="flex items-center gap-2 mb-12">
-          <Activity className="h-8 w-8 text-emerald-500" />
-          <span className="text-xl font-bold tracking-tighter">NEXTGEN</span>
+          <img
+            src="/Client-review-image/nextgen_footerlogo.png"
+            alt="NextGen Marketing Agency"
+            className="h-10 w-auto object-contain"
+          />
         </Link>
 
         <nav className="space-y-2 flex-grow">
@@ -357,6 +364,8 @@ function ClientDashboard() {
         </AnimatePresence>
       </main>
     </div>
+    <Footer />
+    </>
   );
 }
 

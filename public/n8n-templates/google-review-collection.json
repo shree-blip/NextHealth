@@ -1,0 +1,137 @@
+{
+  "name": "Google Review Collection & Reputation Automation",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "post-visit-trigger",
+        "options": {}
+      },
+      "id": "webhook-visit",
+      "name": "Patient Visit Completed",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "const visitDate = new Date($input.first().json.visit_date);\nconst now = new Date();\nconst hoursSince = (now - visitDate) / (1000 * 60 * 60);\nreturn [{ json: { ...items[0].json, hours_since_visit: hoursSince, ready_to_send: hoursSince >= 2 } }];"
+      },
+      "id": "wait-check",
+      "name": "Timing Check (2hr delay)",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [470, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{ $json.satisfaction_score }}",
+              "operation": "largerEqual",
+              "value2": 4
+            }
+          ]
+        }
+      },
+      "id": "sentiment-check",
+      "name": "Happy Patient?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [690, 300]
+    },
+    {
+      "parameters": {
+        "from": "+1YOUR_TWILIO_NUMBER",
+        "to": "={{ $json.patient_phone }}",
+        "message": "Hi {{ $json.patient_name }}! 😊 Thank you for visiting {{ $json.clinic_name }} today! We'd love to hear about your experience. Would you mind leaving us a quick Google review? It helps other patients find quality care. 🙏\n\n{{ $json.google_review_link }}"
+      },
+      "id": "send-review-request",
+      "name": "Send Review Request SMS",
+      "type": "n8n-nodes-base.twilio",
+      "typeVersion": 1,
+      "position": [910, 200]
+    },
+    {
+      "parameters": {
+        "fromEmail": "care@yourclinic.com",
+        "toEmail": "={{ $json.patient_email }}",
+        "subject": "How was your visit, {{ $json.patient_name }}?",
+        "html": "<div style='font-family: Arial; max-width: 600px; margin: 0 auto;'><h2>Thank you for your visit!</h2><p>Hi {{ $json.patient_name }},</p><p>We hope your visit with {{ $json.provider_name }} went well. Your feedback helps us improve and helps other patients find quality healthcare.</p><a href='{{ $json.google_review_link }}' style='display: inline-block; padding: 12px 24px; background: #10b981; color: white; text-decoration: none; border-radius: 8px; font-weight: bold;'>Leave a Google Review ⭐</a><p style='color: #666; margin-top: 20px;'>Thank you for trusting {{ $json.clinic_name }}!</p></div>"
+      },
+      "id": "send-review-email",
+      "name": "Send Review Request Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 1,
+      "position": [1130, 200]
+    },
+    {
+      "parameters": {
+        "fromEmail": "care@yourclinic.com",
+        "toEmail": "={{ $json.patient_email }}",
+        "subject": "We appreciate your feedback, {{ $json.patient_name }}",
+        "html": "<div style='font-family: Arial; max-width: 600px;'><h2>We value your feedback</h2><p>Hi {{ $json.patient_name }}, we noticed your recent visit may not have met expectations. We'd love to hear from you directly so we can improve.</p><a href='{{ $json.feedback_form_link }}' style='display: inline-block; padding: 12px 24px; background: #3b82f6; color: white; text-decoration: none; border-radius: 8px;'>Share Private Feedback</a></div>"
+      },
+      "id": "send-private-feedback",
+      "name": "Route to Private Feedback",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 1,
+      "position": [910, 450]
+    },
+    {
+      "parameters": {
+        "channel": "#reviews",
+        "text": "⭐ New review request sent to {{ $json.patient_name }} ({{ $json.provider_name }}). Satisfaction score: {{ $json.satisfaction_score }}/5",
+        "otherOptions": {}
+      },
+      "id": "notify-team",
+      "name": "Notify Team on Slack",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2,
+      "position": [1350, 300]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": { "__rl": true, "value": "YOUR_SPREADSHEET_ID" },
+        "sheetName": "Review Requests",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Patient": "={{ $json.patient_name }}",
+            "Provider": "={{ $json.provider_name }}",
+            "Score": "={{ $json.satisfaction_score }}",
+            "Action": "={{ $json.satisfaction_score >= 4 ? 'Google Review Request' : 'Private Feedback' }}",
+            "Date": "={{ $now.toISO() }}"
+          }
+        }
+      },
+      "id": "log-request",
+      "name": "Log to Google Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [1350, 450]
+    }
+  ],
+  "connections": {
+    "Patient Visit Completed": { "main": [[{ "node": "Timing Check (2hr delay)", "type": "main", "index": 0 }]] },
+    "Timing Check (2hr delay)": { "main": [[{ "node": "Happy Patient?", "type": "main", "index": 0 }]] },
+    "Happy Patient?": {
+      "main": [
+        [{ "node": "Send Review Request SMS", "type": "main", "index": 0 }],
+        [{ "node": "Route to Private Feedback", "type": "main", "index": 0 }]
+      ]
+    },
+    "Send Review Request SMS": { "main": [[{ "node": "Send Review Request Email", "type": "main", "index": 0 }]] },
+    "Send Review Request Email": { "main": [[{ "node": "Notify Team on Slack", "type": "main", "index": 0 }]] },
+    "Route to Private Feedback": { "main": [[{ "node": "Log to Google Sheets", "type": "main", "index": 0 }]] },
+    "Notify Team on Slack": { "main": [[{ "node": "Log to Google Sheets", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" },
+  "meta": {
+    "templateCredsSetupCompleted": false,
+    "instanceId": "nextgen-review-collection"
+  },
+  "tags": [{ "name": "Healthcare" }, { "name": "Reviews" }, { "name": "Reputation" }, { "name": "Google" }]
+}

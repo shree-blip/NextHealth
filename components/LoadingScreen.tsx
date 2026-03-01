@@ -2,7 +2,7 @@
 
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEffect, useState } from 'react';
-import { Activity, Download } from 'lucide-react';
+// Logo image used instead of icons
 import {
   FaFacebook,
   FaInstagram,
@@ -35,16 +35,8 @@ const orbitIcons = [
 
 export default function LoadingScreen() {
   const [isLoading, setIsLoading] = useState(true);
-  const quotes = [
-    "Growth is not an option, it's a mandate.",
-    "Automate. Acquire. Accelerate.",
-    "Marketing that actually moves the needle.",
-    "Turning clicks into clinical visits."
-  ];
-  const [quoteIndex, setQuoteIndex] = useState(0);
 
   useEffect(() => {
-    // Show loader on every full-page load (includes refresh)
     document.body.style.overflow = 'hidden';
     const timer = setTimeout(() => {
       setIsLoading(false);
@@ -56,13 +48,6 @@ export default function LoadingScreen() {
     };
   }, []);
 
-  useEffect(() => {
-    const iv = setInterval(() => {
-      setQuoteIndex(i => (i + 1) % quotes.length);
-    }, 700);
-    return () => clearInterval(iv);
-  }, []);
-
   return (
     <AnimatePresence>
       {isLoading && (
@@ -72,7 +57,8 @@ export default function LoadingScreen() {
           transition={{ duration: 0.8, ease: [0.76, 0, 0.24, 1] }}
           className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950"
         >
-          <div className="relative flex items-center justify-center w-[360px] h-[360px] md:w-[460px] md:h-[460px]">
+          <div className="relative flex items-center justify-center w-[320px] h-[320px] sm:w-[440px] sm:h-[440px] md:w-[540px] md:h-[540px]">
+            {/* Orbiting social icons */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1, rotate: 360 }}
@@ -81,12 +67,19 @@ export default function LoadingScreen() {
             >
               {orbitIcons.map(({ Icon, color }, idx) => {
                 const angle = (idx * 360) / orbitIcons.length;
+                const rad = (angle * Math.PI) / 180;
+                // Position icons in a circle using percentage-based left/top
+                const x = 50 + 44 * Math.sin(rad); // 44% radius
+                const y = 50 - 44 * Math.cos(rad);
+                const left = `${x.toFixed(3)}%`;
+                const top = `${y.toFixed(3)}%`;
                 return (
                   <div
                     key={`${color}-${idx}`}
-                    className="absolute left-1/2 top-1/2"
+                    className="absolute -translate-x-1/2 -translate-y-1/2"
                     style={{
-                      transform: `rotate(${angle}deg) translateY(-168px) rotate(-${angle}deg)`,
+                      left,
+                      top,
                     }}
                   >
                     <div className="p-2 rounded-full bg-white/8 shadow-lg border border-white/10">
@@ -97,37 +90,47 @@ export default function LoadingScreen() {
               })}
             </motion.div>
 
-            <div className="relative z-10 flex flex-col items-center">
+            {/* Centered logo */}
+            <div className="relative z-10 flex flex-col items-center justify-center">
               <motion.div
-                initial={{ scale: 0.8, opacity: 0 }}
+                initial={{ scale: 0.6, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                transition={{ duration: 0.5, ease: "easeOut" }}
-                className="mb-8 flex items-center gap-2"
+                transition={{ duration: 0.6, ease: "easeOut" }}
+                className="relative"
               >
-                <Activity className="h-16 w-16 text-emerald-500 animate-pulse" />
-                <Download className="h-10 w-10 text-emerald-400 animate-pulse" />
+                {/* Glow behind logo */}
+                <motion.div
+                  className="absolute -inset-6 rounded-full"
+                  style={{
+                    background: 'radial-gradient(circle, rgba(16,185,129,0.35) 0%, transparent 70%)',
+                    filter: 'blur(14px)',
+                  }}
+                  animate={{
+                    scale: [1, 1.3, 1],
+                    opacity: [0.5, 1, 0.5],
+                  }}
+                  transition={{
+                    duration: 2,
+                    repeat: Infinity,
+                    ease: 'easeInOut',
+                  }}
+                />
+                <motion.img
+                  src="/Client-review-image/nextgen_footerlogo.png"
+                  alt="NextGen Marketing Agency"
+                  className="h-20 md:h-28 w-auto object-contain relative z-10"
+                  animate={{
+                    y: [0, -6, 0],
+                  }}
+                  transition={{
+                    duration: 2.5,
+                    repeat: Infinity,
+                    ease: 'easeInOut',
+                  }}
+                />
               </motion.div>
-
-              <div className="overflow-hidden">
-                <motion.h1
-                  initial={{ y: 100 }}
-                  animate={{ y: 0 }}
-                  transition={{ duration: 0.8, ease: [0.76, 0, 0.24, 1], delay: 0.2 }}
-                  className="text-4xl md:text-6xl font-bold text-white tracking-tighter text-center"
-                >
-                  NEXTGEN <span className="text-emerald-500">MARKETING</span>
-                </motion.h1>
-              </div>
-
-              <motion.div
-                initial={{ width: 0 }}
-                animate={{ width: "100%" }}
-                transition={{ duration: 1.5, ease: "easeInOut", delay: 0.5 }}
-                className="h-px bg-emerald-500/50 mt-4 w-64"
-              />
             </div>
           </div>
-
         </motion.div>
       )}
     </AnimatePresence>

@@ -5,16 +5,19 @@ import { motion } from 'framer-motion';
 import { Activity, Shield, User, ArrowRight, Loader2, Mail, Lock } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import Navbar from '@/components/Navbar';
+import Footer from '@/components/Footer';
+import { useAuth } from '@/components/AuthProvider';
 
 export default function LoginPage() {
   const [loginMethod, setLoginMethod] = useState<'email' | 'google'>('email');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState<'client' | 'admin'>('client');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const router = useRouter();
+  const { refreshUser } = useAuth();
 
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
@@ -47,7 +50,7 @@ export default function LoginPage() {
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, role })
+        body: JSON.stringify({ email, password })
       });
 
       if (!response.ok) {
@@ -58,6 +61,9 @@ export default function LoginPage() {
       const data = await response.json();
       setSuccess('Login successful! Redirecting...');
       
+      // Refresh auth context so Navbar updates immediately
+      await refreshUser();
+
       setTimeout(() => {
         router.push(`/dashboard/${data.user.role}`);
       }, 500);
@@ -97,9 +103,11 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="min-h-screen bg-slate-50 flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Background Glow */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-emerald-500/5 blur-[120px] rounded-full -z-10" />
+    <>
+      <Navbar />
+      <main className="min-h-screen bg-slate-50 flex items-center justify-center p-4 relative overflow-hidden pt-32">
+        {/* Background Glow */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-emerald-500/5 blur-[120px] rounded-full -z-10" />
 
       <div className="w-full max-w-md">
         <motion.div
@@ -108,8 +116,11 @@ export default function LoginPage() {
           className="text-center mb-12"
         >
           <Link href="/" className="inline-flex items-center gap-2 mb-8">
-            <Activity className="h-10 w-10 text-emerald-500" />
-            <span className="text-2xl font-bold tracking-tighter">NEXTGEN</span>
+            <img
+              src="/Client-review-image/nextgen_footerlogo.png"
+              alt="NextGen Marketing Agency"
+              className="h-12 w-auto object-contain"
+            />
           </Link>
           <h1 className="text-[20px] font-bold mb-2">Welcome Back</h1>
           <p className="text-slate-500">Access your clinical growth dashboard</p>
@@ -173,28 +184,6 @@ export default function LoginPage() {
 
           {loginMethod === 'email' ? (
             <form onSubmit={handleEmailLogin} className="space-y-4">
-              {/* Role Selector */}
-              <div className="flex p-1 bg-slate-100 rounded-2xl mb-6">
-                <button
-                  type="button"
-                  onClick={() => setRole('client')}
-                  className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all ${
-                    role === 'client' ? 'bg-blue-500 text-white' : 'text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  <User className="h-4 w-4" /> Client
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setRole('admin')}
-                  className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all ${
-                    role === 'admin' ? 'bg-purple-500 text-white' : 'text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  <Shield className="h-4 w-4" /> Admin
-                </button>
-              </div>
-
               {/* Email Input */}
               <div>
                 <label className="block text-sm font-bold text-slate-700 mb-2">Email Address</label>
@@ -241,7 +230,7 @@ export default function LoginPage() {
               </button>
 
               <p className="text-xs text-center text-slate-500 mt-4">
-                Demo: Use any email to register. Emails with &quot;admin&quot; or &quot;shree@focusyourfinance.com&quot; get Admin access.
+                Demo: Use any email/password to sign in. Admin emails are auto-detected.
               </p>
             </form>
           ) : (
@@ -278,7 +267,7 @@ export default function LoginPage() {
                 )}
               </button>
               <p className="text-xs text-center text-slate-500 mt-4">
-                Note: For this demo, logging in with an email containing &quot;admin&quot; or &quot;shree@focusyourfinance.com&quot; grants Admin access.
+                Note: Admin access is auto-detected by email.
               </p>
             </div>
           )}
@@ -289,5 +278,7 @@ export default function LoginPage() {
         </p>
       </div>
     </main>
+    <Footer />
+    </>
   );
 }
