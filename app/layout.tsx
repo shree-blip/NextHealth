@@ -23,8 +23,8 @@ export const metadata: Metadata = {
 
 export default function RootLayout({children}: {children: React.ReactNode}) {
   return (
-    <html lang="en" className={`${inter.variable} ${jetbrainsMono.variable}`}>
-      <body suppressHydrationWarning className="antialiased selection:bg-emerald-500/30 bg-slate-50 text-slate-900">
+    <html lang="en" className={`${inter.variable} ${jetbrainsMono.variable} theme-light`}>
+      <body suppressHydrationWarning className="antialiased selection:bg-emerald-500/30">
         <SitePreferencesProvider>
           <ScrollToTop />
           <LoadingScreen />

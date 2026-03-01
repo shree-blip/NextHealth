@@ -168,6 +168,81 @@ html.theme-dark textarea::placeholder {
 html.theme-dark .prose {
   color: #cbd5e1;
 }
+
+/* LIGHT THEME - explicit background and text colors */
+html.theme-light {
+  --background: #f8fafc;
+  --foreground: #0f172a;
+}
+
+html.theme-light body {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+}
+
+html.theme-light .bg-slate-900,
+html.theme-light .bg-gray-900 {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+html.theme-light .bg-slate-800,
+html.theme-light .bg-gray-800 {
+  background-color: #f3f4f6 !important;
+  color: #0f172a !important;
+}
+
+html.theme-light .bg-slate-50,
+html.theme-light .bg-gray-50 {
+  background-color: #fafafa !important;
+  color: #0f172a !important;
+}
+
+html.theme-light .text-white {
+  color: #0f172a !important;
+}
+
+html.theme-light .text-slate-300,
+html.theme-light .text-slate-400,
+html.theme-light .text-gray-300,
+html.theme-light .text-gray-400 {
+  color: #0f172a !important;
+}
+
+html.theme-light input,
+html.theme-light textarea,
+html.theme-light select {
+  background-color: #ffffff;
+  color: #0f172a;
+  border-color: #e2e8f0;
+}
+
+html.theme-light input::placeholder,
+html.theme-light textarea::placeholder {
+  color: #94a3b8;
+}
+
+html.theme-light .border-white {
+  border-color: #0f172a !important;
+}
+
+/* Ensure light theme buttons and forms are readable */
+html.theme-light button,
+html.theme-light a {
+  color: inherit;
+}
+
+html.theme-light .bg-white {
+  background-color: #ffffff;
+  color: #0f172a;
+}
+
+html.theme-light .shadow-lg,
+html.theme-light .shadow-xl,
+html.theme-light .shadow-2xl {
+  box-shadow: 0 10px 25px -10px rgba(0, 0, 0, 0.1) !important;
+}
+
 /* mesh gradient background animation for hero */
 @keyframes mesh {
   0% { background-position: 0% 50%; }

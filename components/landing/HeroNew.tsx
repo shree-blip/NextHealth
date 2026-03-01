@@ -46,12 +46,13 @@ const socialRainIcons = [
 ];
 
 export default function HeroNew() {
-  const { t } = useSitePreferences();
+  const { t, theme } = useSitePreferences();
+  const isDark = theme === 'dark';
 
   return (
-    <header className="relative overflow-visible py-24 lg:py-32">
-      {/* Mesh gradient background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-emerald-900 via-slate-900 to-emerald-800" />
+    <header className={`relative overflow-visible py-24 lg:py-32 ${isDark ? 'bg-slate-900' : 'bg-white'}`}>
+      {/* Theme-aware gradient background */}
+      <div className={`absolute inset-0 ${isDark ? 'bg-gradient-to-br from-emerald-900 via-slate-900 to-emerald-800' : 'bg-gradient-to-br from-slate-50 via-slate-100 to-slate-50'}`} />
 
       {/* Social icon rain animation */}
       <div className="absolute inset-x-0 top-0 h-[420vh] z-30 pointer-events-none overflow-visible" aria-hidden="true">
@@ -74,7 +75,7 @@ export default function HeroNew() {
         ))}
       </div>
 
-      <div className="absolute inset-0 bg-black/40" />
+      <div className={`absolute inset-0 ${isDark ? 'bg-black/40' : 'bg-white/0'}`} />
       
       <div className="relative z-20 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
@@ -83,27 +84,27 @@ export default function HeroNew() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7 }}
           >
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-white leading-tight tracking-tight">
+            <h1 className={`text-4xl sm:text-5xl lg:text-6xl font-black leading-tight tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
               {t('We market healthcare.')}<br />
               <span className="text-emerald-400">{t('Relentlessly.')}</span>
             </h1>
-            <p className="mt-6 text-xl text-slate-300 max-w-lg">
+            <p className={`mt-6 text-xl max-w-lg ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
               {t('Premium digital marketing for ERs, MedSpas, and urgent care centers.')}
             </p>
 
             {/* Trust Badges */}
             <div className="mt-8 flex flex-wrap items-center gap-4">
-              <div className="flex items-center gap-2 bg-white/10 backdrop-blur px-4 py-2 rounded-full">
+              <div className={`flex items-center gap-2 backdrop-blur px-4 py-2 rounded-full ${isDark ? 'bg-white/10' : 'bg-slate-900/10'}`}>
                 <img src="/2.png" alt="Google Partner" className="h-6 w-6 object-contain" />
-                <span className="text-sm text-white font-medium">{t('Google Partner')}</span>
+                <span className={`text-sm font-medium ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('Google Partner')}</span>
               </div>
-              <div className="flex items-center gap-2 bg-white/10 backdrop-blur px-4 py-2 rounded-full">
+              <div className={`flex items-center gap-2 backdrop-blur px-4 py-2 rounded-full ${isDark ? 'bg-white/10' : 'bg-slate-900/10'}`}>
                 <img src="/3.png" alt="Meta Certified" className="h-6 w-6 object-contain" />
-                <span className="text-sm text-white font-medium">{t('Meta Certified')}</span>
+                <span className={`text-sm font-medium ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('Meta Certified')}</span>
               </div>
-              <div className="flex items-center gap-2 bg-white/10 backdrop-blur px-4 py-2 rounded-full">
+              <div className={`flex items-center gap-2 backdrop-blur px-4 py-2 rounded-full ${isDark ? 'bg-white/10' : 'bg-slate-900/10'}`}>
                 <img src="/4.png" alt="HIPAA Aware" className="h-6 w-6 object-contain" />
-                <span className="text-sm text-white font-medium">{t('HIPAA Aware')}</span>
+                <span className={`text-sm font-medium ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('HIPAA Aware')}</span>
               </div>
             </div>
 
@@ -117,7 +118,7 @@ export default function HeroNew() {
               </Link>
               <Link 
                 href="/case-studies" 
-                className="inline-flex items-center px-8 py-4 bg-white/10 backdrop-blur text-white font-bold rounded-full hover:bg-white/20 transition-all border border-white/20"
+                className={`inline-flex items-center px-8 py-4 font-bold rounded-full transition-all border ${isDark ? 'bg-white/10 text-white border-white/20 hover:bg-white/20' : 'bg-slate-200 text-slate-900 border-slate-300 hover:bg-slate-300'}`}
               >
                 {t('See our work')}
               </Link>
@@ -150,9 +151,9 @@ export default function HeroNew() {
             { value: '$10M+', label: t('Ad spend managed') },
             { value: '3×', label: t('Average ROI') },
           ].map((stat, idx) => (
-            <div key={idx} className="bg-white/10 backdrop-blur rounded-2xl p-6 text-center border border-white/10">
+            <div key={idx} className={`backdrop-blur rounded-2xl p-6 text-center border ${isDark ? 'bg-white/10 border-white/10' : 'bg-slate-900/5 border-slate-900/20'}`}>
               <div className="text-4xl font-black text-emerald-400">{stat.value}</div>
-              <div className="mt-2 text-white/80">{stat.label}</div>
+              <div className={`mt-2 ${isDark ? 'text-white/80' : 'text-slate-700'}`}>{stat.label}</div>
             </div>
           ))}
         </motion.div>
