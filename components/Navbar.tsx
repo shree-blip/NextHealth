@@ -15,6 +15,7 @@ export default function Navbar() {
     en: {
       services: 'Services',
       caseStudies: 'Case Studies',
+      automation: 'Automation',
       industries: 'Industries',
       about: 'About',
       blog: 'Blog',
@@ -29,6 +30,7 @@ export default function Navbar() {
     es: {
       services: 'Servicios',
       caseStudies: 'Casos',
+      automation: 'Automatización',
       industries: 'Industrias',
       about: 'Nosotros',
       blog: 'Blog',
@@ -82,6 +84,7 @@ export default function Navbar() {
           <div className="hidden md:flex items-center gap-6">
             <Link href="/services" className={`font-medium transition-colors ${desktopLinkClass}`}>{text.services}</Link>
             <Link href="/case-studies" className={`font-medium transition-colors ${desktopLinkClass}`}>{text.caseStudies}</Link>
+            <Link href="/automation" className={`font-medium transition-colors ${desktopLinkClass}`}>{text.automation}</Link>
             <Link href="/industries" className={`font-medium transition-colors ${desktopLinkClass}`}>{text.industries}</Link>
             <Link href="/about" className={`font-medium transition-colors ${desktopLinkClass}`}>{text.about}</Link>
             <Link href="/blog" className={`font-medium transition-colors ${desktopLinkClass}`}>{text.blog}</Link>
@@ -147,6 +150,7 @@ export default function Navbar() {
         >
           <Link href="/services" className={`block font-medium ${theme === 'dark' ? 'text-slate-200 hover:text-emerald-400' : 'text-slate-600 hover:text-emerald-600'}`}>{text.services}</Link>
           <Link href="/case-studies" className={`block font-medium ${theme === 'dark' ? 'text-slate-200 hover:text-emerald-400' : 'text-slate-600 hover:text-emerald-600'}`}>{text.caseStudies}</Link>
+          <Link href="/automation" className={`block font-medium ${theme === 'dark' ? 'text-slate-200 hover:text-emerald-400' : 'text-slate-600 hover:text-emerald-600'}`}>{text.automation}</Link>
           <Link href="/industries" className={`block font-medium ${theme === 'dark' ? 'text-slate-200 hover:text-emerald-400' : 'text-slate-600 hover:text-emerald-600'}`}>{text.industries}</Link>
           <Link href="/about" className={`block font-medium ${theme === 'dark' ? 'text-slate-200 hover:text-emerald-400' : 'text-slate-600 hover:text-emerald-600'}`}>{text.about}</Link>
           <Link href="/blog" className={`block font-medium ${theme === 'dark' ? 'text-slate-200 hover:text-emerald-400' : 'text-slate-600 hover:text-emerald-600'}`}>{text.blog}</Link>

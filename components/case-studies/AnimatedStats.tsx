@@ -1,6 +1,5 @@
 'use client';
 import { useRef, useEffect, useState } from 'react';
-import { motion, useInView } from 'framer-motion';
 
 interface StatItem {
   end: number;
@@ -15,9 +14,30 @@ interface AnimatedStatProps {
 }
 
 function AnimatedStat({ stat, duration = 2 }: AnimatedStatProps) {
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true });
+  const ref = useRef<HTMLDivElement>(null);
+  const [isInView, setIsInView] = useState(false);
   const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !isInView) {
+          setIsInView(true);
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (ref.current) {
+      observer.observe(ref.current);
+    }
+
+    return () => {
+      if (ref.current) {
+        observer.unobserve(ref.current);
+      }
+    };
+  }, [isInView]);
 
   useEffect(() => {
     if (!isInView) return;
@@ -43,12 +63,13 @@ function AnimatedStat({ stat, duration = 2 }: AnimatedStatProps) {
   }, [isInView, stat.end, duration]);
 
   return (
-    <motion.div
+    <div
       ref={ref}
-      initial={{ opacity: 0, y: 20 }}
-      animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-      transition={{ duration: 0.6 }}
-      className="text-center"
+      className="text-center transition-all duration-600"
+      style={{
+        opacity: isInView ? 1 : 0,
+        transform: isInView ? 'translateY(0)' : 'translateY(20px)',
+      }}
     >
       <div className="text-5xl font-black text-emerald-400 mb-2">
         {stat.prefix}
@@ -56,7 +77,7 @@ function AnimatedStat({ stat, duration = 2 }: AnimatedStatProps) {
         {stat.suffix}
       </div>
       <p className="text-slate-400">{stat.label}</p>
-    </motion.div>
+    </div>
   );
 }
 
