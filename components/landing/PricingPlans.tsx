@@ -61,7 +61,8 @@ const plans = [
 
 export default function PricingPlans() {
   const [isQuarterly, setIsQuarterly] = useState(false);
-  const { t } = useSitePreferences();
+  const { t, theme } = useSitePreferences();
+  const isDark = theme === 'dark';
 
   const localizedPlans = plans.map((plan) => ({
     ...plan,
@@ -74,7 +75,7 @@ export default function PricingPlans() {
   }));
 
   return (
-    <section className="py-24 bg-slate-50">
+    <section className={`py-24 ${isDark ? 'bg-slate-900' : 'bg-slate-50'}`}>
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -82,18 +83,18 @@ export default function PricingPlans() {
           viewport={{ once: true }}
           className="text-center mb-16"
         >
-          <h2 className="text-4xl font-black text-slate-900 mb-4">{t('Invest in growth')}</h2>
-          <p className="text-xl text-slate-600 max-w-2xl mx-auto mb-8">
+          <h2 className={`text-4xl font-black mb-4 ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('Invest in growth')}</h2>
+          <p className={`text-xl max-w-2xl mx-auto mb-8 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
             {t('Transparent pricing. No contracts. No fluff.')}
           </p>
 
           {/* Billing Toggle */}
           <div className="flex items-center justify-center gap-4">
-            <span className={`text-sm ${!isQuarterly ? 'text-slate-900 font-bold' : 'text-slate-500'}`}>{t('Monthly')}</span>
+            <span className={`text-sm ${!isQuarterly ? isDark ? 'text-white font-bold' : 'text-slate-900 font-bold' : isDark ? 'text-slate-500' : 'text-slate-500'}`}>{t('Monthly')}</span>
             <button
               onClick={() => setIsQuarterly(!isQuarterly)}
               className={`relative w-14 h-7 rounded-full transition-colors ${
-                isQuarterly ? 'bg-emerald-500' : 'bg-slate-300'
+                isQuarterly ? 'bg-emerald-500' : isDark ? 'bg-slate-700' : 'bg-slate-300'
               }`}
             >
               <div
@@ -102,7 +103,7 @@ export default function PricingPlans() {
                 }`}
               />
             </button>
-            <span className={`text-sm ${isQuarterly ? 'text-slate-900 font-bold' : 'text-slate-500'}`}>
+            <span className={`text-sm ${isQuarterly ? isDark ? 'text-white font-bold' : 'text-slate-900 font-bold' : isDark ? 'text-slate-500' : 'text-slate-500'}`}>
               {t('Quarterly')} <span className="text-emerald-500">{t('(Save 10%)')}</span>
             </span>
           </div>
@@ -112,17 +113,17 @@ export default function PricingPlans() {
           {localizedPlans.map((plan, idx) => {
             let baseBg = '';
             let hoverBg = 'hover:bg-gradient-to-br hover:from-emerald-500 hover:to-emerald-700 hover:text-white';
-            let textColor = 'text-black';
+            let textColor = 'text-white';
             let borderColor = '';
             if (plan.color === 'silver') {
-              baseBg = 'bg-gradient-to-br from-zinc-300 via-zinc-400 to-zinc-500';
-              borderColor = 'border-zinc-400';
+              baseBg = isDark ? 'bg-gradient-to-br from-slate-600 via-slate-700 to-slate-800' : 'bg-gradient-to-br from-zinc-300 via-zinc-400 to-zinc-500';
+              borderColor = isDark ? 'border-slate-600' : 'border-zinc-400';
             } else if (plan.color === 'gold') {
-              baseBg = 'bg-gradient-to-br from-yellow-300 via-yellow-400 to-yellow-500';
-              borderColor = 'border-yellow-400';
+              baseBg = isDark ? 'bg-gradient-to-br from-slate-600 via-slate-700 to-slate-800' : 'bg-gradient-to-br from-yellow-300 via-yellow-400 to-yellow-500';
+              borderColor = isDark ? 'border-slate-600' : 'border-yellow-400';
             } else if (plan.color === 'platinum') {
-              baseBg = 'bg-gradient-to-br from-blue-200 via-zinc-200 to-blue-400';
-              borderColor = 'border-blue-300';
+              baseBg = isDark ? 'bg-gradient-to-br from-slate-600 via-slate-700 to-slate-800' : 'bg-gradient-to-br from-blue-200 via-zinc-200 to-blue-400';
+              borderColor = isDark ? 'border-slate-600' : 'border-blue-300';
             }
             return (
               <motion.div
@@ -134,13 +135,13 @@ export default function PricingPlans() {
                 className={`relative rounded-3xl p-8 shadow-lg border-2 ${baseBg} ${textColor} ${borderColor} transition-all duration-300 hover:scale-105 ${hoverBg}`}
               >
                 {plan.popular && (
-                  <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-emerald-500 text-black px-4 py-1 rounded-full text-sm font-bold">
+                  <div className={`absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full text-sm font-bold ${isDark ? 'bg-emerald-600 text-white' : 'bg-emerald-500 text-black'}`}>
                     {t('Most Popular')}
                   </div>
                 )}
-                <h3 className="text-2xl font-bold mb-2">{plan.name}</h3>
+                <h3 className="text-2xl font-bold mb-2 text-white">{plan.name}</h3>
                 <div className="flex items-baseline gap-1 mb-4">
-                  <span className="text-4xl font-black">
+                  <span className="text-4xl font-black text-white">
                     {isQuarterly && !plan.isCustom 
                       ? `$${Math.round(parseInt(plan.price.replace(/\D/g, '')) * 0.9 * 3).toLocaleString()}`
                       : plan.price}
@@ -162,7 +163,11 @@ export default function PricingPlans() {
                 </ul>
                 <Link
                   href="/signup"
-                  className="block w-full text-center py-4 rounded-full font-bold bg-white text-emerald-600 hover:bg-emerald-500 hover:text-white transition-all hover:scale-105"
+                  className={`block w-full text-center py-4 rounded-full font-bold transition-all hover:scale-105 ${
+                    isDark 
+                      ? 'bg-white text-emerald-600 hover:bg-emerald-500 hover:text-white' 
+                      : 'bg-white text-emerald-600 hover:bg-emerald-500 hover:text-white'
+                  }`}
                 >
                   {t('Sign Up')}
                 </Link>

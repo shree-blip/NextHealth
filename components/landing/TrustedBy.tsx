@@ -36,7 +36,8 @@ const testimonials = [
 
 export default function TrustedBy() {
   const [currentTestimonial, setCurrentTestimonial] = useState(0);
-  const { t } = useSitePreferences();
+  const { t, theme } = useSitePreferences();
+  const isDark = theme === 'dark';
 
   const localizedTestimonials = testimonials.map((testimonial) => ({
     ...testimonial,
@@ -52,7 +53,7 @@ export default function TrustedBy() {
   }, []);
 
   return (
-    <section className="py-24 bg-white">
+    <section className={`py-24 ${isDark ? 'bg-slate-900' : 'bg-white'}`}>
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -60,8 +61,8 @@ export default function TrustedBy() {
           viewport={{ once: true }}
           className="text-center mb-16"
         >
-          <h2 className="text-4xl font-black text-slate-900 mb-4">{t('Trusted by healthcare leaders')}</h2>
-          <p className="text-xl text-slate-600 max-w-2xl mx-auto">
+          <h2 className={`text-4xl font-black mb-4 ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('Trusted by healthcare leaders')}</h2>
+          <p className={`text-xl max-w-2xl mx-auto ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
             {t('Join the practices that have transformed their patient acquisition with NextGen.')}
           </p>
         </motion.div>
@@ -87,9 +88,9 @@ export default function TrustedBy() {
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="relative bg-slate-50 rounded-3xl p-8 md:p-12"
+          className={`relative rounded-3xl p-8 md:p-12 ${isDark ? 'bg-slate-800' : 'bg-slate-50'}`}
         >
-          <div className="absolute top-4 left-8 text-8xl text-emerald-200 font-serif">"</div>
+          <div className={`absolute top-4 left-8 text-8xl font-serif ${isDark ? 'text-slate-700' : 'text-emerald-200'}`}>"</div>
           
           <div className="relative z-10 max-w-3xl mx-auto text-center">
             <motion.div
@@ -99,7 +100,7 @@ export default function TrustedBy() {
               exit={{ opacity: 0, x: -20 }}
               transition={{ duration: 0.5 }}
             >
-              <p className="text-2xl md:text-3xl text-slate-900 font-medium leading-relaxed mb-8">
+              <p className={`text-2xl md:text-3xl font-medium leading-relaxed mb-8 ${isDark ? 'text-slate-300' : 'text-slate-900'}`}>
                 {localizedTestimonials[currentTestimonial].quote}
               </p>
               <div className="flex items-center justify-center gap-4">
@@ -109,8 +110,8 @@ export default function TrustedBy() {
                   className="w-16 h-16 rounded-full object-cover"
                 />
                 <div className="text-left">
-                  <div className="font-bold text-slate-900">{localizedTestimonials[currentTestimonial].author}</div>
-                  <div className="text-slate-600">{localizedTestimonials[currentTestimonial].title}</div>
+                  <div className={`font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{localizedTestimonials[currentTestimonial].author}</div>
+                  <div className={isDark ? 'text-slate-400' : 'text-slate-600'}>{localizedTestimonials[currentTestimonial].title}</div>
                 </div>
               </div>
             </motion.div>

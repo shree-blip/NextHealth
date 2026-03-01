@@ -36,7 +36,8 @@ const steps = [
 ];
 
 export default function NextGenApproach() {
-  const { t } = useSitePreferences();
+  const { t, theme } = useSitePreferences();
+  const isDark = theme === 'dark';
 
   const localizedSteps = steps.map((step) => ({
     ...step,
@@ -45,7 +46,7 @@ export default function NextGenApproach() {
   }));
 
   return (
-    <section className="py-24 bg-slate-50 overflow-hidden">
+    <section className={`py-24 overflow-hidden ${isDark ? 'bg-slate-900' : 'bg-slate-50'}`}>
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -53,8 +54,8 @@ export default function NextGenApproach() {
           viewport={{ once: true }}
           className="text-center mb-16"
         >
-          <h2 className="text-4xl font-black text-slate-900 mb-4">{t('The NextGen Approach')}</h2>
-          <p className="text-xl text-slate-600 max-w-2xl mx-auto">
+          <h2 className={`text-4xl font-black mb-4 ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('The NextGen Approach')}</h2>
+          <p className={`text-xl max-w-2xl mx-auto ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
             {t('Our proven process takes you from struggling to scaling.')}
           </p>
         </motion.div>
@@ -62,7 +63,7 @@ export default function NextGenApproach() {
         {/* Timeline */}
         <div className="relative">
           {/* Connecting line */}
-          <div className="hidden lg:block absolute top-1/2 left-0 right-0 h-1 bg-emerald-200 -translate-y-1/2" />
+          <div className={`hidden lg:block absolute top-1/2 left-0 right-0 h-1 -translate-y-1/2 ${isDark ? 'bg-slate-700' : 'bg-emerald-200'}`} />
           
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
             {localizedSteps.map((step, idx) => (
@@ -74,7 +75,7 @@ export default function NextGenApproach() {
                 transition={{ delay: idx * 0.15 }}
                 className="relative"
               >
-                <div className="bg-white rounded-2xl shadow-lg p-6 hover:shadow-xl transition-shadow">
+                <div className={`rounded-2xl shadow-lg p-6 hover:shadow-xl transition-shadow ${isDark ? 'bg-slate-800' : 'bg-white'}`}>
                   {/* Step number */}
                   <div className="flex justify-center mb-4">
                     <div className="w-16 h-16 rounded-full bg-emerald-500 flex items-center justify-center text-white text-2xl font-black shadow-lg shadow-emerald-500/30 relative z-10">
@@ -87,8 +88,8 @@ export default function NextGenApproach() {
                     <img src={step.image} alt={step.title} className="w-full h-32 object-cover" />
                   </div>
                   
-                  <h3 className="text-lg font-bold text-slate-900 mb-2 text-center">{step.title}</h3>
-                  <p className="text-slate-600 text-sm text-center">{step.description}</p>
+                  <h3 className={`text-lg font-bold mb-2 text-center ${isDark ? 'text-white' : 'text-slate-900'}`}>{step.title}</h3>
+                  <p className={`text-sm text-center ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{step.description}</p>
                 </div>
               </motion.div>
             ))}
