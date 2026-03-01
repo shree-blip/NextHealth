@@ -1,0 +1,86 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+// Blog models
+model Post {
+  id          Int       @id @default(autoincrement())
+  title       String
+  slug        String    @unique
+  excerpt     String?
+  content     String    // could be Markdown or richtext stored as plain text
+  coverImage  String?
+  seoTitle    String?
+  metaDesc    String?
+  canonical   String?
+  publishedAt DateTime?
+  updatedAt   DateTime  @updatedAt
+  author      Author?   @relation(fields: [authorId], references: [id])
+  authorId    Int?
+  categories  Category[] @relation("PostCategories")
+  tags        Tag[]      @relation("PostTags")
+  comments    Comment[]  @relation("PostComments")
+}
+
+model Author {
+  id        Int     @id @default(autoincrement())
+  name      String
+  email     String  @unique
+  avatar    String?
+  posts     Post[]
+}
+
+model Category {
+  id    Int    @id @default(autoincrement())
+  name  String @unique
+  posts Post[] @relation("PostCategories")
+}
+
+model Tag {
+  id    Int    @id @default(autoincrement())
+  name  String @unique
+  posts Post[] @relation("PostTags")
+}
+
+model Comment {
+  id          Int      @id @default(autoincrement())
+  post        Post     @relation(fields: [postId], references: [id], name: "PostComments")
+  postId      Int
+  author      String
+  content     String
+  publishedAt DateTime @default(now())
+  approved    Boolean  @default(false)
+}
+// Analytics Models - Google Search Console & Google My Business
+model AnalyticsData {
+  id                    Int       @id @default(autoincrement())
+  userId                String    // from auth system
+  clinicId              String?   // optional clinic association
+  date                  DateTime  @default(now())
+  
+  // Google Search Console metrics
+  gscClicks             Int       @default(0)
+  gscImpressions        Int       @default(0)
+  gscCtr                Float     @default(0)
+  gscAvgPosition        Float     @default(0)
+  
+  // Google My Business metrics
+  gmbPhoneCalls         Int       @default(0)
+  gmbWebsiteClicks      Int       @default(0)
+  gmbDirectionRequests  Int       @default(0)
+  gmbActions            Int       @default(0)
+  gmbProfileViews       Int       @default(0)
+  gmbReviewCount        Int       @default(0)
+  
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  
+  @@index([userId])
+  @@index([clinicId])
+  @@index([date])
+}

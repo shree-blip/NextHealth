@@ -1,0 +1,182 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: var(--font-inter);
+  --font-mono: var(--font-jetbrains-mono);
+}
+
+:root {
+  --background: #f8fafc; /* slate-50 */
+  --foreground: #0f172a; /* slate-900 */
+  --accent: #10b981; /* Emerald 500 */
+}
+
+html.theme-light {
+  --background: #f8fafc;
+  --foreground: #0f172a;
+}
+
+html.theme-dark {
+  --background: #020617;
+  --foreground: #e2e8f0;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+}
+
+/* Typography utilities for consistent heading and paragraph sizes */
+.h1 {
+  /* Match landing page heading scale: text-4xl -> text-5xl */
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  font-size: 2.25rem; /* text-4xl */
+}
+@media (min-width: 768px) {
+  .h1 {
+    font-size: 3rem; /* text-5xl */
+  }
+}
+.h2 {
+  /* reduce roughly 10px from both sizes */
+  @apply text-3xl md:text-5xl font-bold tracking-tight;
+}
+.h3 {
+  @apply text-2xl md:text-3xl font-semibold tracking-tight;
+}
+.h4 {
+  @apply text-xl md:text-2xl font-semibold tracking-tight;
+}
+.p {
+  @apply text-base md:text-lg leading-relaxed;
+}
+
+/* Ensure base HTML elements inherit the same font scales so every page uses
+   the landing page sizes by default.  This avoids inconsistencies when
+   components or pages use raw <h1> / <h2> / <p> tags instead of the utility
+   classes. */
+h1 {
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  font-size: 2.25rem; /* text-4xl */
+}
+@media (min-width: 768px) {
+  h1 {
+    font-size: 3rem; /* text-5xl */
+  }
+}
+h2 {
+  @apply text-3xl md:text-5xl font-bold tracking-tight;
+}
+h3 {
+  @apply text-2xl md:text-3xl font-semibold tracking-tight;
+}
+h4 {
+  @apply text-xl md:text-2xl font-semibold tracking-tight;
+}
+p {
+  @apply text-base md:text-lg leading-relaxed;
+}
+
+.glass {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+}
+
+.text-gradient {
+  background: linear-gradient(to right, #10b981, #3b82f6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+@keyframes scroll {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-scroll {
+  animation: scroll 30s linear infinite;
+}
+
+.animate-scroll:hover {
+  animation-play-state: paused;
+}
+
+html.theme-dark .bg-white {
+  background-color: #0f172a !important;
+}
+
+html.theme-dark .bg-slate-50,
+html.theme-dark .bg-gray-50 {
+  background-color: #111827 !important;
+}
+
+html.theme-dark .bg-slate-100,
+html.theme-dark .bg-gray-100 {
+  background-color: #1f2937 !important;
+}
+
+html.theme-dark .text-slate-900,
+html.theme-dark .text-gray-900,
+html.theme-dark .text-black {
+  color: #f1f5f9 !important;
+}
+
+html.theme-dark .text-slate-700,
+html.theme-dark .text-gray-700,
+html.theme-dark .text-slate-600,
+html.theme-dark .text-gray-600,
+html.theme-dark .text-slate-500,
+html.theme-dark .text-gray-500 {
+  color: #cbd5e1 !important;
+}
+
+html.theme-dark .border-slate-200,
+html.theme-dark .border-gray-200,
+html.theme-dark .border-slate-100,
+html.theme-dark .border-gray-100 {
+  border-color: #334155 !important;
+}
+
+html.theme-dark .shadow-lg,
+html.theme-dark .shadow-xl,
+html.theme-dark .shadow-2xl,
+html.theme-dark .shadow-sm {
+  box-shadow: 0 10px 25px -10px rgba(2, 6, 23, 0.75) !important;
+}
+
+html.theme-dark input,
+html.theme-dark textarea,
+html.theme-dark select {
+  background-color: #0f172a;
+  color: #e2e8f0;
+  border-color: #334155;
+}
+
+html.theme-dark input::placeholder,
+html.theme-dark textarea::placeholder {
+  color: #94a3b8;
+}
+
+html.theme-dark .prose {
+  color: #cbd5e1;
+}
+/* mesh gradient background animation for hero */
+@keyframes mesh {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.bg-mesh {
+  background: linear-gradient(45deg, #a5b4fc, #f0abfc, #fbcfe8, #bae6fd);
+  background-size: 600% 600%;
+  animation: mesh 15s ease infinite;
+}
