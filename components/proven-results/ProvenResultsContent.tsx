@@ -3,12 +3,17 @@ import { motion } from 'framer-motion';
 import { useSitePreferences } from '@/components/SitePreferencesProvider';
 
 export default function ProvenResultsContent() {
-  const { t } = useSitePreferences();
+  const { t, theme } = useSitePreferences();
+  const isDark = theme === 'dark';
 
   return (
     <>
       {/* Hero Section */}
-      <section className="relative py-24 bg-gradient-to-b from-slate-900 to-slate-800 text-white overflow-hidden">
+      <section className={`relative py-24 overflow-hidden ${
+        isDark 
+          ? 'bg-gradient-to-b from-slate-900 to-slate-800 text-white' 
+          : 'bg-gradient-to-b from-slate-50 to-white text-slate-900'
+      }`}>
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-1/2 left-1/4 w-96 h-96 bg-emerald-500 rounded-full blur-3xl" />
           <div className="absolute top-1/4 right-1/4 w-96 h-96 bg-blue-500 rounded-full blur-3xl" />
@@ -24,7 +29,7 @@ export default function ProvenResultsContent() {
             <h1 className="text-5xl md:text-7xl font-black mb-6 leading-tight">
               {t('Proven Results in ')}<span className="text-emerald-400">{t('Healthcare Marketing')}</span>
             </h1>
-            <p className="text-xl text-slate-300 max-w-3xl mx-auto mb-8">
+            <p className={`text-xl max-w-3xl mx-auto mb-8 ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
               {t('Real data from real healthcare practices. See the measurable impact of our strategies through verified metrics from Google Search Console and Google My Business.')}
             </p>
           </motion.div>
@@ -32,7 +37,7 @@ export default function ProvenResultsContent() {
       </section>
 
       {/* Dashboard Analytics Section */}
-      <section className="py-20 bg-white">
+      <section className={`py-20 ${isDark ? 'bg-slate-800' : 'bg-white'}`}>
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -41,8 +46,8 @@ export default function ProvenResultsContent() {
             transition={{ duration: 0.8 }}
             className="text-center mb-16"
           >
-            <h2 className="text-4xl font-black text-slate-900 mb-4">{t('Real Dashboard Analytics')}</h2>
-            <p className="text-xl text-slate-600 max-w-2xl mx-auto">
+            <h2 className={`text-4xl font-black mb-4 ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('Real Dashboard Analytics')}</h2>
+            <p className={`text-xl max-w-2xl mx-auto ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
               {t('Track exactly what matters: clicks, impressions, phone calls, website traffic, and patient engagement metrics from your Google properties.')}
             </p>
           </motion.div>
@@ -56,33 +61,37 @@ export default function ProvenResultsContent() {
               transition={{ duration: 0.8 }}
               className="group"
             >
-              <div className="rounded-3xl overflow-hidden shadow-2xl border-2 border-slate-100 group-hover:border-emerald-400 transition-all group-hover:shadow-emerald-500/20">
-                <div className="relative bg-slate-100 overflow-hidden">
+              <div className={`rounded-3xl overflow-hidden shadow-2xl transition-all group-hover:shadow-emerald-500/20 ${
+                isDark 
+                  ? 'border-2 border-slate-700 group-hover:border-emerald-400' 
+                  : 'border-2 border-slate-100 group-hover:border-emerald-400'
+              }`}>
+                <div className={`relative overflow-hidden ${isDark ? 'bg-slate-700' : 'bg-slate-100'}`}>
                   <img 
                     src="/Search_console_dahbord.png" 
                     alt="Google Search Console Dashboard" 
                     className="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-500"
                   />
                 </div>
-                <div className="p-8 bg-slate-50 border-t border-slate-200">
-                  <h3 className="text-2xl font-black text-slate-900 mb-3">{t('Google Search Console')}</h3>
-                  <p className="text-slate-600 mb-6">
+                <div className={`p-8 border-t ${isDark ? 'bg-slate-700 border-slate-600' : 'bg-slate-50 border-slate-200'}`}>
+                  <h3 className={`text-2xl font-black mb-3 ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('Google Search Console')}</h3>
+                  <p className={`mb-6 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
                     {t('Monitor search visibility and understand how patients find you')}
                   </p>
                   <ul className="space-y-3">
-                    <li className="flex items-center gap-3 text-slate-700">
+                    <li className={`flex items-center gap-3 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
                       <span className="h-2 w-2 rounded-full bg-emerald-500" />
                       {t('Total clicks & impressions')}
                     </li>
-                    <li className="flex items-center gap-3 text-slate-700">
+                    <li className={`flex items-center gap-3 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
                       <span className="h-2 w-2 rounded-full bg-emerald-500" />
                       {t('Click-through rate (CTR)')}
                     </li>
-                    <li className="flex items-center gap-3 text-slate-700">
+                    <li className={`flex items-center gap-3 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
                       <span className="h-2 w-2 rounded-full bg-emerald-500" />
                       {t('Average search position')}
                     </li>
-                    <li className="flex items-center gap-3 text-slate-700">
+                    <li className={`flex items-center gap-3 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
                       <span className="h-2 w-2 rounded-full bg-emerald-500" />
                       {t('Top performing keywords')}
                     </li>
@@ -99,33 +108,37 @@ export default function ProvenResultsContent() {
               transition={{ duration: 0.8 }}
               className="group"
             >
-              <div className="rounded-3xl overflow-hidden shadow-2xl border-2 border-slate-100 group-hover:border-blue-400 transition-all group-hover:shadow-blue-500/20">
-                <div className="relative bg-slate-100 overflow-hidden">
+              <div className={`rounded-3xl overflow-hidden shadow-2xl transition-all group-hover:shadow-blue-500/20 ${
+                isDark 
+                  ? 'border-2 border-slate-700 group-hover:border-blue-400' 
+                  : 'border-2 border-slate-100 group-hover:border-blue-400'
+              }`}>
+                <div className={`relative overflow-hidden ${isDark ? 'bg-slate-700' : 'bg-slate-100'}`}>
                   <img 
                     src="/GMB-Dashboard.png" 
                     alt="Google My Business Dashboard" 
                     className="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-500"
                   />
                 </div>
-                <div className="p-8 bg-slate-50 border-t border-slate-200">
-                  <h3 className="text-2xl font-black text-slate-900 mb-3">{t('Google My Business')}</h3>
-                  <p className="text-slate-600 mb-6">
+                <div className={`p-8 border-t ${isDark ? 'bg-slate-700 border-slate-600' : 'bg-slate-50 border-slate-200'}`}>
+                  <h3 className={`text-2xl font-black mb-3 ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('Google My Business')}</h3>
+                  <p className={`mb-6 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
                     {t('Drive local patient actions directly from your business profile')}
                   </p>
                   <ul className="space-y-3">
-                    <li className="flex items-center gap-3 text-slate-700">
+                    <li className={`flex items-center gap-3 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
                       <span className="h-2 w-2 rounded-full bg-blue-500" />
                       {t('Phone calls received')}
                     </li>
-                    <li className="flex items-center gap-3 text-slate-700">
+                    <li className={`flex items-center gap-3 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
                       <span className="h-2 w-2 rounded-full bg-blue-500" />
                       {t('Website clicks')}
                     </li>
-                    <li className="flex items-center gap-3 text-slate-700">
+                    <li className={`flex items-center gap-3 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
                       <span className="h-2 w-2 rounded-full bg-blue-500" />
                       {t('Direction requests')}
                     </li>
-                    <li className="flex items-center gap-3 text-slate-700">
+                    <li className={`flex items-center gap-3 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
                       <span className="h-2 w-2 rounded-full bg-blue-500" />
                       {t('Reviews & ratings')}
                     </li>
@@ -138,7 +151,7 @@ export default function ProvenResultsContent() {
       </section>
 
       {/* Medical Automation Results */}
-      <section className="py-20 bg-slate-50 border-y border-slate-200">
+      <section className={`py-20 border-y ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -146,8 +159,8 @@ export default function ProvenResultsContent() {
             viewport={{ once: true }}
             className="text-center mb-16"
           >
-            <h2 className="text-4xl font-black text-slate-900 mb-4">{t('Medical Automation Results')}</h2>
-            <p className="text-xl text-slate-600 max-w-3xl mx-auto">
+            <h2 className={`text-4xl font-black mb-4 ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('Medical Automation Results')}</h2>
+            <p className={`text-xl max-w-3xl mx-auto ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
               {t('n8n and custom healthcare workflows that reduce front-desk load, speed response time, and recover missed revenue opportunities.')}
             </p>
           </motion.div>
@@ -176,11 +189,11 @@ export default function ProvenResultsContent() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: idx * 0.1 }}
-                className="bg-white rounded-2xl border border-slate-200 p-8 shadow-sm"
+                className={`rounded-2xl border p-8 shadow-sm ${isDark ? 'bg-slate-700 border-slate-600' : 'bg-white border-slate-200'}`}
               >
-                <h3 className="text-xl font-bold text-slate-900 mb-3">{item.title}</h3>
+                <h3 className={`text-xl font-bold mb-3 ${isDark ? 'text-white' : 'text-slate-900'}`}>{item.title}</h3>
                 <div className="text-3xl font-black text-emerald-500 mb-3">{item.result}</div>
-                <p className="text-slate-600">{item.detail}</p>
+                <p className={isDark ? 'text-slate-400' : 'text-slate-600'}>{item.detail}</p>
               </motion.div>
             ))}
           </div>
@@ -188,7 +201,7 @@ export default function ProvenResultsContent() {
       </section>
 
       {/* Results Metrics Grid */}
-      <section className="py-20 bg-slate-900 text-white">
+      <section className={`py-20 ${isDark ? 'bg-slate-900 text-white' : 'bg-slate-50 text-slate-900'}`}>
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -197,7 +210,7 @@ export default function ProvenResultsContent() {
             className="text-center mb-16"
           >
             <h2 className="text-4xl font-black mb-4">{t('Average Client Improvements')}</h2>
-            <p className="text-xl text-slate-400 max-w-2xl mx-auto">
+            <p className={`text-xl max-w-2xl mx-auto ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
               {t('Based on verified analytics data from our healthcare practice clients')}
             </p>
           </motion.div>
@@ -215,7 +228,7 @@ export default function ProvenResultsContent() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: idx * 0.1 }}
-                className={`bg-gradient-to-br from-${item.color}-600 to-${item.color}-700 rounded-2xl p-8 text-center`}
+                className={`rounded-2xl p-8 text-center text-white`}
                 style={{
                   background: item.color === 'emerald' ? 'linear-gradient(135deg, #10b981, #059669)' :
                              item.color === 'blue' ? 'linear-gradient(135deg, #3b82f6, #1d4ed8)' :
@@ -232,7 +245,7 @@ export default function ProvenResultsContent() {
       </section>
 
       {/* Case Studies Preview */}
-      <section className="py-20 bg-white">
+      <section className={`py-20 ${isDark ? 'bg-slate-800' : 'bg-white'}`}>
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -240,8 +253,8 @@ export default function ProvenResultsContent() {
             viewport={{ once: true }}
             className="text-center mb-16"
           >
-            <h2 className="text-4xl font-black text-slate-900 mb-4">{t('Success Stories')}</h2>
-            <p className="text-xl text-slate-600 max-w-2xl mx-auto">
+            <h2 className={`text-4xl font-black mb-4 ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('Success Stories')}</h2>
+            <p className={`text-xl max-w-2xl mx-auto ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
               {t('See how different healthcare practices achieved breakthrough results')}
             </p>
           </motion.div>
@@ -273,16 +286,20 @@ export default function ProvenResultsContent() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: idx * 0.1 }}
-                className="bg-gradient-to-br from-slate-50 to-slate-100 rounded-2xl p-8 border border-slate-200 hover:border-emerald-400 hover:shadow-lg transition-all"
+                className={`rounded-2xl p-8 border transition-all hover:shadow-lg ${
+                  isDark
+                    ? 'bg-gradient-to-br from-slate-700 to-slate-800 border-slate-600 hover:border-emerald-400'
+                    : 'bg-gradient-to-br from-slate-50 to-slate-100 border-slate-200 hover:border-emerald-400'
+                }`}
               >
                 <div className="mb-4">
                   <span className="inline-block bg-emerald-500 text-white px-3 py-1 rounded-full text-xs font-bold">
                     {story.type}
                   </span>
                 </div>
-                <h3 className="text-2xl font-bold text-slate-900 mb-2">{story.title}</h3>
+                <h3 className={`text-2xl font-bold mb-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>{story.title}</h3>
                 <div className="text-4xl font-black text-emerald-500 mb-3">{story.metric}</div>
-                <p className="text-slate-600">{story.description}</p>
+                <p className={isDark ? 'text-slate-400' : 'text-slate-600'}>{story.description}</p>
               </motion.div>
             ))}
           </div>
