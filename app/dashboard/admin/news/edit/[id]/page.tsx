@@ -16,7 +16,6 @@ export default function EditNewsArticle() {
     excerpt: '',
     content: '',
     coverImage: '',
-    coverImageAlt: '',
     source: '',
     seoTitle: '',
     metaDesc: '',
@@ -43,7 +42,6 @@ export default function EditNewsArticle() {
             excerpt: data.excerpt || '',
             content: data.content || '',
             coverImage: data.coverImage || '',
-            coverImageAlt: data.coverImageAlt || generateAltText(data.title || '', 'Cover Image'),
             source: data.source || '',
             seoTitle: data.seoTitle || '',
             metaDesc: data.metaDesc || '',
@@ -59,10 +57,7 @@ export default function EditNewsArticle() {
     const { name, value } = e.target;
     const updates: any = { [name]: value };
     
-    // Auto-update ALT text when title changes
-    if (name === 'title' && form.coverImage) {
-      updates.coverImageAlt = generateAltText(value, 'Cover Image');
-    }
+    // Note: coverImageAlt is not supported by NewsArticle model
     
     setForm({ ...form, ...updates });
   };
@@ -156,20 +151,9 @@ export default function EditNewsArticle() {
               )}
               {form.coverImage && (
                 <div className="mt-3">
-                  <img src={form.coverImage} alt={form.coverImageAlt} className="max-h-48 rounded-lg object-cover" />
-                  <div className="mt-2 p-2 bg-slate-100 dark:bg-slate-800 rounded text-xs text-slate-600 dark:text-slate-400">
-                    <strong>ALT:</strong> {form.coverImageAlt}
-                  </div>
+                  <img src={form.coverImage} alt="Cover preview" className="max-h-48 rounded-lg object-cover" />
                 </div>
               )}
-              <input 
-                name="coverImageAlt" 
-                value={form.coverImageAlt} 
-                onChange={handleChange} 
-                className="w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 bg-white dark:bg-slate-800 focus:outline-none focus:border-emerald-500 mt-3" 
-                placeholder="ALT text (auto-generated from title)"
-              />
-              <p className="text-xs text-slate-500">ALT text is auto-generated from your title for SEO & accessibility</p>
             </div>
 
             {/* Source & SEO Title */}

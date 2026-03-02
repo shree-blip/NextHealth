@@ -26,7 +26,6 @@ export async function POST(request: Request) {
       excerpt: body.excerpt || null,
       content: body.content,
       coverImage: body.coverImage || null,
-      coverImageAlt: body.coverImageAlt || null,
       source: body.source || null,
       seoTitle: body.seoTitle || null,
       metaDesc: body.metaDesc || null,

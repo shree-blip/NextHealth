@@ -14,7 +14,6 @@ export default function NewNewsArticle() {
     excerpt: '',
     content: '',
     coverImage: '',
-    coverImageAlt: '',
     source: '',
     seoTitle: '',
     metaDesc: '',
@@ -32,10 +31,7 @@ export default function NewNewsArticle() {
     const { name, value } = e.target;
     const updates: any = { [name]: value };
     
-    // Auto-update ALT text when title changes
-    if (name === 'title' && form.coverImage) {
-      updates.coverImageAlt = generateAltText(value, 'Cover Image');
-    }
+    // Note: coverImageAlt is not supported by NewsArticle model
     
     setForm({ ...form, ...updates });
   };
@@ -135,17 +131,6 @@ export default function NewNewsArticle() {
                   <img src={form.coverImage} alt="Cover preview" className="max-h-48 rounded-lg object-cover" />
                 </div>
               )}
-              <input 
-                name="coverImageAlt" 
-                value={form.coverImageAlt} 
-                onChange={(e) => {
-                  const { name, value } = e.target;
-                  setForm({ ...form, [name]: value });
-                }}
-                className="w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 bg-white dark:bg-slate-800 focus:outline-none focus:border-emerald-500 mt-3" 
-                placeholder="ALT text (auto-generated from title)"
-              />
-              <p className="text-xs text-slate-500">ALT text is auto-generated from your title for SEO & accessibility</p>
             </div>
 
             {/* Source & SEO Title */}
