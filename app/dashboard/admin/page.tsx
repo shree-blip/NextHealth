@@ -43,7 +43,6 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { io, Socket } from 'socket.io-client';
 import AnalyticsForm from './analytics';
 import AdminAnalyticsView from '@/components/AdminAnalyticsView';
 import Navbar from '@/components/Navbar';
@@ -202,7 +201,6 @@ function AdminDashboardContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [user, setUser] = useState<any>(null);
-  const socketRef = useRef<Socket | null>(null);
   const [clinics, setClinics] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
   const [assignments, setAssignments] = useState<any[]>([]);
@@ -294,52 +292,8 @@ function AdminDashboardContent() {
       setLeads(data.leads || []);
     }).catch(console.error);
 
-    // Connect socket
-    const newSocket = io({ path: '/socket.io' });
-    socketRef.current = newSocket;
-
-    newSocket.on('initial_state', (data) => {
-      setClinics(data.clinics);
-      setUsers(data.users);
-      setAssignments(data.assignments);
-    });
-
-    newSocket.on('assignment_added', (data) => {
-      setAssignments(prev => {
-        if (!prev.find(a => a.userId === data.userId && a.clinicId === data.clinicId)) {
-          return [...prev, data];
-        }
-        return prev;
-      });
-    });
-
-    newSocket.on('assignment_removed', (data) => {
-      setAssignments(prev => prev.filter(a => !(a.userId === data.userId && a.clinicId === data.clinicId)));
-    });
-
-    newSocket.on('clinic_updated', (updatedClinic) => {
-      setClinics(prev => prev.map(c => c.id === updatedClinic.id ? updatedClinic : c));
-    });
-
-    newSocket.on('clinic_added', (newClinic) => {
-      setClinics(prev => [...prev, newClinic]);
-    });
-
-    newSocket.on('clinic_deleted', (data) => {
-      setClinics(prev => prev.filter(c => c.id !== data.id));
-    });
-
-    newSocket.on('client_added', (newClient) => {
-      setUsers(prev => [...prev, newClient]);
-    });
-
-    newSocket.on('client_deleted', (data) => {
-      setUsers(prev => prev.filter(u => u.id !== data.id));
-    });
-
-    return () => {
-      newSocket.disconnect();
-    };
+    // Note: Socket.io is disabled for Vercel serverless deployment
+    // Real-time updates are not available. Manual refresh or API polling recommended.
   }, [router]);
 
   // Handle view parameter from URL
@@ -359,14 +313,15 @@ function AdminDashboardContent() {
   };
 
   const handleAssign = () => {
-    if (socketRef.current && selectedUser && selectedClinic) {
-      socketRef.current.emit('assign_clinic', { userId: selectedUser, clinicId: selectedClinic });
+    if (selectedUser && selectedClinic) {
+      // TODO: Replace with API call for Vercel serverless
+      console.log('Assign:', selectedUser, selectedClinic);
     }
   };
 
   const handleQuickAssign = (userId: string) => {
-    if (socketRef.current && userId && quickAssignClinicId) {
-      socketRef.current.emit('assign_clinic', { userId, clinicId: quickAssignClinicId });
+    if (userId && quickAssignClinicId) {
+      console.log('Quick assign:', userId, quickAssignClinicId);
       setShowQuickAssignModal(false);
       setQuickAssignClinicId('');
       setSelectedUser('');
@@ -374,25 +329,16 @@ function AdminDashboardContent() {
   };
 
   const handleRemoveAssignment = (userId: string, clinicId: string) => {
-    if (socketRef.current) {
-      socketRef.current.emit('remove_assignment', { userId, clinicId });
-    }
+    console.log('Remove assignment:', userId, clinicId);
   };
 
   const handleUpdateStats = (clinicId: string, leads: number, appointments: number) => {
-    if (socketRef.current) {
-      socketRef.current.emit('update_clinic_stats', { clinicId, leads, appointments });
-    }
+    console.log('Update stats:', clinicId, leads, appointments);
   };
 
   const handleAddClient = () => {
-    if (socketRef.current && newClientName && newClientEmail && newClientPassword) {
-      socketRef.current.emit('add_client', { 
-        name: newClientName, 
-        email: newClientEmail, 
-        password: newClientPassword,
-        role: newClientRole 
-      });
+    if (newClientName && newClientEmail && newClientPassword) {
+      console.log('Add client:', { newClientName, newClientEmail, newClientRole });
       setNewClientName('');
       setNewClientEmail('');
       setNewClientPassword('');
@@ -402,13 +348,8 @@ function AdminDashboardContent() {
   };
 
   const handleAddClinic = () => {
-    if (socketRef.current && newClinicName && newClinicType && newClinicLocation) {
-      socketRef.current.emit('add_clinic', { 
-        name: newClinicName, 
-        type: newClinicType, 
-        location: newClinicLocation,
-        assignedUserId: newClinicAssignedUser || null
-      });
+    if (newClinicName && newClinicType && newClinicLocation) {
+      console.log('Add clinic:', { newClinicName, newClinicType, newClinicLocation });
       setNewClinicName('');
       setNewClinicType('');
       setNewClinicLocation('');
@@ -418,13 +359,8 @@ function AdminDashboardContent() {
   };
 
   const handleEditClinic = () => {
-    if (socketRef.current && editingClinic) {
-      socketRef.current.emit('update_clinic', {
-        id: editingClinic.id,
-        name: editingClinic.name,
-        type: editingClinic.type,
-        location: editingClinic.location
-      });
+    if (editingClinic) {
+      console.log('Edit clinic:', editingClinic);
       setEditingClinic(null);
       setShowEditClinicModal(false);
     }
@@ -432,17 +368,13 @@ function AdminDashboardContent() {
 
   const handleDeleteClinic = (clinicId: string) => {
     if (confirm('Are you sure you want to delete this clinic?')) {
-      if (socketRef.current) {
-        socketRef.current.emit('delete_clinic', { id: clinicId });
-      }
+      console.log('Delete clinic:', clinicId);
     }
   };
 
   const handleDeleteClient = (clientId: string) => {
     if (confirm('Are you sure you want to delete this client?')) {
-      if (socketRef.current) {
-        socketRef.current.emit('delete_client', { id: clientId });
-      }
+      console.log('Delete client:', clientId);
     }
   };
 

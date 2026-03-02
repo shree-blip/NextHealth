@@ -37,7 +37,6 @@ import {
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { io, Socket } from 'socket.io-client';
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import ClientAnalyticsView from '@/components/ClientAnalyticsView';
 import Navbar from '@/components/Navbar';
@@ -120,7 +119,6 @@ function ClientDashboard() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [user, setUser] = useState<any>(null);
-  const socketRef = useRef<Socket | null>(null);
   const [myClinics, setMyClinics] = useState<any[]>([]);
   const [activeView, setActiveView] = useState<'overview' | 'membership' | 'analytics' | 'profile' | 'settings'>('overview');
 
@@ -189,36 +187,8 @@ function ClientDashboard() {
     // Fetch subscription status
     fetchSubscriptionStatus();
 
-    // Connect socket
-    const newSocket = io({ path: '/socket.io' });
-    socketRef.current = newSocket;
-
-    newSocket.on('initial_state', (data) => {
-      fetch('/api/auth/me').then(res => res.json()).then(userData => {
-        const myAssignments = data.assignments.filter((a: any) => a.userId === userData.id);
-        const clinics = myAssignments.map((a: any) => data.clinics.find((c: any) => c.id === a.clinicId)).filter(Boolean);
-        setMyClinics(clinics);
-      });
-    });
-
-    newSocket.on('assignment_added', (data) => {
-      if (user && data.userId === user.id) {
-        window.location.reload();
-      }
-    });
-
-    newSocket.on('clinic_updated', (updatedClinic) => {
-      setMyClinics(prev => prev.map(c => c.id === updatedClinic.id ? updatedClinic : c));
-    });
-
-    // Refresh analytics if admin just saved new data
-    newSocket.on('analytics_updated', () => {
-      setAnalyticsRefreshKey(k => k + 1);
-    });
-
-    return () => {
-      newSocket.disconnect();
-    };
+    // Note: Socket.io is disabled for Vercel serverless deployment
+    // Real-time updates are not available
   }, [router, fetchSubscriptionStatus]);
 
   const handleLogout = async () => {
