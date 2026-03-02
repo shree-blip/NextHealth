@@ -10,7 +10,6 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import Stripe from 'stripe';
 import { PrismaClient } from '@prisma/client';
-import { syncDueGmbConnections } from './lib/gmb';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -29,6 +28,8 @@ const db = {
   assignments: [] as { userId: string, clinicId: string }[],
 };
 
+const normalizeRole = (role?: string) => (String(role || '').toLowerCase() === 'admin' ? 'admin' : 'client');
+
 const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-key-for-dev';
 
 // Stripe Setup
@@ -46,31 +47,13 @@ const PLAN_MAP: Record<string, { priceId: string; name: string; amount: number }
 app.prepare().then(() => {
   const server = express();
   server.use(cookieParser());
-  // Only parse JSON for Express-handled routes; skip for Next.js App Router API routes
-  // to avoid consuming the request body stream before Next.js can read it
-  server.use((req, res, next) => {
-    const nextAppRoutes = ['/api/chat', '/api/posts', '/api/admin', '/api/analytics/weekly', '/api/client', '/api/newsletter', '/api/contact-lead', '/api/news'];
-    if (nextAppRoutes.some((r) => req.path.startsWith(r))) {
-      return next();
-    }
-    express.json()(req, res, next);
-  });
+  // Parse JSON for ALL routes - Next.js will handle its own routes
+  server.use(express.json());
 
   const httpServer = createServer(server);
   const io = new Server(httpServer, {
     cors: { origin: '*' }
   });
-
-  const runDailyGmbSync = async () => {
-    try {
-      await syncDueGmbConnections();
-    } catch (error) {
-      console.error('[GMB Sync] Scheduled sync failure:', error);
-    }
-  };
-
-  runDailyGmbSync();
-  setInterval(runDailyGmbSync, 60 * 60 * 1000);
 
   // OAuth Endpoints
   server.get('/api/auth/url', (req, res) => {
@@ -131,7 +114,8 @@ app.prepare().then(() => {
         db.users.push(user);
       }
 
-      const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, { expiresIn: '1d' });
+      const normalizedRole = normalizeRole(user.role);
+      const token = jwt.sign({ id: user.id, role: normalizedRole }, JWT_SECRET, { expiresIn: '1d' });
 
       res.cookie('auth_token', token, {
         secure: true,
@@ -147,7 +131,7 @@ app.prepare().then(() => {
                 window.opener.postMessage({ type: 'OAUTH_AUTH_SUCCESS', user: ${JSON.stringify(user)} }, '*');
                 window.close();
               } else {
-                window.location.href = '/dashboard/' + '${user.role}';
+                window.location.href = '${normalizeRole(user.role) === 'admin' ? '/dashboard/admin' : '/dashboard/client'}';
               }
             </script>
             <p>Authentication successful. This window should close automatically.</p>
@@ -176,7 +160,7 @@ app.prepare().then(() => {
               id: dbUser.id,
               email: dbUser.email,
               name: dbUser.name,
-              role: dbUser.role,
+              role: normalizeRole(dbUser.role),
               avatar: dbUser.avatar,
               plan: dbUser.plan,
               planId: dbUser.planId,
@@ -193,7 +177,7 @@ app.prepare().then(() => {
       }
 
       if (!user) return res.status(401).json({ error: 'User not found' });
-      res.json({ id: user.id, email: user.email, name: user.name, role: user.role, avatar: user.avatar || null });
+      res.json({ id: user.id, email: user.email, name: user.name, role: normalizeRole(user.role), avatar: user.avatar || null });
     } catch (e) {
       res.status(401).json({ error: 'Invalid token' });
     }
@@ -210,7 +194,7 @@ app.prepare().then(() => {
 
   // Email/Password Login
   server.post('/api/auth/login', async (req, res) => {
-    const { email, password } = req.body;
+    const { email, password } = req.body || {};
     
     if (!email || !password) {
       return res.status(400).json({ error: 'Email and password required' });
@@ -233,11 +217,12 @@ app.prepare().then(() => {
       }
 
       // Update in-memory cache
+      const normalizedRole = normalizeRole(user.role);
       const userObj = {
         id: user.id,
         email: user.email,
         name: user.name,
-        role: user.role,
+        role: normalizedRole,
         avatar: user.avatar,
         plan: user.plan,
         planId: user.planId,
@@ -253,7 +238,7 @@ app.prepare().then(() => {
       }
 
       // Generate JWT token
-      const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
+      const token = jwt.sign({ id: user.id, role: normalizedRole }, JWT_SECRET, { expiresIn: '7d' });
 
       res.cookie('auth_token', token, {
         secure: process.env.NODE_ENV === 'production',
@@ -268,7 +253,7 @@ app.prepare().then(() => {
           id: user.id,
           email: user.email,
           name: user.name,
-          role: user.role,
+          role: normalizedRole,
           avatar: user.avatar || null,
         },
         success: true
@@ -306,7 +291,7 @@ app.prepare().then(() => {
         if (avatar !== undefined) cachedUser.avatar = avatar;
       }
 
-      res.json({ id: updatedUser.id, email: updatedUser.email, name: updatedUser.name, role: updatedUser.role, avatar: updatedUser.avatar || null });
+      res.json({ id: updatedUser.id, email: updatedUser.email, name: updatedUser.name, role: normalizeRole(updatedUser.role), avatar: updatedUser.avatar || null });
     } catch (e) {
       console.error('Profile update error:', e);
       res.status(401).json({ error: 'Invalid token' });
@@ -325,7 +310,7 @@ app.prepare().then(() => {
 
       res.json({
         currentPassword: user.password,
-        role: user.role,
+        role: normalizeRole(user.role),
       });
     } catch (e) {
       console.error('Get password settings error:', e);
@@ -377,49 +362,6 @@ app.prepare().then(() => {
     } catch (e) {
       console.error('Update password error:', e);
       res.status(401).json({ error: 'Invalid token' });
-    }
-  });
-
-  // Update User Role (Admin Only)
-  server.patch('/api/auth/user-role', async (req, res) => {
-    const token = req.cookies.auth_token;
-    if (!token) return res.status(401).json({ error: 'Not authenticated' });
-
-    try {
-      const decoded = jwt.verify(token, JWT_SECRET) as any;
-      const adminUser = await prisma.user.findUnique({ where: { id: decoded.id } });
-      
-      if (!adminUser || adminUser.role !== 'admin') {
-        return res.status(403).json({ error: 'Admin access required' });
-      }
-
-      const { userId, role } = req.body;
-      if (!userId || !role || (role !== 'admin' && role !== 'client')) {
-        return res.status(400).json({ error: 'Valid userId and role (admin|client) required' });
-      }
-
-      const updatedUser = await prisma.user.update({
-        where: { id: userId },
-        data: { role }
-      });
-
-      // Update in-memory cache
-      const cachedUser = db.users.find(u => u.id === userId);
-      if (cachedUser) {
-        cachedUser.role = role;
-      }
-
-      res.json({
-        id: updatedUser.id,
-        email: updatedUser.email,
-        name: updatedUser.name,
-        role: updatedUser.role,
-        avatar: updatedUser.avatar || null,
-        message: `User role updated to ${role}`
-      });
-    } catch (e) {
-      console.error('Update user role error:', e);
-      res.status(401).json({ error: 'Failed to update user role' });
     }
   });
 
@@ -982,14 +924,14 @@ app.prepare().then(() => {
               email: data.email,
               name: data.name,
               password: data.password || 'defaultpass123', // In production, hash this
-              role: data.role || 'client' // Support both 'client' and 'admin' roles
+              role: normalizeRole(data.role) // Support both 'client' and 'admin' roles
             }
           });
           const userObj = {
             id: newUser.id,
             email: newUser.email,
             name: newUser.name,
-            role: newUser.role,
+            role: normalizeRole(newUser.role),
             avatar: newUser.avatar,
             createdAt: newUser.createdAt.toISOString()
           };
@@ -1087,9 +1029,31 @@ app.prepare().then(() => {
       }
     });
 
-    // Analytics updated — broadcast to all clients so their charts refresh
-    socket.on('analytics_updated', (data?: { clinicId?: string }) => {
-      socket.broadcast.emit('analytics_updated', data || {});
+    socket.on('update_user_role', async (data: { id: string; role: string }) => {
+      try {
+        const normalizedRole = normalizeRole(data.role);
+        const updatedUser = await prisma.user.update({
+          where: { id: data.id },
+          data: { role: normalizedRole },
+        });
+
+        const cachedUser = db.users.find((u) => u.id === data.id);
+        if (cachedUser) {
+          cachedUser.role = normalizedRole;
+        }
+
+        io.emit('user_role_updated', {
+          id: updatedUser.id,
+          role: normalizedRole,
+        });
+      } catch (err) {
+        console.error('Failed to update user role:', err);
+        socket.emit('error', { message: 'Failed to update user role' });
+      }
+    });
+
+    socket.on('weekly_analytics_saved', (data: { clinicId: string; year: number; month: number; weekNumber: number }) => {
+      io.emit('weekly_analytics_updated', data);
     });
 
     socket.on('disconnect', () => {
