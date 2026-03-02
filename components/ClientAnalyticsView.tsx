@@ -58,7 +58,7 @@ const MONTH_NAMES: Record<number, string> = {
   9: 'September', 10: 'October', 11: 'November', 12: 'December',
 };
 
-export default function ClientAnalyticsView() {
+export default function ClientAnalyticsView({ refreshTrigger }: { refreshTrigger?: number }) {
   const { theme } = useSitePreferences();
   const isDark = theme === 'dark';
   const [analytics, setAnalytics] = useState<WeeklyAnalytics[]>([]);
@@ -79,7 +79,7 @@ export default function ClientAnalyticsView() {
     if (selectedClinic) {
       fetchAnalytics(selectedClinic);
     }
-  }, [selectedClinic]);
+  }, [selectedClinic, refreshTrigger]);
 
   const fetchClinics = async () => {
     try {

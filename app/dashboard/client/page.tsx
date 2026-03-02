@@ -133,6 +133,9 @@ function ClientDashboard() {
   // Toast notifications
   const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
+  // Analytics refresh trigger (via socket from admin)
+  const [analyticsRefreshKey, setAnalyticsRefreshKey] = useState(0);
+
   // Read URL params for upgrade feedback and view
   useEffect(() => {
     const upgrade = searchParams.get('upgrade');
@@ -206,6 +209,11 @@ function ClientDashboard() {
 
     newSocket.on('clinic_updated', (updatedClinic) => {
       setMyClinics(prev => prev.map(c => c.id === updatedClinic.id ? updatedClinic : c));
+    });
+
+    // Refresh analytics if admin just saved new data
+    newSocket.on('analytics_updated', () => {
+      setAnalyticsRefreshKey(k => k + 1);
     });
 
     return () => {
@@ -361,7 +369,7 @@ function ClientDashboard() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
             >
-              <ClientAnalyticsView />
+              <ClientAnalyticsView refreshTrigger={analyticsRefreshKey} />
             </motion.div>
           ) : activeView === 'profile' ? (
             <motion.div

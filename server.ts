@@ -10,6 +10,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import Stripe from 'stripe';
 import { PrismaClient } from '@prisma/client';
+import { syncDueGmbConnections } from './lib/gmb';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -48,7 +49,7 @@ app.prepare().then(() => {
   // Only parse JSON for Express-handled routes; skip for Next.js App Router API routes
   // to avoid consuming the request body stream before Next.js can read it
   server.use((req, res, next) => {
-    const nextAppRoutes = ['/api/chat', '/api/posts', '/api/admin', '/api/analytics/weekly', '/api/client', '/api/newsletter', '/api/contact-lead', '/api/news', '/api/auth'];
+    const nextAppRoutes = ['/api/chat', '/api/posts', '/api/admin', '/api/analytics/weekly', '/api/client', '/api/newsletter', '/api/contact-lead', '/api/news'];
     if (nextAppRoutes.some((r) => req.path.startsWith(r))) {
       return next();
     }
@@ -59,6 +60,17 @@ app.prepare().then(() => {
   const io = new Server(httpServer, {
     cors: { origin: '*' }
   });
+
+  const runDailyGmbSync = async () => {
+    try {
+      await syncDueGmbConnections();
+    } catch (error) {
+      console.error('[GMB Sync] Scheduled sync failure:', error);
+    }
+  };
+
+  runDailyGmbSync();
+  setInterval(runDailyGmbSync, 60 * 60 * 1000);
 
   // OAuth Endpoints
   server.get('/api/auth/url', (req, res) => {
@@ -365,6 +377,49 @@ app.prepare().then(() => {
     } catch (e) {
       console.error('Update password error:', e);
       res.status(401).json({ error: 'Invalid token' });
+    }
+  });
+
+  // Update User Role (Admin Only)
+  server.patch('/api/auth/user-role', async (req, res) => {
+    const token = req.cookies.auth_token;
+    if (!token) return res.status(401).json({ error: 'Not authenticated' });
+
+    try {
+      const decoded = jwt.verify(token, JWT_SECRET) as any;
+      const adminUser = await prisma.user.findUnique({ where: { id: decoded.id } });
+      
+      if (!adminUser || adminUser.role !== 'admin') {
+        return res.status(403).json({ error: 'Admin access required' });
+      }
+
+      const { userId, role } = req.body;
+      if (!userId || !role || (role !== 'admin' && role !== 'client')) {
+        return res.status(400).json({ error: 'Valid userId and role (admin|client) required' });
+      }
+
+      const updatedUser = await prisma.user.update({
+        where: { id: userId },
+        data: { role }
+      });
+
+      // Update in-memory cache
+      const cachedUser = db.users.find(u => u.id === userId);
+      if (cachedUser) {
+        cachedUser.role = role;
+      }
+
+      res.json({
+        id: updatedUser.id,
+        email: updatedUser.email,
+        name: updatedUser.name,
+        role: updatedUser.role,
+        avatar: updatedUser.avatar || null,
+        message: `User role updated to ${role}`
+      });
+    } catch (e) {
+      console.error('Update user role error:', e);
+      res.status(401).json({ error: 'Failed to update user role' });
     }
   });
 
@@ -1030,6 +1085,11 @@ app.prepare().then(() => {
         console.error('Failed to delete client:', err);
         socket.emit('error', { message: 'Failed to delete client' });
       }
+    });
+
+    // Analytics updated — broadcast to all clients so their charts refresh
+    socket.on('analytics_updated', (data?: { clinicId?: string }) => {
+      socket.broadcast.emit('analytics_updated', data || {});
     });
 
     socket.on('disconnect', () => {

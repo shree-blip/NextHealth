@@ -53,9 +53,10 @@ const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'
 
 interface AdminAnalyticsViewProps {
   isDark: boolean;
+  refreshTrigger?: number;
 }
 
-export default function AdminAnalyticsView({ isDark }: AdminAnalyticsViewProps) {
+export default function AdminAnalyticsView({ isDark, refreshTrigger }: AdminAnalyticsViewProps) {
   const [analytics, setAnalytics] = useState<WeeklyAnalytics[]>([]);
   const [clinics, setClinics] = useState<ClinicInfo[]>([]);
   const [selectedClinic, setSelectedClinic] = useState<string>('all');
@@ -68,7 +69,7 @@ export default function AdminAnalyticsView({ isDark }: AdminAnalyticsViewProps) 
 
   useEffect(() => {
     fetchAnalytics(selectedClinic);
-  }, [selectedClinic]);
+  }, [selectedClinic, refreshTrigger]);
 
   const fetchClinics = async () => {
     try {

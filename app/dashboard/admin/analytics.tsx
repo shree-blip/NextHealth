@@ -1,269 +1,543 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Send, Loader2, Check, AlertCircle, Trash2, Edit, FileText, TrendingUp } from 'lucide-react';
+import {
+  Loader2,
+  Check,
+  AlertCircle,
+  Calendar,
+  Building2,
+  Save,
+  FileText,
+  TrendingUp,
+  Trash2,
+  Edit,
+} from 'lucide-react';
 
-interface WeeklyAnalyticsInput {
-  clinicId: string;
-  weekLabel: string;
-  year: number;
-  month: number;
+/* ------------------------------------------------------------------ */
+/* Types & constants                                                   */
+/* ------------------------------------------------------------------ */
+
+interface WeekOption {
   weekNumber: number;
-  blogsPublished: number;
-  avgRanking: number;
-  totalTraffic: number;
-  callsRequested: number;
-  websiteVisits: number;
-  directionClicks: number;
-  metaImpressions: number;
-  metaClicks: number;
-  metaCTR: number;
-  metaConversions: number;
-  metaAdSpend: number;
-  googleImpressions: number;
-  googleClicks: number;
-  googleCTR: number;
-  googleCPC: number;
-  googleConversions: number;
-  googleCVR: number;
-  googleCostPerConversion: number;
-  googleTotalCost: number;
-  socialPosts: number;
-  socialViews: number;
-  patientCount: number;
-  digitalConversion: number;
-  conversionRate: number;
-  dailyPatientAvg: number;
+  year: number;
+  month: number; // Thursday's month (1-12, ISO convention)
+  monday: Date;
+  sunday: Date;
+  label: string; // e.g. "2026 Week 10 (Mar 2–Mar 8)"
 }
 
-export default function AnalyticsForm() {
-  const [loading, setLoading] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
-  const [error, setError] = useState('');
-  const [clinics, setClinics] = useState<any[]>([]);
-  const [existingData, setExistingData] = useState<any[]>([]);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  
-  const currentYear = new Date().getFullYear();
-  const currentMonth = new Date().getMonth() + 1;
-  
-  const [data, setData] = useState<WeeklyAnalyticsInput>({
-    clinicId: '',
-    weekLabel: '',
-    year: currentYear,
-    month: currentMonth,
-    weekNumber: 1,
-    blogsPublished: 0,
-    avgRanking: 0,
-    totalTraffic: 0,
-    callsRequested: 0,
-    websiteVisits: 0,
-    directionClicks: 0,
-    metaImpressions: 0,
-    metaClicks: 0,
-    metaCTR: 0,
-    metaConversions: 0,
-    metaAdSpend: 0,
-    googleImpressions: 0,
-    googleClicks: 0,
-    googleCTR: 0,
-    googleCPC: 0,
-    googleConversions: 0,
-    googleCVR: 0,
-    googleCostPerConversion: 0,
-    googleTotalCost: 0,
-    socialPosts: 0,
-    socialViews: 0,
-    patientCount: 0,
-    digitalConversion: 0,
-    conversionRate: 0,
-    dailyPatientAvg: 0,
-  });
+const METRIC_FIELDS = [
+  'blogsPublished',
+  'avgRanking',
+  'totalTraffic',
+  'callsRequested',
+  'websiteVisits',
+  'directionClicks',
+  'metaImpressions',
+  'metaClicks',
+  'metaCTR',
+  'metaConversions',
+  'metaAdSpend',
+  'googleImpressions',
+  'googleClicks',
+  'googleCTR',
+  'googleCPC',
+  'googleConversions',
+  'googleCVR',
+  'googleCostPerConversion',
+  'googleTotalCost',
+  'socialPosts',
+  'socialViews',
+  'patientCount',
+  'digitalConversion',
+  'conversionRate',
+  'dailyPatientAvg',
+] as const;
 
-  // Load clinics on mount
+type MetricField = (typeof METRIC_FIELDS)[number];
+type FormValues = Record<MetricField, string>;
+
+const FLOAT_FIELDS: Set<string> = new Set([
+  'avgRanking',
+  'metaCTR',
+  'metaAdSpend',
+  'googleCTR',
+  'googleCPC',
+  'googleCVR',
+  'googleCostPerConversion',
+  'googleTotalCost',
+  'conversionRate',
+  'dailyPatientAvg',
+]);
+
+interface AnalyticsFormProps {
+  onSaved?: () => void;
+}
+
+/* ------------------------------------------------------------------ */
+/* Helpers                                                             */
+/* ------------------------------------------------------------------ */
+
+function shortDate(d: Date): string {
+  const m = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return `${m[d.getMonth()]} ${d.getDate()}`;
+}
+
+/** Generate all Mon–Sun weeks for `year`. Week 1 contains Jan 1. */
+function generateWeeks(year: number): WeekOption[] {
+  const weeks: WeekOption[] = [];
+  const jan1 = new Date(year, 0, 1);
+  const dow = jan1.getDay(); // 0=Sun … 6=Sat
+  // Monday of the week containing Jan 1
+  const mondayOffset = dow === 0 ? -6 : 1 - dow;
+  let monday = new Date(year, 0, 1 + mondayOffset);
+  let weekNum = 1;
+
+  while (true) {
+    const sunday = new Date(monday);
+    sunday.setDate(sunday.getDate() + 6);
+    // Thursday determines the week's month (ISO convention)
+    const thursday = new Date(monday);
+    thursday.setDate(thursday.getDate() + 3);
+    const month = thursday.getMonth() + 1;
+
+    weeks.push({
+      weekNumber: weekNum,
+      year,
+      month,
+      monday: new Date(monday),
+      sunday: new Date(sunday),
+      label: `${year} Week ${weekNum} (${shortDate(monday)}\u2013${shortDate(sunday)})`,
+    });
+
+    const nextMonday = new Date(monday);
+    nextMonday.setDate(nextMonday.getDate() + 7);
+    if (nextMonday.getFullYear() > year && weekNum >= 52) break;
+    monday = nextMonday;
+    weekNum++;
+  }
+  return weeks;
+}
+
+/** Default week: current week, or LAST week when today is Monday. */
+function getDefaultWeekIndex(weeks: WeekOption[]): number {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const isMonday = today.getDay() === 1;
+
+  let idx = weeks.findIndex((w) => today >= w.monday && today <= w.sunday);
+  if (idx === -1) {
+    for (let i = weeks.length - 1; i >= 0; i--) {
+      if (weeks[i].monday <= today) { idx = i; break; }
+    }
+  }
+  if (idx === -1) idx = 0;
+  if (isMonday && idx > 0) return idx - 1;
+  return idx;
+}
+
+function emptyForm(): FormValues {
+  return Object.fromEntries(METRIC_FIELDS.map((f) => [f, ''])) as FormValues;
+}
+
+function recordToForm(record: any): FormValues {
+  const form: any = {};
+  for (const field of METRIC_FIELDS) {
+    form[field] = record[field] != null ? String(record[field]) : '';
+  }
+  return form as FormValues;
+}
+
+/* ------------------------------------------------------------------ */
+/* Component                                                           */
+/* ------------------------------------------------------------------ */
+
+export default function AnalyticsForm({ onSaved }: AnalyticsFormProps) {
+  const currentYear = new Date().getFullYear();
+
+  // Clinic selector
+  const [clinics, setClinics] = useState<any[]>([]);
+  const [selectedClinicId, setSelectedClinicId] = useState('');
+
+  // Week selector
+  const [selectedYear, setSelectedYear] = useState(currentYear);
+  const [weeks, setWeeks] = useState<WeekOption[]>(() => generateWeeks(currentYear));
+  const [selectedWeekIdx, setSelectedWeekIdx] = useState<number>(-1);
+
+  // Form
+  const [formValues, setFormValues] = useState<FormValues>(emptyForm());
+  const [existingRecord, setExistingRecord] = useState<any>(null);
+  const [loadingData, setLoadingData] = useState(false);
+
+  // Save state
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState('');
+
+  // Table of all entries for this clinic
+  const [existingEntries, setExistingEntries] = useState<any[]>([]);
+
+  // ── Load clinics on mount ──
   useEffect(() => {
     fetch('/api/admin/clinics')
-      .then(res => res.json())
-      .then(data => setClinics(data.clinics || []))
-      .catch(err => console.error('Failed to load clinics:', err));
+      .then((r) => r.json())
+      .then((d) => setClinics(d.clinics || []))
+      .catch(() => {});
   }, []);
 
-  // Load existing analytics when clinic changes
+  // ── Regenerate weeks when year changes ──
   useEffect(() => {
-    if (data.clinicId) {
-      fetch(`/api/analytics/weekly?clinicId=${data.clinicId}`)
-        .then(res => res.json())
-        .then(result => setExistingData(result.analytics || []))
-        .catch(err => console.error('Failed to load analytics:', err));
-    }
-  }, [data.clinicId]);
+    const w = generateWeeks(selectedYear);
+    setWeeks(w);
+    setSelectedWeekIdx(
+      selectedYear === currentYear ? getDefaultWeekIndex(w) : 0,
+    );
+  }, [selectedYear, currentYear]);
 
-  // Auto-generate weekLabel based on month and week number
+  // Set default week on first render
   useEffect(() => {
-    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    if (data.month >= 1 && data.month <= 12) {
-      setData(prev => ({
-        ...prev,
-        weekLabel: `${monthNames[data.month - 1]} Week ${data.weekNumber}`
-      }));
-    }
-  }, [data.month, data.weekNumber]);
+    if (weeks.length > 0 && selectedWeekIdx === -1)
+      setSelectedWeekIdx(getDefaultWeekIndex(weeks));
+  }, [weeks, selectedWeekIdx]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setData(prev => ({
-      ...prev,
-      [name]: ['clinicId', 'weekLabel'].includes(name) ? value : Number(value)
-    }));
+  // ── Fetch the specific record for the selected clinic + week ──
+  useEffect(() => {
+    if (!selectedClinicId || selectedWeekIdx < 0 || selectedWeekIdx >= weeks.length) {
+      setExistingRecord(null);
+      setFormValues(emptyForm());
+      return;
+    }
+    const wk = weeks[selectedWeekIdx];
+    setLoadingData(true);
+    setError('');
+    setSaved(false);
+
+    fetch(
+      `/api/analytics/weekly?clinicId=${selectedClinicId}&year=${wk.year}&month=${wk.month}&weekNumber=${wk.weekNumber}`,
+    )
+      .then((r) => r.json())
+      .then((d) => {
+        const recs = d.analytics || [];
+        if (recs.length > 0) {
+          setExistingRecord(recs[0]);
+          setFormValues(recordToForm(recs[0]));
+        } else {
+          setExistingRecord(null);
+          setFormValues(emptyForm());
+        }
+      })
+      .catch(() => {
+        setExistingRecord(null);
+        setFormValues(emptyForm());
+      })
+      .finally(() => setLoadingData(false));
+  }, [selectedClinicId, selectedWeekIdx, weeks]);
+
+  // ── Fetch all entries for the table ──
+  const refreshEntries = () => {
+    if (!selectedClinicId) { setExistingEntries([]); return; }
+    fetch(`/api/analytics/weekly?clinicId=${selectedClinicId}`)
+      .then((r) => r.json())
+      .then((d) => setExistingEntries(d.analytics || []))
+      .catch(() => setExistingEntries([]));
   };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { refreshEntries(); }, [selectedClinicId]);
+
+  // ── Field change ──
+  const handleFieldChange = (name: MetricField, value: string) => {
+    setFormValues((prev) => ({ ...prev, [name]: value }));
+  };
+
+  // ── Submit ──
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    setSubmitted(false);
+    setSaved(false);
 
-    if (!data.clinicId) {
-      setError('Clinic is required');
-      return;
+    if (!selectedClinicId) { setError('Please select a clinic.'); return; }
+    if (selectedWeekIdx < 0 || selectedWeekIdx >= weeks.length) { setError('Please select a week.'); return; }
+
+    const wk = weeks[selectedWeekIdx];
+
+    // Build payload – skip empty fields so DB keeps existing values
+    const payload: any = {
+      clinicId: selectedClinicId,
+      year: wk.year,
+      month: wk.month,
+      weekNumber: wk.weekNumber,
+      weekLabel: wk.label,
+    };
+
+    for (const field of METRIC_FIELDS) {
+      const val = formValues[field];
+      if (val !== '' && val != null) {
+        const num = FLOAT_FIELDS.has(field) ? parseFloat(val) : parseInt(val, 10);
+        if (!isNaN(num)) payload[field] = num;
+      }
     }
 
-    setLoading(true);
+    setSaving(true);
     try {
-      const payload = editingId ? { id: editingId, ...data } : data;
-      
       const res = await fetch('/api/analytics/weekly', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
-
       if (!res.ok) {
         const err = await res.json();
         throw new Error(err.error || 'Failed to save analytics');
       }
+      const result = await res.json();
 
-      setSubmitted(true);
-      setEditingId(null);
-      
-      // Reload data
-      if (data.clinicId) {
-        const refreshRes = await fetch(`/api/analytics/weekly?clinicId=${data.clinicId}`);
-        const refreshData = await refreshRes.json();
-        setExistingData(refreshData.analytics || []);
-      }
+      // Refresh form with saved record
+      setExistingRecord(result.analytics);
+      setFormValues(recordToForm(result.analytics));
+      setSaved(true);
 
-      // Reset form
-      setData({
-        clinicId: data.clinicId, // Keep clinic selected
-        weekLabel: '',
-        year: currentYear,
-        month: currentMonth,
-        weekNumber: 1,
-        blogsPublished: 0,
-        avgRanking: 0,
-        totalTraffic: 0,
-        callsRequested: 0,
-        websiteVisits: 0,
-        directionClicks: 0,
-        metaImpressions: 0,
-        metaClicks: 0,
-        metaCTR: 0,
-        metaConversions: 0,
-        metaAdSpend: 0,
-        googleImpressions: 0,
-        googleClicks: 0,
-        googleCTR: 0,
-        googleCPC: 0,
-        googleConversions: 0,
-        googleCVR: 0,
-        googleCostPerConversion: 0,
-        googleTotalCost: 0,
-        socialPosts: 0,
-        socialViews: 0,
-        patientCount: 0,
-        digitalConversion: 0,
-        conversionRate: 0,
-        dailyPatientAvg: 0,
-      });
+      // Refresh table
+      refreshEntries();
 
-      setTimeout(() => setSubmitted(false), 3000);
+      // Notify parent → charts refresh
+      onSaved?.();
+
+      setTimeout(() => setSaved(false), 4000);
     } catch (err: any) {
       setError(err.message || 'Error saving analytics');
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
 
-  const handleEdit = (item: any) => {
-    setEditingId(item.id);
-    setData({
-      clinicId: item.clinicId,
-      weekLabel: item.weekLabel,
-      year: item.year,
-      month: item.month,
-      weekNumber: item.weekNumber,
-      blogsPublished: item.blogsPublished || 0,
-      avgRanking: item.avgRanking || 0,
-      totalTraffic: item.totalTraffic || 0,
-      callsRequested: item.callsRequested || 0,
-      websiteVisits: item.websiteVisits || 0,
-      directionClicks: item.directionClicks || 0,
-      metaImpressions: item.metaImpressions || 0,
-      metaClicks: item.metaClicks || 0,
-      metaCTR: item.metaCTR || 0,
-      metaConversions: item.metaConversions || 0,
-      metaAdSpend: item.metaAdSpend || 0,
-      googleImpressions: item.googleImpressions || 0,
-      googleClicks: item.googleClicks || 0,
-      googleCTR: item.googleCTR || 0,
-      googleCPC: item.googleCPC || 0,
-      googleConversions: item.googleConversions || 0,
-      googleCVR: item.googleCVR || 0,
-      googleCostPerConversion: item.googleCostPerConversion || 0,
-      googleTotalCost: item.googleTotalCost || 0,
-      socialPosts: item.socialPosts || 0,
-      socialViews: item.socialViews || 0,
-      patientCount: item.patientCount || 0,
-      digitalConversion: item.digitalConversion || 0,
-      conversionRate: item.conversionRate || 0,
-      dailyPatientAvg: item.dailyPatientAvg || 0,
-    });
-  };
-
+  // ── Delete ──
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this analytics entry?')) return;
-    
+    if (!confirm('Delete this analytics entry?')) return;
     try {
       const res = await fetch(`/api/analytics/weekly?id=${id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Failed to delete');
-      
-      // Refresh data
-      if (data.clinicId) {
-        const refreshRes = await fetch(`/api/analytics/weekly?clinicId=${data.clinicId}`);
-        const refreshData = await refreshRes.json();
-        setExistingData(refreshData.analytics || []);
+      if (existingRecord?.id === id) {
+        setExistingRecord(null);
+        setFormValues(emptyForm());
       }
-    } catch (err) {
+      refreshEntries();
+      onSaved?.();
+    } catch {
       setError('Failed to delete analytics entry');
     }
   };
 
+  // ── Edit from table ──
+  const handleEditFromTable = (item: any) => {
+    const idx = weeks.findIndex(
+      (w) => w.year === item.year && w.month === item.month && w.weekNumber === item.weekNumber,
+    );
+    if (idx !== -1) setSelectedWeekIdx(idx);
+  };
+
+  const selectedWeek = selectedWeekIdx >= 0 && selectedWeekIdx < weeks.length ? weeks[selectedWeekIdx] : null;
+
+  /* ── Field renderer ── */
+  const renderField = (name: MetricField, label: string, opts: { step?: string; prefix?: string; suffix?: string } = {}) => (
+    <div key={name}>
+      <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+        {opts.prefix && <span className="text-slate-400 mr-1">{opts.prefix}</span>}
+        {label}
+        {opts.suffix && <span className="text-slate-400 ml-1">{opts.suffix}</span>}
+      </label>
+      <input
+        type="number"
+        value={formValues[name]}
+        onChange={(e) => handleFieldChange(name, e.target.value)}
+        placeholder={existingRecord ? '0' : '\u2014'}
+        step={opts.step || (FLOAT_FIELDS.has(name) ? '0.01' : '1')}
+        min="0"
+        className="w-full px-4 py-2.5 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 transition-all text-sm"
+      />
+    </div>
+  );
+
+  /* ---------------------------------------------------------------- */
+  /* Render                                                            */
+  /* ---------------------------------------------------------------- */
+
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="max-w-6xl mx-auto"
-    >
-      <div className="mb-8">
-        <h2 className="text-3xl font-black mb-2">📊 Weekly Analytics Management</h2>
-        <p className="text-slate-600 dark:text-slate-400">Enter and manage weekly performance metrics for each clinic</p>
+    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="max-w-6xl mx-auto">
+      {/* Header */}
+      <div className="mb-6">
+        <h2 className="text-2xl font-black mb-1 flex items-center gap-2">
+          <Calendar className="h-6 w-6 text-emerald-500" />
+          Weekly Analytics Data Entry
+        </h2>
+        <p className="text-slate-600 dark:text-slate-400 text-sm">
+          Select a clinic and week, then enter or update performance metrics. Saved data feeds directly into client analytics charts.
+        </p>
       </div>
 
-      {/* Existing Data Table */}
-      {existingData.length > 0 && (
-        <div className="mb-8 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6">
-          <h3 className="text-xl font-bold mb-4">Existing Weekly Data</h3>
+      {/* ── Clinic + Week Selectors ── */}
+      <div className="rounded-2xl p-5 border border-slate-200 dark:border-slate-700 bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/40 dark:to-teal-950/40 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Clinic */}
+          <div>
+            <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+              <Building2 className="h-4 w-4 inline mr-1 -mt-0.5" /> Clinic
+            </label>
+            <select
+              value={selectedClinicId}
+              onChange={(e) => setSelectedClinicId(e.target.value)}
+              className="w-full px-4 py-2.5 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 text-sm"
+            >
+              <option value="">Select Clinic</option>
+              {clinics.map((c) => (
+                <option key={c.id} value={c.id}>{c.name} — {c.location}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Year */}
+          <div>
+            <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1.5">Year</label>
+            <select
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(Number(e.target.value))}
+              className="w-full px-4 py-2.5 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 text-sm"
+            >
+              {[currentYear - 1, currentYear, currentYear + 1].map((y) => (
+                <option key={y} value={y}>{y}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Week */}
+          <div>
+            <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+              <Calendar className="h-4 w-4 inline mr-1 -mt-0.5" /> Week (Mon–Sun)
+            </label>
+            <select
+              value={selectedWeekIdx}
+              onChange={(e) => setSelectedWeekIdx(Number(e.target.value))}
+              className="w-full px-4 py-2.5 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 text-sm"
+            >
+              {weeks.map((w, i) => (
+                <option key={i} value={i}>{w.label}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* Status */}
+        {selectedClinicId && selectedWeek && (
+          <div className="mt-3 flex items-center gap-2 text-sm">
+            {loadingData ? (
+              <><Loader2 className="h-4 w-4 animate-spin text-emerald-500" /><span className="text-slate-500">Loading data…</span></>
+            ) : existingRecord ? (
+              <><Edit className="h-4 w-4 text-blue-500" /><span className="font-semibold text-blue-600 dark:text-blue-400">Editing existing data for {selectedWeek.label}</span></>
+            ) : (
+              <><FileText className="h-4 w-4 text-emerald-500" /><span className="font-semibold text-emerald-600 dark:text-emerald-400">New entry — {selectedWeek.label}</span></>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* ── Messages ── */}
+      {error && (
+        <div className="flex items-center gap-3 p-4 mb-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-2xl text-red-700 dark:text-red-300 text-sm">
+          <AlertCircle className="h-5 w-5 shrink-0" /><span className="font-semibold">{error}</span>
+        </div>
+      )}
+      {saved && (
+        <div className="flex items-center gap-3 p-4 mb-4 bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 rounded-2xl text-emerald-700 dark:text-emerald-300 text-sm">
+          <Check className="h-5 w-5 shrink-0" /><span className="font-semibold">Analytics saved! Client charts will reflect the updated data.</span>
+        </div>
+      )}
+
+      {/* ── Form ── */}
+      <form onSubmit={handleSubmit} className="space-y-5">
+        {/* Content */}
+        <div className="rounded-2xl p-5 border border-slate-200 dark:border-slate-700 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/40 dark:to-pink-950/40">
+          <h3 className="text-base font-bold mb-3 flex items-center gap-2"><FileText className="h-5 w-5 text-purple-500" /> Content Metrics</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {renderField('blogsPublished', 'Blogs Published')}
+          </div>
+        </div>
+
+        {/* SEO */}
+        <div className="rounded-2xl p-5 border border-slate-200 dark:border-slate-700 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/40 dark:to-cyan-950/40">
+          <h3 className="text-base font-bold mb-3 flex items-center gap-2"><TrendingUp className="h-5 w-5 text-blue-500" /> SEO Metrics</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {renderField('avgRanking', 'Avg Ranking', { step: '0.1' })}
+            {renderField('totalTraffic', 'Total Traffic')}
+          </div>
+        </div>
+
+        {/* GMB */}
+        <div className="rounded-2xl p-5 border border-slate-200 dark:border-slate-700 bg-gradient-to-br from-orange-50 to-yellow-50 dark:from-orange-950/40 dark:to-yellow-950/40">
+          <h3 className="text-base font-bold mb-3">📍 Google My Business</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {renderField('callsRequested', 'Calls Requested')}
+            {renderField('websiteVisits', 'Website Visits')}
+            {renderField('directionClicks', 'Direction Clicks')}
+          </div>
+        </div>
+
+        {/* Meta Ads */}
+        <div className="rounded-2xl p-5 border border-slate-200 dark:border-slate-700 bg-gradient-to-br from-indigo-50 to-blue-50 dark:from-indigo-950/40 dark:to-blue-950/40">
+          <h3 className="text-base font-bold mb-3">📘 Meta Ads</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+            {renderField('metaImpressions', 'Impressions')}
+            {renderField('metaClicks', 'Clicks')}
+            {renderField('metaCTR', 'CTR', { suffix: '%', step: '0.01' })}
+            {renderField('metaConversions', 'Conversions')}
+            {renderField('metaAdSpend', 'Ad Spend', { prefix: '$', step: '0.01' })}
+          </div>
+        </div>
+
+        {/* Google Ads */}
+        <div className="rounded-2xl p-5 border border-slate-200 dark:border-slate-700 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/40 dark:to-emerald-950/40">
+          <h3 className="text-base font-bold mb-3">🔍 Google Ads</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {renderField('googleImpressions', 'Impressions')}
+            {renderField('googleClicks', 'Clicks')}
+            {renderField('googleCTR', 'CTR', { suffix: '%', step: '0.01' })}
+            {renderField('googleCPC', 'CPC', { prefix: '$', step: '0.01' })}
+            {renderField('googleConversions', 'Conversions')}
+            {renderField('googleCVR', 'CVR', { suffix: '%', step: '0.01' })}
+            {renderField('googleCostPerConversion', 'Cost Per Conv.', { prefix: '$', step: '0.01' })}
+            {renderField('googleTotalCost', 'Total Cost', { prefix: '$', step: '0.01' })}
+          </div>
+        </div>
+
+        {/* Social Media & Patients */}
+        <div className="rounded-2xl p-5 border border-slate-200 dark:border-slate-700 bg-gradient-to-br from-rose-50 to-pink-50 dark:from-rose-950/40 dark:to-pink-950/40">
+          <h3 className="text-base font-bold mb-3">📱 Social Media & Patients</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {renderField('socialPosts', 'Social Posts')}
+            {renderField('socialViews', 'Social Views')}
+            {renderField('patientCount', 'Patient Count')}
+            {renderField('digitalConversion', 'Digital Conversions')}
+            {renderField('conversionRate', 'Conversion Rate', { suffix: '%', step: '0.01' })}
+            {renderField('dailyPatientAvg', 'Daily Patient Avg', { step: '0.1' })}
+          </div>
+        </div>
+
+        {/* Submit */}
+        <button
+          type="submit"
+          disabled={saving || !selectedClinicId || selectedWeekIdx < 0}
+          className="w-full bg-emerald-500 text-black font-bold py-3.5 rounded-2xl hover:bg-emerald-400 transition-all flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          {saving ? (<><Loader2 className="h-5 w-5 animate-spin" /> Saving…</>) : (<><Save className="h-5 w-5" /> {existingRecord ? 'Update Analytics' : 'Save Analytics'}</>)}
+        </button>
+      </form>
+
+      {/* ── Existing entries table ── */}
+      {existingEntries.length > 0 && (
+        <div className="mt-8 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5">
+          <h3 className="text-lg font-bold mb-3">
+            Saved Entries for {clinics.find((c) => c.id === selectedClinicId)?.name || 'this clinic'}
+          </h3>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
@@ -272,29 +546,28 @@ export default function AnalyticsForm() {
                   <th className="text-left py-2 px-3 font-bold">Traffic</th>
                   <th className="text-left py-2 px-3 font-bold">Blogs</th>
                   <th className="text-left py-2 px-3 font-bold">GMB Calls</th>
-                  <th className="text-left py-2 px-3 font-bold">Meta Spend</th>
+                  <th className="text-left py-2 px-3 font-bold">Meta $</th>
+                  <th className="text-left py-2 px-3 font-bold">Google $</th>
                   <th className="text-right py-2 px-3 font-bold">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {existingData.map((item: any) => (
-                  <tr key={item.id} className="border-b border-slate-100 dark:border-slate-800">
-                    <td className="py-3 px-3">{item.weekLabel}</td>
-                    <td className="py-3 px-3">{item.totalTraffic}</td>
-                    <td className="py-3 px-3">{item.blogsPublished}</td>
-                    <td className="py-3 px-3">{item.callsRequested}</td>
-                    <td className="py-3 px-3">${item.metaAdSpend}</td>
-                    <td className="py-3 px-3 text-right">
-                      <button
-                        onClick={() => handleEdit(item)}
-                        className="px-3 py-1 bg-blue-500 text-white rounded-lg text-xs font-bold mr-2 hover:bg-blue-600"
-                      >
+                {existingEntries.map((item: any) => (
+                  <tr
+                    key={item.id}
+                    className={`border-b border-slate-100 dark:border-slate-800 ${existingRecord?.id === item.id ? 'bg-emerald-50 dark:bg-emerald-900/20' : ''}`}
+                  >
+                    <td className="py-2.5 px-3 font-medium">{item.weekLabel}</td>
+                    <td className="py-2.5 px-3">{item.totalTraffic.toLocaleString()}</td>
+                    <td className="py-2.5 px-3">{item.blogsPublished}</td>
+                    <td className="py-2.5 px-3">{item.callsRequested}</td>
+                    <td className="py-2.5 px-3">${item.metaAdSpend}</td>
+                    <td className="py-2.5 px-3">${item.googleTotalCost}</td>
+                    <td className="py-2.5 px-3 text-right space-x-1">
+                      <button type="button" onClick={() => handleEditFromTable(item)} className="px-2.5 py-1 bg-blue-500 text-white rounded-lg text-xs font-bold hover:bg-blue-600 transition-colors" title="Edit">
                         <Edit className="h-3 w-3 inline" />
                       </button>
-                      <button
-                        onClick={() => handleDelete(item.id)}
-                        className="px-3 py-1 bg-red-500 text-white rounded-lg text-xs font-bold hover:bg-red-600"
-                      >
+                      <button type="button" onClick={() => handleDelete(item.id)} className="px-2.5 py-1 bg-red-500 text-white rounded-lg text-xs font-bold hover:bg-red-600 transition-colors" title="Delete">
                         <Trash2 className="h-3 w-3 inline" />
                       </button>
                     </td>
@@ -305,484 +578,6 @@ export default function AnalyticsForm() {
           </div>
         </div>
       )}
-
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Error/Success Messages */}
-        {error && (
-          <div className="flex items-center gap-3 p-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-2xl text-red-700 dark:text-red-300">
-            <AlertCircle className="h-5 w-5 shrink-0" />
-            <span className="font-semibold">{error}</span>
-          </div>
-        )}
-        {submitted && (
-          <div className="flex items-center gap-3 p-4 bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 rounded-2xl text-emerald-700 dark:text-emerald-300">
-            <Check className="h-5 w-5 shrink-0" />
-            <span className="font-semibold">{editingId ? 'Analytics updated!' : 'Analytics saved!'}</span>
-          </div>
-        )}
-
-        {/* Clinic & Week Selection */}
-        <div className="rounded-2xl p-6 border border-slate-200 dark:border-slate-700 bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/50 dark:to-teal-950/50">
-          <h3 className="text-lg font-bold mb-4">📍 Clinic & Time Period</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div>
-              <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Clinic *</label>
-              <select
-                name="clinicId"
-                value={data.clinicId}
-                onChange={handleChange}
-                className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 dark:text-slate-200 focus:outline-none focus:border-emerald-500"
-                required
-              >
-                <option value="">Select Clinic</option>
-                {clinics.map(clinic => (
-                  <option key={clinic.id} value={clinic.id}>{clinic.name}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Year</label>
-              <input
-                type="number"
-                name="year"
-                value={data.year}
-                onChange={handleChange}
-                min="2020"
-                max="2030"
-                className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 dark:text-slate-200 focus:outline-none focus:border-emerald-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Month</label>
-              <select
-                name="month"
-                value={data.month}
-                onChange={handleChange}
-                className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 dark:text-slate-200 focus:outline-none focus:border-emerald-500"
-              >
-                {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map((m, i) => (
-                  <option key={i} value={i + 1}>{m}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Week #</label>
-              <select
-                name="weekNumber"
-                value={data.weekNumber}
-                onChange={handleChange}
-                className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 dark:text-slate-200 focus:outline-none focus:border-emerald-500"
-              >
-                <option value="1">Week 1</option>
-                <option value="2">Week 2</option>
-                <option value="3">Week 3</option>
-                <option value="4">Week 4</option>
-              </select>
-            </div>
-          </div>
-          {data.weekLabel && (
-            <div className="mt-3 text-sm font-bold text-emerald-700 dark:text-emerald-300">
-              Week Label: {data.weekLabel}
-            </div>
-          )}
-        </div>
-
-        {/* Content Section */}
-        <div className="rounded-2xl p-6 border border-slate-200 dark:border-slate-700 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/50 dark:to-pink-950/50">
-          <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-            <FileText className="h-5 w-5 text-purple-500" />
-            Content Metrics
-          </h3>
-          <div className="grid grid-cols-1 gap-4">
-            <div>
-              <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Blogs Published</label>
-              <input
-                type="number"
-                name="blogsPublished"
-                value={data.blogsPublished}
-                onChange={handleChange}
-                min="0"
-                className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 dark:text-slate-200 focus:outline-none focus:border-purple-500"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* SEO Section */}
-        <div className="rounded-2xl p-6 border border-slate-200 dark:border-slate-700 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/50 dark:to-cyan-950/50">
-          <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-            <TrendingUp className="h-5 w-5 text-blue-500" />
-            SEO Metrics
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Avg Ranking (lower is better)</label>
-              <input
-                type="number"
-                name="avgRanking"
-                value={data.avgRanking}
-                onChange={handleChange}
-                min="0"
-                step="0.1"
-                className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 dark:text-slate-200 focus:outline-none focus:border-blue-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Total Traffic</label>
-              <input
-                type="number"
-                name="totalTraffic"
-                value={data.totalTraffic}
-                onChange={handleChange}
-                min="0"
-                className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 dark:text-slate-200 focus:outline-none focus:border-blue-500"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* GMB Section */}
-        <div className="rounded-2xl p-6 border border-slate-200 dark:border-slate-700 bg-gradient-to-br from-orange-50 to-yellow-50 dark:from-orange-950/50 dark:to-yellow-950/50">
-          <h3 className="text-lg font-bold mb-4">📍 Google My Business</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Calls Requested</label>
-              <input
-                type="number"
-                name="callsRequested"
-                value={data.callsRequested}
-                onChange={handleChange}
-                min="0"
-                className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 dark:text-slate-200 focus:outline-none focus:border-orange-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Website Visits</label>
-              <input
-                type="number"
-                name="websiteVisits"
-                value={data.websiteVisits}
-                onChange={handleChange}
-                min="0"
-                className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 dark:text-slate-200 focus:outline-none focus:border-orange-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Direction Clicks</label>
-              <input
-                type="number"
-                name="directionClicks"
-                value={data.directionClicks}
-                onChange={handleChange}
-                min="0"
-                className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 dark:text-slate-200 focus:outline-none focus:border-orange-500"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Meta Ads Section */}
-        <div className="rounded-2xl p-6 border border-slate-200 dark:border-slate-700 bg-gradient-to-br from-indigo-50 to-blue-50 dark:from-indigo-950/50 dark:to-blue-950/50">
-          <h3 className="text-lg font-bold mb-4">📘 Meta Ads</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Impressions</label>
-              <input
-                type="number"
-                name="metaImpressions"
-                value={data.metaImpressions}
-                onChange={handleChange}
-                min="0"
-                className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 dark:text-slate-200 focus:outline-none focus:border-indigo-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Clicks</label>
-              <input
-                type="number"
-                name="metaClicks"
-                value={data.metaClicks}
-                onChange={handleChange}
-                min="0"
-                className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 dark:text-slate-200 focus:outline-none focus:border-indigo-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">CTR %</label>
-              <input
-                type="number"
-                name="metaCTR"
-                value={data.metaCTR}
-                onChange={handleChange}
-                min="0"
-                step="0.1"
-                className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 dark:text-slate-200 focus:outline-none focus:border-indigo-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Conversions</label>
-              <input
-                type="number"
-                name="metaConversions"
-                value={data.metaConversions}
-                onChange={handleChange}
-                min="0"
-                className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 dark:text-slate-200 focus:outline-none focus:border-indigo-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Ad Spend ($)</label>
-              <input
-                type="number"
-                name="metaAdSpend"
-                value={data.metaAdSpend}
-                onChange={handleChange}
-                min="0"
-                step="0.01"
-                className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 dark:text-slate-200 focus:outline-none focus:border-indigo-500"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Google Ads Section */}
-        <div className="rounded-2xl p-6 border border-slate-200 dark:border-slate-700 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/50 dark:to-emerald-950/50">
-          <h3 className="text-lg font-bold mb-4">🔍 Google Ads</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div>
-              <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Impressions</label>
-              <input
-                type="number"
-                name="googleImpressions"
-                value={data.googleImpressions}
-                onChange={handleChange}
-                min="0"
-                className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 dark:text-slate-200 focus:outline-none focus:border-green-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Clicks</label>
-              <input
-                type="number"
-                name="googleClicks"
-                value={data.googleClicks}
-                onChange={handleChange}
-                min="0"
-                className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 dark:text-slate-200 focus:outline-none focus:border-green-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">CTR %</label>
-              <input
-                type="number"
-                name="googleCTR"
-                value={data.googleCTR}
-                onChange={handleChange}
-                min="0"
-                step="0.1"
-                className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 dark:text-slate-200 focus:outline-none focus:border-green-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">CPC ($)</label>
-              <input
-                type="number"
-                name="googleCPC"
-                value={data.googleCPC}
-                onChange={handleChange}
-                min="0"
-                step="0.01"
-                className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 dark:text-slate-200 focus:outline-none focus:border-green-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Conversions</label>
-              <input
-                type="number"
-                name="googleConversions"
-                value={data.googleConversions}
-                onChange={handleChange}
-                min="0"
-                className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 dark:text-slate-200 focus:outline-none focus:border-green-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">CVR %</label>
-              <input
-                type="number"
-                name="googleCVR"
-                value={data.googleCVR}
-                onChange={handleChange}
-                min="0"
-                step="0.1"
-                className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 dark:text-slate-200 focus:outline-none focus:border-green-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Cost Per Conv ($)</label>
-              <input
-                type="number"
-                name="googleCostPerConversion"
-                value={data.googleCostPerConversion}
-                onChange={handleChange}
-                min="0"
-                step="0.01"
-                className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 dark:text-slate-200 focus:outline-none focus:border-green-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Total Cost ($)</label>
-              <input
-                type="number"
-                name="googleTotalCost"
-                value={data.googleTotalCost}
-                onChange={handleChange}
-                min="0"
-                step="0.01"
-                className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 dark:text-slate-200 focus:outline-none focus:border-green-500"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Social Media Section */}
-        <div className="rounded-2xl p-6 border border-slate-200 dark:border-slate-700 bg-gradient-to-br from-rose-50 to-pink-50 dark:from-rose-950/50 dark:to-pink-950/50">
-          <h3 className="text-lg font-bold mb-4">📱 Social Media</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Posts</label>
-              <input
-                type="number"
-                name="socialPosts"
-                value={data.socialPosts}
-                onChange={handleChange}
-                min="0"
-                className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 dark:text-slate-200 focus:outline-none focus:border-rose-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Views</label>
-              <input
-                type="number"
-                name="socialViews"
-                value={data.socialViews}
-                onChange={handleChange}
-                min="0"
-                className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 dark:text-slate-200 focus:outline-none focus:border-rose-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Patient Count</label>
-              <input
-                type="number"
-                name="patientCount"
-                value={data.patientCount}
-                onChange={handleChange}
-                min="0"
-                className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 dark:text-slate-200 focus:outline-none focus:border-rose-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Digital Conversion</label>
-              <input
-                type="number"
-                name="digitalConversion"
-                value={data.digitalConversion}
-                onChange={handleChange}
-                min="0"
-                className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 dark:text-slate-200 focus:outline-none focus:border-rose-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Conversion Rate %</label>
-              <input
-                type="number"
-                name="conversionRate"
-                value={data.conversionRate}
-                onChange={handleChange}
-                min="0"
-                step="0.1"
-                className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 dark:text-slate-200 focus:outline-none focus:border-rose-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Daily Patient Avg</label>
-              <input
-                type="number"
-                name="dailyPatientAvg"
-                value={data.dailyPatientAvg}
-                onChange={handleChange}
-                min="0"
-                step="0.1"
-                className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 dark:text-slate-200 focus:outline-none focus:border-rose-500"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Submit Button */}
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full bg-emerald-500 text-black font-bold py-4 rounded-2xl hover:bg-emerald-400 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
-        >
-          {loading ? (
-            <>
-              <Loader2 className="h-5 w-5 animate-spin" />
-              {editingId ? 'Updating...' : 'Saving...'}
-            </>
-          ) : (
-            <>
-              <Send className="h-5 w-5" />
-              {editingId ? 'Update Weekly Analytics' : 'Save Weekly Analytics'}
-            </>
-          )}
-        </button>
-        
-        {editingId && (
-          <button
-            type="button"
-            onClick={() => {
-              setEditingId(null);
-              setData({
-                ...data,
-                weekLabel: '',
-                year: currentYear,
-                month: currentMonth,
-                weekNumber: 1,
-                blogsPublished: 0,
-                avgRanking: 0,
-                totalTraffic: 0,
-                callsRequested: 0,
-                websiteVisits: 0,
-                directionClicks: 0,
-                metaImpressions: 0,
-                metaClicks: 0,
-                metaCTR: 0,
-                metaConversions: 0,
-                metaAdSpend: 0,
-                googleImpressions: 0,
-                googleClicks: 0,
-                googleCTR: 0,
-                googleCPC: 0,
-                googleConversions: 0,
-                googleCVR: 0,
-                googleCostPerConversion: 0,
-                googleTotalCost: 0,
-                socialPosts: 0,
-                socialViews: 0,
-                patientCount: 0,
-                digitalConversion: 0,
-                conversionRate: 0,
-                dailyPatientAvg: 0,
-              });
-            }}
-            className="w-full bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold py-3 rounded-2xl hover:bg-slate-300 dark:hover:bg-slate-600 transition-all"
-          >
-            Cancel Edit
-          </button>
-        )}
-      </form>
     </motion.div>
   );
 }

@@ -38,6 +38,8 @@ import {
   Lock,
   Eye,
   EyeOff,
+  Link2,
+  RefreshCw,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -69,6 +71,129 @@ function Modal({ isOpen, onClose, title, children }: { isOpen: boolean; onClose:
         </div>
         {children}
       </motion.div>
+    </div>
+  );
+}
+
+// Staff Management Section Component
+function StaffManagementSection({ users }: { users: any[] }) {
+  const [updatingUserId, setUpdatingUserId] = useState<string | null>(null);
+  const [updateMessage, setUpdateMessage] = useState<string>('');
+
+  const handleRoleUpdate = async (userId: string, newRole: 'admin' | 'client') => {
+    try {
+      setUpdatingUserId(userId);
+      const response = await fetch('/api/auth/update-role', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, role: newRole }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to update role');
+      }
+
+      setUpdateMessage(`✅ ${data.message}`);
+      
+      // Reload page after successful update
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
+    } catch (error) {
+      setUpdateMessage(`❌ Error updating role: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setUpdatingUserId(null);
+    }
+  };
+
+  return (
+    <div>
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold mb-2">Staff Management</h2>
+        <p className="text-slate-600 dark:text-slate-400">Manage user roles and permissions. Assign Admin or Client role to any user.</p>
+      </div>
+
+      {updateMessage && (
+        <div className={`mb-6 p-4 rounded-xl border ${updateMessage.includes('✅') ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400' : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-700 dark:text-red-400'}`}>
+          {updateMessage}
+        </div>
+      )}
+
+      <div className="overflow-x-auto">
+        <table className="w-full text-left">
+          <thead>
+            <tr className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-widest border-b border-slate-100 dark:border-slate-700">
+              <th className="px-4 py-4">Name</th>
+              <th className="px-4 py-4">Email</th>
+              <th className="px-4 py-4">Current Role</th>
+              <th className="px-4 py-4">Change Role</th>
+              <th className="px-4 py-4">Status</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
+            {users.length === 0 ? (
+              <tr>
+                <td colSpan={5} className="px-4 py-8 text-center text-slate-500 dark:text-slate-400">
+                  No users found
+                </td>
+              </tr>
+            ) : (
+              users.map(user => (
+                <tr key={user.id} className="hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                  <td className="px-4 py-4 font-bold">{user.name}</td>
+                  <td className="px-4 py-4 text-sm text-slate-600 dark:text-slate-400">{user.email}</td>
+                  <td className="px-4 py-4">
+                    <span className={`text-xs px-3 py-1 rounded-full font-bold ${
+                      user.role === 'admin' 
+                        ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400' 
+                        : 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400'
+                    }`}>
+                      {user.role}
+                    </span>
+                  </td>
+                  <td className="px-4 py-4">
+                    <div className="flex gap-2">
+                      {user.role !== 'admin' && (
+                        <button
+                          disabled={updatingUserId === user.id}
+                          onClick={() => handleRoleUpdate(user.id, 'admin')}
+                          className="text-xs bg-purple-500 text-white px-4 py-2 rounded-lg hover:bg-purple-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-bold"
+                        >
+                          {updatingUserId === user.id ? 'Updating...' : 'Make Admin'}
+                        </button>
+                      )}
+                      {user.role !== 'client' && (
+                        <button
+                          disabled={updatingUserId === user.id}
+                          onClick={() => handleRoleUpdate(user.id, 'client')}
+                          className="text-xs bg-emerald-500 text-black px-4 py-2 rounded-lg hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-bold"
+                        >
+                          {updatingUserId === user.id ? 'Updating...' : 'Make Client'}
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-4 py-4">
+                    <span className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 px-3 py-1 rounded-full">Active</span>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="mt-8 p-6 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl">
+        <h3 className="font-bold text-blue-900 dark:text-blue-300 mb-2">📋 Role Management Guide</h3>
+        <ul className="text-sm text-blue-800 dark:text-blue-400 space-y-1 list-disc list-inside">
+          <li><strong>Admin Users:</strong> Have full access to the admin dashboard, analytics engine, and system configuration</li>
+          <li><strong>Client Users:</strong> Can only access their assigned clinics on the client dashboard</li>
+          <li>Click "Make Admin" or "Make Client" to change a user's role immediately</li>
+          <li>After role change, the user will need to log in again to see the changes</li>
+        </ul>
+      </div>
     </div>
   );
 }
@@ -110,6 +235,21 @@ function AdminDashboardContent() {
   const [newClinicType, setNewClinicType] = useState('');
   const [newClinicLocation, setNewClinicLocation] = useState('');
   const [newClinicAssignedUser, setNewClinicAssignedUser] = useState('');
+  // Analytics refresh trigger – incremented after form saves
+  const [analyticsRefreshKey, setAnalyticsRefreshKey] = useState(0);
+
+  const [gmbState, setGmbState] = useState({
+    loading: false,
+    connecting: false,
+    syncing: false,
+    error: '',
+    message: '',
+    connection: null as any,
+    accounts: [] as any[],
+    locations: [] as any[],
+    selectedAccount: '',
+    selectedLocation: '',
+  });
 
   // Navigation functions
   const navigateToSection = (newSection: string) => {
@@ -306,6 +446,214 @@ function AdminDashboardContent() {
     }
   };
 
+  const fetchGmbConnection = async (clinicId: string) => {
+    setGmbState(prev => ({
+      ...prev,
+      loading: true,
+      error: '',
+      message: '',
+      accounts: [],
+      locations: [],
+      selectedAccount: '',
+      selectedLocation: '',
+    }));
+
+    try {
+      const connRes = await fetch(`/api/admin/gmb/connection?clinicId=${encodeURIComponent(clinicId)}`);
+      const connData = await connRes.json();
+      if (!connRes.ok) throw new Error(connData.error || 'Failed to load GMB connection');
+
+      const connection = connData.connection;
+      if (!connection) {
+        setGmbState(prev => ({
+          ...prev,
+          loading: false,
+          connection: null,
+          message: 'Connect Google to choose the correct business account and location.',
+        }));
+        return;
+      }
+
+      const accountsRes = await fetch(`/api/admin/gmb/accounts?clinicId=${encodeURIComponent(clinicId)}`);
+      const accountsData = await accountsRes.json();
+      if (!accountsRes.ok) throw new Error(accountsData.error || 'Failed to load Google accounts');
+
+      const selectedAccount = connection.businessAccountId || accountsData.accounts?.[0]?.name || '';
+      let locations: any[] = [];
+
+      if (selectedAccount) {
+        const locationsRes = await fetch(`/api/admin/gmb/locations?clinicId=${encodeURIComponent(clinicId)}&accountName=${encodeURIComponent(selectedAccount)}`);
+        const locationsData = await locationsRes.json();
+        if (!locationsRes.ok) throw new Error(locationsData.error || 'Failed to load account locations');
+        locations = locationsData.locations || [];
+      }
+
+      setGmbState(prev => ({
+        ...prev,
+        loading: false,
+        connection,
+        accounts: accountsData.accounts || [],
+        locations,
+        selectedAccount,
+        selectedLocation: connection.businessLocationId || '',
+        message: connection.businessLocationId
+          ? 'Google Business Profile connected. Daily sync is active.'
+          : 'Google connected. Select account and location to complete setup.',
+      }));
+    } catch (error: any) {
+      setGmbState(prev => ({
+        ...prev,
+        loading: false,
+        error: error?.message || 'Failed to load GMB status',
+      }));
+    }
+  };
+
+  const handleGmbConnect = () => {
+    if (!editingClinic?.id) return;
+
+    setGmbState(prev => ({ ...prev, connecting: true, error: '', message: '' }));
+
+    const popup = window.open(
+      `/api/admin/gmb/connect?clinicId=${encodeURIComponent(editingClinic.id)}`,
+      'gmb_oauth',
+      'width=560,height=720'
+    );
+
+    if (!popup) {
+      setGmbState(prev => ({
+        ...prev,
+        connecting: false,
+        error: 'Popup blocked. Please allow popups and try again.',
+      }));
+    }
+  };
+
+  const handleAccountChange = async (accountName: string) => {
+    if (!editingClinic?.id) return;
+
+    setGmbState(prev => ({
+      ...prev,
+      selectedAccount: accountName,
+      selectedLocation: '',
+      locations: [],
+      error: '',
+      message: '',
+    }));
+
+    if (!accountName) return;
+
+    try {
+      const locationsRes = await fetch(`/api/admin/gmb/locations?clinicId=${encodeURIComponent(editingClinic.id)}&accountName=${encodeURIComponent(accountName)}`);
+      const locationsData = await locationsRes.json();
+      if (!locationsRes.ok) throw new Error(locationsData.error || 'Failed to load locations');
+
+      setGmbState(prev => ({ ...prev, locations: locationsData.locations || [] }));
+    } catch (error: any) {
+      setGmbState(prev => ({
+        ...prev,
+        error: error?.message || 'Failed to load locations',
+      }));
+    }
+  };
+
+  const handleSaveGmbSelection = async () => {
+    if (!editingClinic?.id || !gmbState.selectedAccount || !gmbState.selectedLocation) return;
+
+    setGmbState(prev => ({ ...prev, loading: true, error: '', message: '' }));
+
+    try {
+      const res = await fetch('/api/admin/gmb/select-location', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          clinicId: editingClinic.id,
+          accountName: gmbState.selectedAccount,
+          locationName: gmbState.selectedLocation,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to save account/location');
+
+      await fetchGmbConnection(editingClinic.id);
+      setGmbState(prev => ({
+        ...prev,
+        message: data.warning
+          ? `Connected, but initial sync failed: ${data.warning}`
+          : 'Google Business Profile location saved. Daily sync is now enabled.',
+      }));
+    } catch (error: any) {
+      setGmbState(prev => ({
+        ...prev,
+        loading: false,
+        error: error?.message || 'Failed to save GMB location',
+      }));
+    }
+  };
+
+  const handleManualGmbSync = async () => {
+    if (!editingClinic?.id) return;
+
+    setGmbState(prev => ({ ...prev, syncing: true, error: '', message: '' }));
+
+    try {
+      const res = await fetch('/api/admin/gmb/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clinicId: editingClinic.id }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Manual sync failed');
+
+      await fetchGmbConnection(editingClinic.id);
+      setGmbState(prev => ({
+        ...prev,
+        syncing: false,
+        message: 'GMB data synced successfully.',
+      }));
+    } catch (error: any) {
+      setGmbState(prev => ({
+        ...prev,
+        syncing: false,
+        error: error?.message || 'Manual sync failed',
+      }));
+    }
+  };
+
+  useEffect(() => {
+    if (!showEditClinicModal || !editingClinic?.id) return;
+    fetchGmbConnection(editingClinic.id);
+  }, [showEditClinicModal, editingClinic?.id]);
+
+  useEffect(() => {
+    const onMessage = async (event: MessageEvent) => {
+      if (event.origin !== window.location.origin) return;
+
+      const data = event.data;
+      if (data?.type === 'GMB_OAUTH_SUCCESS' && editingClinic?.id && data.clinicId === editingClinic.id) {
+        await fetchGmbConnection(editingClinic.id);
+        setGmbState(prev => ({
+          ...prev,
+          connecting: false,
+          message: data.message || 'Google connected. Select account and location to finish setup.',
+        }));
+      }
+
+      if (data?.type === 'GMB_OAUTH_ERROR') {
+        setGmbState(prev => ({
+          ...prev,
+          connecting: false,
+          error: data.message || 'Google connection failed',
+        }));
+      }
+    };
+
+    window.addEventListener('message', onMessage);
+    return () => window.removeEventListener('message', onMessage);
+  }, [editingClinic?.id]);
+
   if (!user) return <div className={`min-h-screen flex items-center justify-center ${dark ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-900'}`}>Loading...</div>;
 
   return (
@@ -336,7 +684,7 @@ function AdminDashboardContent() {
         <nav className="space-y-2 flex-grow">
           <NavItem icon={LayoutDashboard} label="Global Stats" active={section==='Global Stats'} onClick={() => navigateToSection('Global Stats')} dark={dark} />
           <NavItem icon={BarChart3} label="Analytics" active={section==='Analytics'} onClick={() => navigateToSection('Analytics')} dark={dark} />
-          <NavItem icon={Users} label="Registered Clients" active={section==='Registered Clients'} onClick={() => navigateToSection('Registered Clients')} dark={dark} />
+          <NavItem icon={Users} label="Staff Management" active={section==='Staff Management'} onClick={() => navigateToSection('Staff Management')} dark={dark} />
           <NavItem icon={Globe} label="Client Sites" active={section==='Client Sites'} onClick={() => navigateToSection('Client Sites')} dark={dark} />
           <NavItem icon={Cpu} label="AI Models" active={section==='AI Models'} onClick={() => navigateToSection('AI Models')} dark={dark} />
           <NavItem icon={Database} label="Lead Database" active={section==='Lead Database'} onClick={() => navigateToSection('Lead Database')} dark={dark} />
@@ -401,6 +749,9 @@ function AdminDashboardContent() {
             setShowQuickAssignModal(true);
           }}
           isDark={dark}
+          analyticsRefreshKey={analyticsRefreshKey}
+          setAnalyticsRefreshKey={setAnalyticsRefreshKey}
+          socketRef={socketRef}
         />
       </main>
     </div>
@@ -541,7 +892,7 @@ function AdminDashboardContent() {
     </Modal>
 
     {/* Edit Clinic Modal */}
-    <Modal isOpen={showEditClinicModal} onClose={() => setShowEditClinicModal(false)} title="Edit Clinic">
+    <Modal isOpen={showEditClinicModal} onClose={() => setShowEditClinicModal(false)} title="Clinic Profile">
       {editingClinic && (
         <div className="space-y-4">
           <div>
@@ -577,6 +928,94 @@ function AdminDashboardContent() {
               className="w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 bg-white dark:bg-slate-800"
             />
           </div>
+
+          <div className="border border-slate-200 dark:border-slate-700 rounded-xl p-3 space-y-3">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-semibold">Google Business Profile (GMB)</p>
+              <button
+                onClick={handleGmbConnect}
+                disabled={gmbState.connecting || gmbState.loading}
+                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-blue-500 text-white text-xs font-bold hover:bg-blue-600 disabled:opacity-50"
+              >
+                <Link2 className="h-3.5 w-3.5" />
+                {gmbState.connection ? 'Reconnect Google' : 'Connect Google'}
+              </button>
+            </div>
+
+            <p className="text-[11px] text-slate-500 dark:text-slate-400">
+              Required scopes: business.manage, openid, email, profile.
+            </p>
+
+            {gmbState.connection && (
+              <div className="text-xs text-slate-600 dark:text-slate-300 space-y-1">
+                <p><span className="font-semibold">Google Account:</span> {gmbState.connection.googleEmail || '—'}</p>
+                <p><span className="font-semibold">Status:</span> {gmbState.connection.connectionStatus || '—'} • {gmbState.connection.syncStatus || 'idle'}</p>
+                <p><span className="font-semibold">Last Sync:</span> {gmbState.connection.lastSyncedAt ? new Date(gmbState.connection.lastSyncedAt).toLocaleString() : 'Never'}</p>
+              </div>
+            )}
+
+            {gmbState.accounts.length > 0 && (
+              <div>
+                <label className="block text-xs font-medium mb-1">Business Account</label>
+                <select
+                  value={gmbState.selectedAccount}
+                  onChange={(e) => handleAccountChange(e.target.value)}
+                  className="w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-800"
+                >
+                  <option value="">Select account...</option>
+                  {gmbState.accounts.map((account) => (
+                    <option key={account.name} value={account.name}>
+                      {account.accountName || account.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {gmbState.selectedAccount && (
+              <div>
+                <label className="block text-xs font-medium mb-1">Location</label>
+                <select
+                  value={gmbState.selectedLocation}
+                  onChange={(e) => setGmbState(prev => ({ ...prev, selectedLocation: e.target.value }))}
+                  className="w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-800"
+                >
+                  <option value="">Select location...</option>
+                  {gmbState.locations.map((location) => (
+                    <option key={location.name} value={location.name}>
+                      {location.title || location.name}{location.address ? ` — ${location.address}` : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            <div className="flex gap-2">
+              <button
+                onClick={handleSaveGmbSelection}
+                disabled={!gmbState.selectedAccount || !gmbState.selectedLocation || gmbState.loading}
+                className="flex-1 px-3 py-2 rounded-lg bg-emerald-500 text-black text-xs font-bold hover:bg-emerald-400 disabled:opacity-50"
+              >
+                Save Account & Location
+              </button>
+              <button
+                onClick={handleManualGmbSync}
+                disabled={!gmbState.connection?.businessLocationId || gmbState.syncing}
+                className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-200 dark:bg-slate-700 text-xs font-bold hover:bg-slate-300 dark:hover:bg-slate-600 disabled:opacity-50"
+              >
+                <RefreshCw className={`h-3.5 w-3.5 ${gmbState.syncing ? 'animate-spin' : ''}`} />
+                Sync Now
+              </button>
+            </div>
+
+            {gmbState.message && (
+              <p className="text-xs text-emerald-600 dark:text-emerald-400">{gmbState.message}</p>
+            )}
+            {gmbState.error && (
+              <p className="text-xs text-red-600 dark:text-red-400">{gmbState.error}</p>
+            )}
+          </div>
+
           <div className="flex gap-3 pt-2">
             <button
               onClick={handleEditClinic}
@@ -1025,6 +1464,9 @@ function ContentForSection(props: {
   onDeleteClient: (id: string) => void;
   onQuickAssign: (clinicId: string) => void;
   isDark: boolean;
+  analyticsRefreshKey: number;
+  setAnalyticsRefreshKey: React.Dispatch<React.SetStateAction<number>>;
+  socketRef: React.RefObject<Socket | null>;
 }) {
   const {
     section,
@@ -1046,7 +1488,10 @@ function ContentForSection(props: {
     onDeleteClinic,
     onDeleteClient,
     onQuickAssign,
-    isDark
+    isDark,
+    analyticsRefreshKey,
+    setAnalyticsRefreshKey,
+    socketRef,
   } = props;
 
   switch(section) {
@@ -1216,6 +1661,11 @@ function ContentForSection(props: {
             </div>
           </div>
         </>
+      );
+
+    case 'Staff Management':
+      return (
+        <StaffManagementSection users={users} />
       );
 
     case 'Registered Clients':
@@ -1510,17 +1960,24 @@ function ContentForSection(props: {
           <div>
             <h2 className="text-2xl font-black mb-2">📊 Analytics Dashboard</h2>
             <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
-              View performance metrics across all clinics and manage weekly data entry
+              Enter weekly data at the top — charts below update in real time after each save.
             </p>
           </div>
-          
-          {/* Analytics Charts */}
-          <AdminAnalyticsView isDark={isDark} />
-          
-          {/* Data Entry Form */}
-          <div className={`mt-12 pt-8 border-t ${isDark ? 'border-slate-700' : 'border-slate-200'}`}>
-            <h2 className="text-2xl font-black mb-6">📝 Enter Weekly Data</h2>
-            <AnalyticsForm />
+
+          {/* Data Entry Form – at the TOP */}
+          <AnalyticsForm
+            onSaved={() => {
+              setAnalyticsRefreshKey((k) => k + 1);
+              // Broadcast via socket so connected client dashboards refresh
+              if (socketRef.current) {
+                socketRef.current.emit('analytics_updated');
+              }
+            }}
+          />
+
+          {/* Analytics Charts – refreshed after every save */}
+          <div className={`pt-8 border-t ${isDark ? 'border-slate-700' : 'border-slate-200'}`}>
+            <AdminAnalyticsView isDark={isDark} refreshTrigger={analyticsRefreshKey} />
           </div>
         </div>
       );

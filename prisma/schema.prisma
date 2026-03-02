@@ -3,8 +3,8 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = "file:./dev.db"
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 // Blog models
@@ -193,6 +193,7 @@ model Clinic {
   
   clientAssignments ClientClinic[]
   weeklyAnalytics   WeeklyAnalytics[]
+  gmbConnection     GMBConnection?
   
   @@index([type])
 }
@@ -256,4 +257,85 @@ model WeeklyAnalytics {
   @@unique([clinicId, year, month, weekNumber])
   @@index([clinicId])
   @@index([year, month, weekNumber])
+}
+
+// Google Business Profile (GMB) Connection
+model GMBConnection {
+  id                    String   @id @default(cuid())
+  clinic                Clinic   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  clinicId              String   @unique
+  
+  // OAuth tokens
+  accessToken           String   // Encrypted in production
+  refreshToken          String?  // Optional, may not always be returned
+  tokenExpiry           DateTime?
+  
+  // Business account information
+  businessAccountId     String?  // From Google: "accounts/{accountId}"
+  businessLocationId    String?  // From Google: "locations/{locationId}"
+  businessName          String?  // e.g., "My Medical Practice"
+  locationName          String?  // Selected location name
+  locationAddress       String?  // Full address of the location
+  
+  // Connection metadata
+  googleEmail           String?  // Email used to authenticate
+  connectionStatus      String   @default("connected") // "connected", "disconnected", "refresh_failed"
+  
+  // Sync information
+  lastSyncedAt          DateTime?
+  nextSyncAt            DateTime?
+  syncStatus            String   @default("idle") // "idle", "syncing", "error"
+  lastSyncError         String?
+  
+  // Data storage
+  gmbData               GMBData[]
+  
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  
+  @@index([clinicId])
+  @@index([businessAccountId])
+  @@index([lastSyncedAt])
+}
+
+// Daily GMB metrics data
+model GMBData {
+  id                    String   @id @default(cuid())
+  gmbConnection        GMBConnection @relation(fields: [gmbConnectionId], references: [id], onDelete: Cascade)
+  gmbConnectionId      String
+  
+  // Date of metrics
+  date                  DateTime // Synced date from GMB
+  
+  // GMB Insights Metrics
+  views                 Int      @default(0)    // Profile views
+  discovery             Int      @default(0)    // Discovery (Google Maps, Search)
+  directionRequests     Int      @default(0)    // Direction requests
+  phoneImpressions      Int      @default(0)    // Phone call trigger impressions
+  phoneCalls            Int      @default(0)    // Actual phone calls
+  websiteClicks         Int      @default(0)    // Website link clicks
+  messageCount          Int      @default(0)    // Messages received
+  
+  // Reviews & Ratings
+  totalReviews          Int      @default(0)    // Total review count
+  averageRating         Float    @default(0)    // Average rating (out of 5)
+  newReviews            Int      @default(0)    // New reviews added this period
+  
+  // Q&A
+  questions             Int      @default(0)    // Active questions
+  answers               Int      @default(0)    // Answers provided
+  
+  // Posts (if applicable)
+  totalPosts            Int      @default(0)    // Total number of posts
+  activePosts           Int      @default(0)    // Posts active in feed
+  
+  // Business hours
+  isOpenNow             Boolean  @default(false)
+  
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  
+  @@unique([gmbConnectionId, date])
+  @@index([gmbConnectionId])
+  @@index([date])
 }
