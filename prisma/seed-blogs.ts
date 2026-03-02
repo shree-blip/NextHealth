@@ -25,7 +25,7 @@ Any automation tool used in healthcare must meet strict HIPAA requirements to pr
 - Access controls and audit logging.
 - Business Associate Agreements (BAAs) with vendors.
 
-## How NextGen Marketing Agency Can Help
+## How NexHealth Healthcare Marketing Can Help
 
 Our team specializes in building HIPAA-compliant automation solutions tailored to your clinic's needs. From AI-powered intake to secure messaging, we help you modernize without compromising compliance.
 
@@ -36,9 +36,9 @@ Our team specializes in building HIPAA-compliant automation solutions tailored t
 *Keywords: HIPAA automation, healthcare workflow, patient intake, compliance, AI in healthcare*
 `,
     coverImage: '/1.png',
-    seoTitle: 'HIPAA-Compliant Automation: Transforming Healthcare Workflows | NextGen Marketing Agency',
+    seoTitle: 'HIPAA-Compliant Automation: Transforming Healthcare Workflows | NexHealth Healthcare Marketing',
     metaDesc: 'Discover how HIPAA-compliant automation can streamline patient intake, reduce errors, and improve care outcomes for healthcare providers.',
-    canonical: 'https://nextgenmarketing.agency/blog/hipaa-compliant-automation-transforming-healthcare-workflows',
+    canonical: 'https://nexhealthmarketing.com/blog/hipaa-compliant-automation-transforming-healthcare-workflows',
     publishedAt: new Date('2026-02-15'),
   },
   {
@@ -73,9 +73,9 @@ One of our clients, a multi-location urgent care network, needed a patient intak
 *Keywords: custom software, healthcare, vibe coding, HIPAA, EHR integration*
 `,
     coverImage: '/2.png',
-    seoTitle: 'Custom Software for Healthcare: Why Vibe Coding Delivers Better Results | NextGen Marketing Agency',
+    seoTitle: 'Custom Software for Healthcare: Why Vibe Coding Delivers Better Results | NexHealth Healthcare Marketing',
     metaDesc: 'Learn why custom software built with vibe coding principles delivers intuitive, HIPAA-compliant solutions for healthcare providers.',
-    canonical: 'https://nextgenmarketing.agency/blog/custom-software-healthcare-vibe-coding',
+    canonical: 'https://nexhealthmarketing.com/blog/custom-software-healthcare-vibe-coding',
     publishedAt: new Date('2026-02-20'),
   },
   {
@@ -98,7 +98,7 @@ The healthcare marketing landscape is evolving rapidly. AI-powered tools now ena
 2. **HIPAA-Compliant Ad Targeting:** Use compliant data sources to reach the right audience.
 3. **Patient Journey Mapping:** Understand every touchpoint and optimize for conversion.
 
-## Why Work with NextGen Marketing Agency?
+## Why Work with NexHealth Healthcare Marketing?
 
 Our team combines deep healthcare expertise with cutting-edge AI tools to deliver measurable results. We've helped clinics across Texas increase new patient volume by 40% or more.
 
@@ -109,9 +109,9 @@ Our team combines deep healthcare expertise with cutting-edge AI tools to delive
 *Keywords: AI, patient acquisition, healthcare marketing, local SEO, HIPAA*
 `,
     coverImage: '/3.png',
-    seoTitle: 'AI-Powered Patient Acquisition: The Future of Healthcare Marketing | NextGen Marketing Agency',
+    seoTitle: 'AI-Powered Patient Acquisition: The Future of Healthcare Marketing | NexHealth Healthcare Marketing',
     metaDesc: 'Discover how AI is revolutionizing patient acquisition for healthcare providers and the strategies that work in 2026.',
-    canonical: 'https://nextgenmarketing.agency/blog/ai-powered-patient-acquisition-future-healthcare-marketing',
+    canonical: 'https://nexhealthmarketing.com/blog/ai-powered-patient-acquisition-future-healthcare-marketing',
     publishedAt: new Date('2026-02-28'),
   },
 ];

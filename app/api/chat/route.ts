@@ -1,18 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import prisma from '@/lib/prisma';
 
 export const dynamic = 'force-dynamic';
 export const fetchCache = 'force-no-store';
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY!;
-const prisma = new PrismaClient();
 
-const SYSTEM_PROMPT = `You are NextGen Healthcare Marketing's friendly 24/7 AI assistant. You help visitors with questions about the agency's services, pricing, and healthcare marketing.
+const SYSTEM_PROMPT = `You are NexHealth Healthcare Marketing's friendly 24/7 AI assistant. You help visitors with questions about our services, pricing, and healthcare marketing.
 
 ABOUT THE COMPANY:
-- NextGen Healthcare Marketing is a specialized digital marketing agency for healthcare providers
+- NexHealth Healthcare Marketing is a specialized digital healthcare marketing firm for healthcare providers
 - Located at 3811 Turtle Creek Blvd, Suite 600, Dallas, TX 75219
-- Email: info@nextgenhealthcaremarketing.com
+- Email: info@nexhealthmarketing.com
 - We serve ERs, urgent care centers, MedSpas, wellness clinics, dental offices, and other healthcare providers
 
 SERVICES WE OFFER:
@@ -181,7 +180,7 @@ export async function POST(req: NextRequest) {
     // Build Gemini conversation contents
     const contents = [
       { role: 'user', parts: [{ text: SYSTEM_PROMPT }] },
-      { role: 'model', parts: [{ text: 'Understood. I will act as NextGen Healthcare Marketing\'s AI assistant and follow all the guidelines provided.' }] },
+      { role: 'model', parts: [{ text: 'Understood. I will act as NexHealth Healthcare Marketing\'s AI assistant and follow all the guidelines provided.' }] },
       ...recentMessages.map((m) => ({
         role: m.role === 'user' ? 'user' : 'model',
         parts: [{ text: m.content }],

@@ -4,8 +4,8 @@ import Footer from '@/components/Footer';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Terms of Service | NextGen Marketing Agency',
-  description: 'Terms of Service for NextGen Marketing Agency.',
+  title: 'Terms of Service | NexHealth Healthcare Marketing',
+  description: 'Terms of Service for NexHealth Healthcare Marketing.',
 };
 
 export default function TermsOfService() {
@@ -27,12 +27,12 @@ export default function TermsOfService() {
             
             <h2 className="text-2xl font-bold mt-10 mb-4 text-slate-900">1. Acceptance of Terms</h2>
             <p className="text-slate-600 mb-6">
-              By accessing and using the NextGen Marketing Agency website (nextgenmarketing.agency) and our services, you accept and agree to be bound by the terms and provision of this agreement. In addition, when using these particular services, you shall be subject to any posted guidelines or rules applicable to such services.
+              By accessing and using the NexHealth Healthcare Marketing website (nexhealthmarketing.com) and our services, you accept and agree to be bound by the terms and provision of this agreement. In addition, when using these particular services, you shall be subject to any posted guidelines or rules applicable to such services.
             </p>
 
             <h2 className="text-2xl font-bold mt-10 mb-4 text-slate-900">2. Description of Service</h2>
             <p className="text-slate-600 mb-6">
-              NextGen Marketing Agency provides healthcare marketing and automation services, including but not limited to local SEO, paid advertising management, and AI-driven patient intake automation. We reserve the right to modify, suspend, or discontinue any aspect of our services at any time.
+              NexHealth Healthcare Marketing provides healthcare marketing and automation services, including but not limited to local SEO, paid advertising management, and AI-driven patient intake automation. We reserve the right to modify, suspend, or discontinue any aspect of our services at any time.
             </p>
 
             <h2 className="text-2xl font-bold mt-10 mb-4 text-slate-900">3. User Conduct</h2>
@@ -47,7 +47,7 @@ export default function TermsOfService() {
 
             <h2 className="text-2xl font-bold mt-10 mb-4 text-slate-900">5. Limitation of Liability</h2>
             <p className="text-slate-600 mb-6">
-              NextGen Marketing Agency shall not be liable for any special or consequential damages that result from the use of, or the inability to use, the services and products offered on this site, or the performance of the services and products.
+              NexHealth Healthcare Marketing shall not be liable for any special or consequential damages that result from the use of, or the inability to use, the services and products offered on this site, or the performance of the services and products.
             </p>
 
             <h2 className="text-2xl font-bold mt-10 mb-4 text-slate-900">6. Governing Law</h2>

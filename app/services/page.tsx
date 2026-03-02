@@ -8,10 +8,10 @@ import { Search, Megaphone, ShieldCheck, Globe, MessageSquare, Activity, MapPin,
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Medical SEO & Healthcare Marketing Services | NextGen Marketing Agency',
+  title: 'Medical SEO & Healthcare Marketing Services | NexHealth Healthcare Marketing',
   description: 'Comprehensive healthcare marketing services including Local SEO, Google Ads, Reputation Management, and HIPAA-compliant web design for Texas clinics.',
   alternates: {
-    canonical: 'https://nextgenmarketing.agency/services',
+    canonical: 'https://nexhealthmarketing.com/services',
   }
 };
 
@@ -21,7 +21,7 @@ const schema = {
   "serviceType": "Healthcare Marketing and SEO",
   "provider": {
     "@type": "ProfessionalService",
-    "name": "NextGen Marketing Agency",
+    "name": "NexHealth Healthcare Marketing",
     "address": {
       "@type": "PostalAddress",
       "streetAddress": "3001 Skyway Cir N",
@@ -41,8 +41,8 @@ const faqs = [
     a: "Local SEO is a foundational strategy. While initial optimizations to your Google Business Profile and technical on-page SEO can yield improvements within 30-60 days, establishing true dominance in competitive Texas markets like Dallas or Houston typically requires 3-6 months of sustained effort. This involves building authoritative local citations, generating consistent patient reviews, and publishing high-quality, E-E-A-T compliant medical content."
   },
   {
-    q: "What makes your Paid Media strategies different from a general agency?",
-    a: "General marketing agencies bid on broad keywords that drain your budget. As a specialized healthcare agency, we utilize hyper-targeted, high-acuity keyword strategies. For an ER, we bid on 'chest pain near me' rather than 'doctor'. We also deploy advanced geofencing around competitor clinics and utilize HIPAA-compliant tracking to measure actual patient acquisition cost (CAC), not just clicks."
+    q: "What makes your Paid Media strategies different from a general firm?",
+    a: "General marketing firms bid on broad keywords that drain your budget. As a specialized healthcare marketing firm, we utilize hyper-targeted, high-acuity keyword strategies. For an ER, we bid on 'chest pain near me' rather than 'doctor'. We also deploy advanced geofencing around competitor clinics and utilize HIPAA-compliant tracking to measure actual patient acquisition cost (CAC), not just clicks."
   },
   {
     q: "Why is HIPAA compliance necessary for a clinic's website?",

@@ -72,7 +72,7 @@ export default function ServicesSection() {
           viewport={{ once: true }}
           className="text-center mb-16"
         >
-          <h2 className="text-4xl font-black text-slate-900 mb-4">{t('Our services')}</h2>
+          <h2 className="text-3xl font-black text-slate-900 mb-4">{t('Our services')}</h2>
           <p className="text-xl text-slate-600 max-w-2xl mx-auto">
             {t('Everything your healthcare practice needs to own the digital space.')}
           </p>
@@ -93,6 +93,8 @@ export default function ServicesSection() {
                     <img 
                       src={service.image} 
                       alt={service.title} 
+                      loading="lazy"
+                      decoding="async"
                       className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                     />
                   </div>

@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   description: 'Expert Google Ads management for healthcare practices. High-converting PPC campaigns that fill your waiting room with qualified patients ready to book appointments.',
   keywords: 'Google Ads for doctors, healthcare PPC, medical lead generation, Google Ads management',
   alternates: {
-    canonical: 'https://nextgenmarketing.agency/services/google-ads',
+    canonical: 'https://nexhealthmarketing.com/services/google-ads',
   }
 };
 

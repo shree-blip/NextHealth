@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   description: 'Healthcare content and copywriting that educates, engages, and converts. E-E-A-T optimized medical content building trust and authority.',
   keywords: 'healthcare content marketing, medical copywriting, patient education content, healthcare blog, doctor content strategy',
   alternates: {
-    canonical: 'https://nextgenmarketing.agency/services/content-copywriting',
+    canonical: 'https://nexhealthmarketing.com/services/content-copywriting',
   }
 };
 

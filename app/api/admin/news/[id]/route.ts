@@ -1,7 +1,5 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import prisma from '@/lib/prisma';
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -25,6 +23,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       excerpt: body.excerpt || null,
       content: body.content,
       coverImage: body.coverImage || null,
+      coverImageAlt: body.coverImageAlt || null,
       source: body.source || null,
       seoTitle: body.seoTitle || null,
       metaDesc: body.metaDesc || null,

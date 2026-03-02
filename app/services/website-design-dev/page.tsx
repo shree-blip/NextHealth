@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   description: 'Fast, beautiful, conversion-optimized websites for medical practices. HIPAA-compliant healthcare web design that turns visitors into appointments.',
   keywords: 'medical website design, healthcare web development, doctor website, clinic website design, HIPAA-compliant web design',
   alternates: {
-    canonical: 'https://nextgenmarketing.agency/services/website-design-dev',
+    canonical: 'https://nexhealthmarketing.com/services/website-design-dev',
   }
 };
 

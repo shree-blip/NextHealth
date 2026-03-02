@@ -184,7 +184,7 @@
   "settings": { "executionOrder": "v1" },
   "meta": {
     "templateCredsSetupCompleted": false,
-    "instanceId": "nextgen-chatbot-lead-capture"
+    "instanceId": "nexhealth-chatbot-lead-capture"
   },
   "tags": [{ "name": "Healthcare" }, { "name": "AI" }, { "name": "Chatbot" }, { "name": "Lead Generation" }]
 }

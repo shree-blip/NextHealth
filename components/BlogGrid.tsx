@@ -57,7 +57,7 @@ export default function BlogGrid({ posts }: { posts: Post[] }) {
               <BookOpen className="h-4 w-4" />
               {t('Healthcare Marketing Insights')}
             </div>
-            <h1 className={`text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight mb-6 ${isDark ? 'text-white' : 'text-slate-900'}`}>
+            <h1 className={`text-2xl sm:text-3xl font-extrabold tracking-tight mb-6 ${isDark ? 'text-white' : 'text-slate-900'}`}>
               {t('Expert')} <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-500 to-blue-500">{t('Insights')}</span>
             </h1>
             <p className={`text-lg sm:text-xl max-w-3xl mx-auto ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>

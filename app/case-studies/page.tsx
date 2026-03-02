@@ -8,10 +8,10 @@ import WhoWeServe from '@/components/landing/WhoWeServe';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Case Studies | Healthcare Marketing | NextGen Marketing Agency',
+  title: 'Case Studies | Healthcare Marketing | NexHealth Healthcare Marketing',
   description: 'See real case studies of healthcare practices we have helped grow. Results from clinics, urgent cares, and ERs across Texas.',
   alternates: {
-    canonical: 'https://nextgenmarketing.agency/case-studies',
+    canonical: 'https://nexhealthmarketing.com/case-studies',
   }
 };
 
@@ -125,7 +125,7 @@ export default function CaseStudiesPage() {
       <section className="py-24 bg-gradient-to-br from-emerald-500 to-emerald-600">
         <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 text-center">
           <FadeIn>
-            <h2 className="text-4xl md:text-5xl font-black text-white mb-6">
+            <h2 className="text-3xl font-black text-white mb-6">
               Ready to Become a Success Story?
             </h2>
             <p className="text-xl text-emerald-100 mb-8">

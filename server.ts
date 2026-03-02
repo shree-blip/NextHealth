@@ -21,14 +21,10 @@ const dev = process.env.NODE_ENV !== 'production';
 const app = next({ dev });
 const handle = app.getRequestHandler();
 
-// Mock Database
+// Mock Database (for in-memory caching, backed by Prisma)
 const db = {
   users: [] as any[],
-  clinics: [
-    { id: 'c1', name: 'Dallas ER', type: 'ER', location: 'Dallas, TX', leads: 120, appointments: 45 },
-    { id: 'c2', name: 'Houston Urgent Care', type: 'Urgent Care', location: 'Houston, TX', leads: 300, appointments: 150 },
-    { id: 'c3', name: 'Austin Wellness', type: 'Wellness', location: 'Austin, TX', leads: 80, appointments: 20 },
-  ],
+  clinics: [] as any[],
   assignments: [] as { userId: string, clinicId: string }[],
 };
 
@@ -52,7 +48,7 @@ app.prepare().then(() => {
   // Only parse JSON for Express-handled routes; skip for Next.js App Router API routes
   // to avoid consuming the request body stream before Next.js can read it
   server.use((req, res, next) => {
-    const nextAppRoutes = ['/api/chat', '/api/posts', '/api/admin'];
+    const nextAppRoutes = ['/api/chat', '/api/posts', '/api/admin', '/api/analytics/weekly', '/api/client', '/api/newsletter', '/api/contact-lead', '/api/news', '/api/auth'];
     if (nextAppRoutes.some((r) => req.path.startsWith(r))) {
       return next();
     }
@@ -152,12 +148,38 @@ app.prepare().then(() => {
     }
   });
 
-  server.get('/api/auth/me', (req, res) => {
+  server.get('/api/auth/me', async (req, res) => {
     const token = req.cookies.auth_token;
     if (!token) return res.status(401).json({ error: 'Not authenticated' });
     try {
       const decoded = jwt.verify(token, JWT_SECRET) as any;
-      const user = db.users.find(u => u.id === decoded.id);
+      let user = db.users.find(u => u.id === decoded.id);
+
+      // Fallback to Prisma DB if user not in memory cache
+      if (!user) {
+        try {
+          const dbUser = await prisma.user.findUnique({ where: { id: decoded.id } });
+          if (dbUser) {
+            const userObj = {
+              id: dbUser.id,
+              email: dbUser.email,
+              name: dbUser.name,
+              role: dbUser.role,
+              avatar: dbUser.avatar,
+              plan: dbUser.plan,
+              planId: dbUser.planId,
+              stripeCustomerId: dbUser.stripeCustomerId,
+              stripeSubscriptionId: dbUser.stripeSubscriptionId,
+              subscriptionStatus: dbUser.subscriptionStatus,
+            };
+            db.users.push(userObj);
+            user = userObj;
+          }
+        } catch (dbErr) {
+          console.error('Prisma fallback error:', dbErr);
+        }
+      }
+
       if (!user) return res.status(401).json({ error: 'User not found' });
       res.json({ id: user.id, email: user.email, name: user.name, role: user.role, avatar: user.avatar || null });
     } catch (e) {
@@ -175,70 +197,173 @@ app.prepare().then(() => {
   });
 
   // Email/Password Login
-  server.post('/api/auth/login', (req, res) => {
+  server.post('/api/auth/login', async (req, res) => {
     const { email, password } = req.body;
     
     if (!email || !password) {
       return res.status(400).json({ error: 'Email and password required' });
     }
 
-    // Auto-detect role from email
+    // Auto-detect role from email (for new users)
     const detectedRole = (email.includes('admin') || email === 'shree@focusyourfinance.com') ? 'admin' : 'client';
 
-    // Find or create user
-    let user = db.users.find(u => u.email === email);
-    
-    if (!user) {
-      user = {
-        id: Math.random().toString(36).substr(2, 9),
-        email,
-        name: email.split('@')[0],
-        role: detectedRole,
-        avatar: null,
-        password
-      };
-      db.users.push(user);
-    }
+    try {
+      // Find user from database
+      let user = await prisma.user.findUnique({ where: { email } });
+      
+      if (!user) {
+        return res.status(401).json({ error: 'No account found with this email. Please contact your administrator.' });
+      }
 
-    // Generate JWT token
-    const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
+      // Verify password
+      if (user.password !== password) {
+        return res.status(401).json({ error: 'Invalid password' });
+      }
 
-    res.cookie('auth_token', token, {
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      httpOnly: true,
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-      path: '/',
-    });
-
-    res.json({
-      user: {
+      // Update in-memory cache
+      const userObj = {
         id: user.id,
         email: user.email,
         name: user.name,
         role: user.role,
-        avatar: user.avatar || null,
-      },
-      success: true
-    });
+        avatar: user.avatar,
+        plan: user.plan,
+        planId: user.planId,
+        stripeCustomerId: user.stripeCustomerId,
+        stripeSubscriptionId: user.stripeSubscriptionId,
+        subscriptionStatus: user.subscriptionStatus
+      };
+      const existingIndex = db.users.findIndex(u => u.id === user.id);
+      if (existingIndex >= 0) {
+        db.users[existingIndex] = userObj;
+      } else {
+        db.users.push(userObj);
+      }
+
+      // Generate JWT token
+      const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
+
+      res.cookie('auth_token', token, {
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        httpOnly: true,
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+        path: '/',
+      });
+
+      res.json({
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          role: user.role,
+          avatar: user.avatar || null,
+        },
+        success: true
+      });
+    } catch (err) {
+      console.error('Login error:', err);
+      res.status(500).json({ error: 'Login failed' });
+    }
   });
 
   // Profile Update
-  server.patch('/api/auth/profile', (req, res) => {
+  server.patch('/api/auth/profile', async (req, res) => {
     const token = req.cookies.auth_token;
     if (!token) return res.status(401).json({ error: 'Not authenticated' });
 
     try {
       const decoded = jwt.verify(token, JWT_SECRET) as any;
-      const user = db.users.find(u => u.id === decoded.id);
+      const user = await prisma.user.findUnique({ where: { id: decoded.id } });
       if (!user) return res.status(401).json({ error: 'User not found' });
 
       const { name, avatar } = req.body;
-      if (name) user.name = name;
-      if (avatar !== undefined) user.avatar = avatar;
+      const updateData: any = {};
+      if (name) updateData.name = name;
+      if (avatar !== undefined) updateData.avatar = avatar;
 
-      res.json({ id: user.id, email: user.email, name: user.name, role: user.role, avatar: user.avatar || null });
+      const updatedUser = await prisma.user.update({
+        where: { id: user.id },
+        data: updateData
+      });
+
+      // Update in-memory cache
+      const cachedUser = db.users.find(u => u.id === user.id);
+      if (cachedUser) {
+        if (name) cachedUser.name = name;
+        if (avatar !== undefined) cachedUser.avatar = avatar;
+      }
+
+      res.json({ id: updatedUser.id, email: updatedUser.email, name: updatedUser.name, role: updatedUser.role, avatar: updatedUser.avatar || null });
     } catch (e) {
+      console.error('Profile update error:', e);
+      res.status(401).json({ error: 'Invalid token' });
+    }
+  });
+
+  // Password Settings
+  server.get('/api/auth/password', async (req, res) => {
+    const token = req.cookies.auth_token;
+    if (!token) return res.status(401).json({ error: 'Not authenticated' });
+
+    try {
+      const decoded = jwt.verify(token, JWT_SECRET) as any;
+      const user = await prisma.user.findUnique({ where: { id: decoded.id } });
+      if (!user) return res.status(401).json({ error: 'User not found' });
+
+      res.json({
+        currentPassword: user.password,
+        role: user.role,
+      });
+    } catch (e) {
+      console.error('Get password settings error:', e);
+      res.status(401).json({ error: 'Invalid token' });
+    }
+  });
+
+  server.patch('/api/auth/password', async (req, res) => {
+    const token = req.cookies.auth_token;
+    if (!token) return res.status(401).json({ error: 'Not authenticated' });
+
+    try {
+      const decoded = jwt.verify(token, JWT_SECRET) as any;
+      const user = await prisma.user.findUnique({ where: { id: decoded.id } });
+      if (!user) return res.status(401).json({ error: 'User not found' });
+
+      const { currentPassword, newPassword, confirmPassword } = req.body || {};
+
+      if (!currentPassword || !newPassword || !confirmPassword) {
+        return res.status(400).json({ error: 'All password fields are required' });
+      }
+
+      if (user.password !== currentPassword) {
+        return res.status(400).json({ error: 'Current password is incorrect' });
+      }
+
+      if (newPassword.length < 6) {
+        return res.status(400).json({ error: 'New password must be at least 6 characters' });
+      }
+
+      if (newPassword !== confirmPassword) {
+        return res.status(400).json({ error: 'New password and confirmation do not match' });
+      }
+
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { password: newPassword },
+      });
+
+      const cachedUser = db.users.find(u => u.id === user.id);
+      if (cachedUser) {
+        cachedUser.password = newPassword;
+      }
+
+      res.json({
+        message: 'Password updated successfully',
+        currentPassword: newPassword,
+      });
+    } catch (e) {
+      console.error('Update password error:', e);
       res.status(401).json({ error: 'Invalid token' });
     }
   });
@@ -471,12 +596,27 @@ app.prepare().then(() => {
       return res.status(401).json({ error: 'Invalid token' });
     }
 
-    const user = db.users.find(u => u.id === decoded.id);
+    let user = db.users.find(u => u.id === decoded.id);
+    if (!user) {
+      try {
+        const dbUser = await prisma.user.findUnique({ where: { id: decoded.id } });
+        if (dbUser) {
+          user = { id: dbUser.id, email: dbUser.email, name: dbUser.name, role: dbUser.role };
+          db.users.push(user);
+        }
+      } catch (e) { /* ignore */ }
+    }
     if (!user) return res.status(401).json({ error: 'User not found' });
 
     try {
+      const clinicId = req.query.clinicId as string | undefined;
+      const whereClause: any = { userId: user.id };
+      if (clinicId) {
+        whereClause.clinicId = clinicId;
+      }
+      
       const analytics = await prisma.analyticsData.findMany({
-        where: { userId: user.id },
+        where: whereClause,
         orderBy: { date: 'desc' },
         take: 90 // Last 90 days
       });
@@ -499,12 +639,27 @@ app.prepare().then(() => {
       return res.status(401).json({ error: 'Invalid token' });
     }
 
-    const user = db.users.find(u => u.id === decoded.id);
+    let user = db.users.find(u => u.id === decoded.id);
+    if (!user) {
+      try {
+        const dbUser = await prisma.user.findUnique({ where: { id: decoded.id } });
+        if (dbUser) {
+          user = { id: dbUser.id, email: dbUser.email, name: dbUser.name, role: dbUser.role };
+          db.users.push(user);
+        }
+      } catch (e) { /* ignore */ }
+    }
     if (!user) return res.status(401).json({ error: 'User not found' });
 
     try {
+      const clinicId = req.query.clinicId as string | undefined;
+      const whereClause: any = { userId: user.id };
+      if (clinicId) {
+        whereClause.clinicId = clinicId;
+      }
+
       const analytics = await prisma.analyticsData.findMany({
-        where: { userId: user.id },
+        where: whereClause,
         orderBy: { date: 'desc' }
       });
 
@@ -540,37 +695,340 @@ app.prepare().then(() => {
     }
   });
 
+  // GET /api/analytics/by-clinic – get analytics grouped by clinic for multi-location view
+  server.get('/api/analytics/by-clinic', async (req, res) => {
+    const token = req.cookies.auth_token;
+    if (!token) return res.status(401).json({ error: 'Not authenticated' });
+
+    let decoded: any;
+    try {
+      decoded = jwt.verify(token, JWT_SECRET) as any;
+    } catch {
+      return res.status(401).json({ error: 'Invalid token' });
+    }
+
+    let user = db.users.find(u => u.id === decoded.id);
+    if (!user) {
+      try {
+        const dbUser = await prisma.user.findUnique({ where: { id: decoded.id } });
+        if (dbUser) {
+          user = { id: dbUser.id, email: dbUser.email, name: dbUser.name, role: dbUser.role };
+          db.users.push(user);
+        }
+      } catch (e) { /* ignore */ }
+    }
+    if (!user) return res.status(401).json({ error: 'User not found' });
+
+    try {
+      // Get all assigned clinics for this user
+      const assignments = await prisma.clientClinic.findMany({
+        where: { userId: user.id },
+        include: { clinic: true },
+      });
+
+      // Get analytics data per clinic
+      const result = await Promise.all(
+        assignments.map(async (assignment) => {
+          const clinicAnalytics = await prisma.analyticsData.findMany({
+            where: { userId: user!.id, clinicId: assignment.clinicId },
+            orderBy: { date: 'desc' },
+            take: 90,
+          });
+
+          const totalClicks = clinicAnalytics.reduce((s, a) => s + a.gscClicks, 0);
+          const totalImpressions = clinicAnalytics.reduce((s, a) => s + a.gscImpressions, 0);
+          const totalPhoneCalls = clinicAnalytics.reduce((s, a) => s + a.gmbPhoneCalls, 0);
+          const totalWebsiteClicks = clinicAnalytics.reduce((s, a) => s + a.gmbWebsiteClicks, 0);
+          const totalDirectionRequests = clinicAnalytics.reduce((s, a) => s + a.gmbDirectionRequests, 0);
+          const totalActions = clinicAnalytics.reduce((s, a) => s + a.gmbActions, 0);
+          const avgCtr = clinicAnalytics.length > 0 ? clinicAnalytics.reduce((s, a) => s + a.gscCtr, 0) / clinicAnalytics.length : 0;
+          const avgPosition = clinicAnalytics.length > 0 ? clinicAnalytics.reduce((s, a) => s + a.gscAvgPosition, 0) / clinicAnalytics.length : 0;
+
+          return {
+            clinic: {
+              id: assignment.clinic.id,
+              name: assignment.clinic.name,
+              type: assignment.clinic.type,
+              location: assignment.clinic.location,
+            },
+            summary: {
+              totalClicks,
+              totalImpressions,
+              avgCtr,
+              avgPosition,
+              totalPhoneCalls,
+              totalWebsiteClicks,
+              totalDirectionRequests,
+              totalActions,
+              dataPoints: clinicAnalytics.length,
+            },
+            data: clinicAnalytics.map(a => ({
+              date: a.date,
+              clicks: a.gscClicks,
+              impressions: a.gscImpressions,
+              ctr: a.gscCtr,
+              position: a.gscAvgPosition,
+              calls: a.gmbPhoneCalls,
+              websiteClicks: a.gmbWebsiteClicks,
+              directions: a.gmbDirectionRequests,
+              profileViews: a.gmbProfileViews,
+              reviews: a.gmbReviewCount,
+            })).reverse(),
+          };
+        })
+      );
+
+      // Also get "all locations" aggregate
+      const allAnalytics = await prisma.analyticsData.findMany({
+        where: { userId: user.id },
+        orderBy: { date: 'desc' },
+        take: 90,
+      });
+
+      const allSummary = {
+        totalClicks: allAnalytics.reduce((s, a) => s + a.gscClicks, 0),
+        totalImpressions: allAnalytics.reduce((s, a) => s + a.gscImpressions, 0),
+        avgCtr: allAnalytics.length > 0 ? allAnalytics.reduce((s, a) => s + a.gscCtr, 0) / allAnalytics.length : 0,
+        avgPosition: allAnalytics.length > 0 ? allAnalytics.reduce((s, a) => s + a.gscAvgPosition, 0) / allAnalytics.length : 0,
+        totalPhoneCalls: allAnalytics.reduce((s, a) => s + a.gmbPhoneCalls, 0),
+        totalWebsiteClicks: allAnalytics.reduce((s, a) => s + a.gmbWebsiteClicks, 0),
+        totalDirectionRequests: allAnalytics.reduce((s, a) => s + a.gmbDirectionRequests, 0),
+        totalActions: allAnalytics.reduce((s, a) => s + a.gmbActions, 0),
+        dataPoints: allAnalytics.length,
+      };
+
+      res.json({
+        clinics: result,
+        allLocations: {
+          summary: allSummary,
+          data: allAnalytics.map(a => ({
+            date: a.date,
+            clinicId: a.clinicId,
+            clicks: a.gscClicks,
+            impressions: a.gscImpressions,
+            ctr: a.gscCtr,
+            position: a.gscAvgPosition,
+            calls: a.gmbPhoneCalls,
+            websiteClicks: a.gmbWebsiteClicks,
+            directions: a.gmbDirectionRequests,
+            profileViews: a.gmbProfileViews,
+            reviews: a.gmbReviewCount,
+          })).reverse(),
+        },
+      });
+    } catch (err) {
+      console.error('Analytics by-clinic error:', err);
+      res.status(500).json({ error: 'Failed to fetch analytics by clinic' });
+    }
+  });
+
   // Socket.io Logic
-  io.on('connection', (socket) => {
+  io.on('connection', async (socket) => {
     console.log('Client connected:', socket.id);
 
-    // Send initial state
-    socket.emit('initial_state', {
-      clinics: db.clinics,
-      assignments: db.assignments,
-      users: db.users
-    });
+    // Load data from database and send initial state
+    try {
+      const users = await prisma.user.findMany({
+        orderBy: { createdAt: 'desc' }
+      });
+      const clinics = await prisma.clinic.findMany({
+        orderBy: { createdAt: 'desc' }
+      });
+      const assignmentsRaw = await prisma.clientClinic.findMany();
+      const assignments = assignmentsRaw.map(a => ({ userId: a.userId, clinicId: a.clinicId }));
 
-    socket.on('assign_clinic', (data: { userId: string, clinicId: string }) => {
-      // Idempotent check
-      const exists = db.assignments.find(a => a.userId === data.userId && a.clinicId === data.clinicId);
-      if (!exists) {
-        db.assignments.push(data);
+      // Update in-memory cache
+      db.users = users.map(u => ({
+        id: u.id,
+        email: u.email,
+        name: u.name,
+        role: u.role,
+        avatar: u.avatar,
+        plan: u.plan,
+        planId: u.planId,
+        stripeCustomerId: u.stripeCustomerId,
+        stripeSubscriptionId: u.stripeSubscriptionId,
+        subscriptionStatus: u.subscriptionStatus,
+        createdAt: u.createdAt.toISOString()
+      }));
+      db.clinics = clinics.map(c => ({
+        id: c.id,
+        name: c.name,
+        type: c.type,
+        location: c.location,
+        leads: c.leads,
+        appointments: c.appointments
+      }));
+      db.assignments = assignments;
+
+      socket.emit('initial_state', {
+        clinics: db.clinics,
+        assignments: db.assignments,
+        users: db.users
+      });
+    } catch (err) {
+      console.error('Failed to load initial state:', err);
+      socket.emit('initial_state', { clinics: [], assignments: [], users: [] });
+    }
+
+    socket.on('assign_clinic', async (data: { userId: string, clinicId: string }) => {
+      try {
+        await prisma.clientClinic.upsert({
+          where: { userId_clinicId: { userId: data.userId, clinicId: data.clinicId } },
+          create: { userId: data.userId, clinicId: data.clinicId },
+          update: {}
+        });
+        const exists = db.assignments.find(a => a.userId === data.userId && a.clinicId === data.clinicId);
+        if (!exists) {
+          db.assignments.push(data);
+        }
         io.emit('assignment_added', data);
+      } catch (err) {
+        console.error('Failed to assign clinic:', err);
       }
     });
 
-    socket.on('remove_assignment', (data: { userId: string, clinicId: string }) => {
-      db.assignments = db.assignments.filter(a => !(a.userId === data.userId && a.clinicId === data.clinicId));
-      io.emit('assignment_removed', data);
+    socket.on('remove_assignment', async (data: { userId: string, clinicId: string }) => {
+      try {
+        await prisma.clientClinic.deleteMany({
+          where: { userId: data.userId, clinicId: data.clinicId }
+        });
+        db.assignments = db.assignments.filter(a => !(a.userId === data.userId && a.clinicId === data.clinicId));
+        io.emit('assignment_removed', data);
+      } catch (err) {
+        console.error('Failed to remove assignment:', err);
+      }
     });
 
-    socket.on('update_clinic_stats', (data: { clinicId: string, leads: number, appointments: number }) => {
-      const clinic = db.clinics.find(c => c.id === data.clinicId);
-      if (clinic) {
-        clinic.leads = data.leads;
-        clinic.appointments = data.appointments;
-        io.emit('clinic_updated', clinic);
+    socket.on('update_clinic_stats', async (data: { clinicId: string, leads: number, appointments: number }) => {
+      try {
+        const updated = await prisma.clinic.update({
+          where: { id: data.clinicId },
+          data: { leads: data.leads, appointments: data.appointments }
+        });
+        const clinic = db.clinics.find(c => c.id === data.clinicId);
+        if (clinic) {
+          clinic.leads = data.leads;
+          clinic.appointments = data.appointments;
+        }
+        io.emit('clinic_updated', { ...clinic, ...data });
+      } catch (err) {
+        console.error('Failed to update clinic stats:', err);
+      }
+    });
+
+    // Add new client
+    socket.on('add_client', async (data: { name: string, email: string, password?: string, role?: string }) => {
+      try {
+        const exists = await prisma.user.findUnique({ where: { email: data.email } });
+        if (!exists) {
+          const newUser = await prisma.user.create({
+            data: {
+              email: data.email,
+              name: data.name,
+              password: data.password || 'defaultpass123', // In production, hash this
+              role: data.role || 'client' // Support both 'client' and 'admin' roles
+            }
+          });
+          const userObj = {
+            id: newUser.id,
+            email: newUser.email,
+            name: newUser.name,
+            role: newUser.role,
+            avatar: newUser.avatar,
+            createdAt: newUser.createdAt.toISOString()
+          };
+          db.users.push(userObj);
+          io.emit('client_added', userObj);
+        } else {
+          socket.emit('error', { message: 'User with this email already exists' });
+        }
+      } catch (err) {
+        console.error('Failed to add client:', err);
+        socket.emit('error', { message: 'Failed to add client' });
+      }
+    });
+
+    // Add new clinic
+    socket.on('add_clinic', async (data: { name: string, type: string, location: string, assignedUserId?: string | null }) => {
+      try {
+        const newClinic = await prisma.clinic.create({
+          data: {
+            name: data.name,
+            type: data.type,
+            location: data.location,
+            leads: 0,
+            appointments: 0
+          }
+        });
+        const clinicObj = {
+          id: newClinic.id,
+          name: newClinic.name,
+          type: newClinic.type,
+          location: newClinic.location,
+          leads: newClinic.leads,
+          appointments: newClinic.appointments
+        };
+        db.clinics.push(clinicObj);
+        io.emit('clinic_added', clinicObj);
+
+        // If assignedUserId is provided, automatically create the assignment
+        if (data.assignedUserId) {
+          const assignmentExists = db.assignments.find(a => a.userId === data.assignedUserId && a.clinicId === newClinic.id);
+          if (!assignmentExists) {
+            db.assignments.push({ userId: data.assignedUserId, clinicId: newClinic.id });
+            io.emit('assignment_updated', { userId: data.assignedUserId, clinicId: newClinic.id });
+          }
+        }
+      } catch (err) {
+        console.error('Failed to add clinic:', err);
+        socket.emit('error', { message: 'Failed to add clinic' });
+      }
+    });
+
+    // Update clinic
+    socket.on('update_clinic', async (data: { id: string, name: string, type: string, location: string }) => {
+      try {
+        const updated = await prisma.clinic.update({
+          where: { id: data.id },
+          data: { name: data.name, type: data.type, location: data.location }
+        });
+        const clinic = db.clinics.find(c => c.id === data.id);
+        if (clinic) {
+          clinic.name = data.name;
+          clinic.type = data.type;
+          clinic.location = data.location;
+        }
+        io.emit('clinic_updated', { ...clinic, ...data });
+      } catch (err) {
+        console.error('Failed to update clinic:', err);
+        socket.emit('error', { message: 'Failed to update clinic' });
+      }
+    });
+
+    // Delete clinic
+    socket.on('delete_clinic', async (data: { id: string }) => {
+      try {
+        await prisma.clinic.delete({ where: { id: data.id } });
+        db.clinics = db.clinics.filter(c => c.id !== data.id);
+        db.assignments = db.assignments.filter(a => a.clinicId !== data.id);
+        io.emit('clinic_deleted', data);
+      } catch (err) {
+        console.error('Failed to delete clinic:', err);
+        socket.emit('error', { message: 'Failed to delete clinic' });
+      }
+    });
+
+    // Delete client
+    socket.on('delete_client', async (data: { id: string }) => {
+      try {
+        await prisma.user.delete({ where: { id: data.id } });
+        db.users = db.users.filter(u => u.id !== data.id);
+        db.assignments = db.assignments.filter(a => a.userId !== data.id);
+        io.emit('client_deleted', data);
+      } catch (err) {
+        console.error('Failed to delete client:', err);
+        socket.emit('error', { message: 'Failed to delete client' });
       }
     });
 

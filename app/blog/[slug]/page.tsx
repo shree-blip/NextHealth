@@ -14,7 +14,7 @@ import BlogPostMeta from '@/components/BlogPostMeta';
 const prisma = new PrismaClient();
 export const revalidate = 300; // 5 minutes
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://nextgenhealthcaremarketing.com';
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://nexhealthmarketing.com';
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
@@ -75,7 +75,7 @@ export default async function BlogPost({ params }: { params: Promise<{ slug: str
     } : undefined,
     publisher: {
       '@type': 'Organization',
-      name: 'NextGen Healthcare Marketing',
+      name: 'NexHealth Healthcare Marketing',
       url: SITE_URL,
     },
     mainEntityOfPage: {
@@ -86,15 +86,15 @@ export default async function BlogPost({ params }: { params: Promise<{ slug: str
   };
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-50">
+    <main className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(blogSchema) }}
       />
       <Navbar />
       <article className="mx-auto max-w-5xl py-12 sm:py-16 px-4 sm:px-6 lg:px-8">
-        <header className="rounded-3xl border border-slate-200 bg-white shadow-sm p-6 sm:p-10">
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-slate-900 leading-tight">
+        <header className="rounded-3xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm p-6 sm:p-10">
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-slate-900 dark:text-white leading-tight">
             {post.title}
           </h1>
 
@@ -108,7 +108,7 @@ export default async function BlogPost({ params }: { params: Promise<{ slug: str
         </header>
 
         {post.coverImage && (
-          <div className="relative w-full h-64 sm:h-80 lg:h-[28rem] mt-8 rounded-3xl overflow-hidden border border-slate-200 shadow-sm">
+          <div className="relative w-full h-64 sm:h-80 lg:h-[28rem] mt-8 rounded-3xl overflow-hidden border border-slate-200 dark:border-slate-700 shadow-sm">
             <Image src={post.coverImage} alt={post.title} fill className="object-cover" />
           </div>
         )}
@@ -121,16 +121,21 @@ export default async function BlogPost({ params }: { params: Promise<{ slug: str
           <TableOfContents html={post.content} />
         </div>
 
-        <div className="mt-6 rounded-3xl border border-slate-200 bg-white shadow-sm p-6 sm:p-10">
+        <div className="mt-6 rounded-3xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm p-6 sm:p-10">
           <div
             data-article-content
-            className="prose prose-slate prose-lg max-w-none
-              prose-headings:font-bold prose-headings:tracking-tight prose-headings:text-slate-900
-              prose-h2:text-2xl prose-h2:mt-10 prose-h2:mb-4
-              prose-h3:text-xl prose-h3:mt-8 prose-h3:mb-3
-              prose-p:text-slate-700 prose-p:leading-relaxed
-              prose-li:text-slate-700
-              prose-a:text-emerald-600 prose-a:no-underline hover:prose-a:underline"
+            className="prose prose-slate prose-lg sm:prose-xl max-w-none
+              prose-headings:font-bold prose-headings:tracking-tight prose-headings:text-slate-900 dark:prose-headings:text-white
+              prose-h2:text-2xl sm:prose-h2:text-3xl prose-h2:mt-10 prose-h2:mb-4
+              prose-h3:text-xl sm:prose-h3:text-2xl prose-h3:mt-8 prose-h3:mb-3
+              prose-p:text-base sm:prose-p:text-lg prose-p:text-slate-700 dark:prose-p:text-slate-300 prose-p:leading-relaxed
+              prose-li:text-base sm:prose-li:text-lg prose-li:text-slate-700 dark:prose-li:text-slate-300
+              prose-strong:text-slate-900 dark:prose-strong:text-white
+              prose-a:text-emerald-600 dark:prose-a:text-emerald-400 prose-a:no-underline hover:prose-a:underline
+              prose-code:text-slate-900 dark:prose-code:text-slate-100
+              prose-pre:bg-slate-900 dark:prose-pre:bg-slate-950
+              prose-blockquote:text-slate-700 dark:prose-blockquote:text-slate-300 prose-blockquote:border-slate-300 dark:prose-blockquote:border-slate-600
+              prose-img:rounded-xl"
             dangerouslySetInnerHTML={{ __html: post.content }}
           />
         </div>

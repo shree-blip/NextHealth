@@ -1,0 +1,212 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+// Blog models
+model Post {
+  id             Int       @id @default(autoincrement())
+  title          String
+  slug           String    @unique
+  excerpt        String?
+  content        String    // could be Markdown or richtext stored as plain text
+  coverImage     String?
+  coverImageAlt  String?
+  seoTitle       String?
+  metaDesc       String?
+  canonical      String?
+  publishedAt    DateTime?
+  updatedAt      DateTime  @updatedAt
+  author         Author?   @relation(fields: [authorId], references: [id])
+  authorId       Int?
+  categories     Category[] @relation("PostCategories")
+  tags           Tag[]      @relation("PostTags")
+  comments       Comment[]  @relation("PostComments")
+}
+
+model Author {
+  id        Int     @id @default(autoincrement())
+  name      String
+  email     String  @unique
+  avatar    String?
+  posts     Post[]
+}
+
+model Category {
+  id    Int    @id @default(autoincrement())
+  name  String @unique
+  posts Post[] @relation("PostCategories")
+}
+
+model Tag {
+  id    Int    @id @default(autoincrement())
+  name  String @unique
+  posts Post[] @relation("PostTags")
+}
+
+model Comment {
+  id          Int      @id @default(autoincrement())
+  post        Post     @relation(fields: [postId], references: [id], name: "PostComments")
+  postId      Int
+  author      String
+  content     String
+  publishedAt DateTime @default(now())
+  approved    Boolean  @default(false)
+}
+// Analytics Models - Google Search Console & Google My Business
+
+// Healthcare News model
+model NewsArticle {
+  id             Int       @id @default(autoincrement())
+  title          String
+  slug           String    @unique
+  excerpt        String?
+  content        String
+  coverImage     String?
+  coverImageAlt  String?
+  source         String?    // e.g. "FDA", "CDC", "Reuters Health"
+  seoTitle       String?
+  metaDesc       String?
+  publishedAt    DateTime?
+  updatedAt      DateTime  @updatedAt
+}
+
+model AnalyticsData {
+  id                    Int       @id @default(autoincrement())
+  userId                String    // from auth system
+  clinicId              String?   // optional clinic association
+  date                  DateTime  @default(now())
+  
+  // Google Search Console metrics
+  gscClicks             Int       @default(0)
+  gscImpressions        Int       @default(0)
+  gscCtr                Float     @default(0)
+  gscAvgPosition        Float     @default(0)
+  
+  // Google My Business metrics
+  gmbPhoneCalls         Int       @default(0)
+  gmbWebsiteClicks      Int       @default(0)
+  gmbDirectionRequests  Int       @default(0)
+  gmbActions            Int       @default(0)
+  gmbProfileViews       Int       @default(0)
+  gmbReviewCount        Int       @default(0)
+  
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  
+  @@index([userId])
+  @@index([clinicId])
+  @@index([date])
+}
+
+model ChatSession {
+  id            String        @id @default(cuid())
+  sessionKey    String        @unique
+  visitorId     String?
+  language      String?
+  startedAt     DateTime      @default(now())
+  lastMessageAt DateTime      @updatedAt
+  summary       String?
+  report        String?
+  messages      ChatMessage[]
+
+  @@index([startedAt])
+  @@index([lastMessageAt])
+}
+
+model ChatMessage {
+  id         Int         @id @default(autoincrement())
+  session    ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  sessionId  String
+  role       String
+  content    String
+  createdAt  DateTime    @default(now())
+
+  @@index([sessionId])
+  @@index([createdAt])
+}
+
+// Newsletter Subscribers (from footer)
+model NewsletterSubscriber {
+  id          Int      @id @default(autoincrement())
+  email       String   @unique
+  subscribedAt DateTime @default(now())
+  active      Boolean  @default(true)
+  source      String?  // e.g., "footer", "blog-sidebar"
+  
+  @@index([subscribedAt])
+}
+
+// Contact Leads (from various forms)
+model ContactLead {
+  id           Int      @id @default(autoincrement())
+  name         String
+  email        String
+  phone        String?
+  businessType String?  // e.g., "ER", "MedSpa", "Urgent Care"
+  budget       String?
+  message      String?
+  source       String?  // e.g., "hero-form", "contact-page", "pricing-cta"
+  status       String   @default("new")  // "new", "contacted", "qualified", "closed"
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  @@index([createdAt])
+  @@index([status])
+}
+
+// User Accounts (for authentication and profile management)
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String   // In production, this would be hashed
+  name      String
+  role      String   // "client" or "admin"
+  avatar    String?  // URL to profile image
+  plan      String?  // Subscription plan name
+  planId    String?  // Subscription plan ID
+  stripeCustomerId     String?
+  stripeSubscriptionId String?
+  subscriptionStatus   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  clinicAssignments ClientClinic[]
+  
+  @@index([email])
+  @@index([role])
+}
+
+// Clinic/Site model for client sites
+model Clinic {
+  id          String   @id @default(cuid())
+  name        String
+  type        String   // "ER", "Urgent Care", "Wellness", "MedSpa", etc.
+  location    String
+  leads       Int      @default(0)
+  appointments Int     @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  clientAssignments ClientClinic[]
+  
+  @@index([type])
+}
+
+// Many-to-many relationship between Clients and Clinics
+model ClientClinic {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  clinic    Clinic   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  clinicId  String
+  assignedAt DateTime @default(now())
+  
+  @@unique([userId, clinicId])
+  @@index([userId])
+  @@index([clinicId])
+}

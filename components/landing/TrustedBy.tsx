@@ -15,7 +15,7 @@ const logos = [
 
 const testimonials = [
   {
-    quote: "NextGen tripled our leads in three months and improved our Google ranking beyond our expectations.",
+    quote: "NexHealth tripled our leads in three months and improved our Google ranking beyond our expectations.",
     author: "Dr. Sarah Chen",
     title: "Medical Director, GlowMed Spa",
     image: "/Client-review-image/review-1.jpg",
@@ -61,9 +61,9 @@ export default function TrustedBy() {
           viewport={{ once: true }}
           className="text-center mb-16"
         >
-          <h2 className={`text-4xl font-black mb-4 ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('Trusted by healthcare leaders')}</h2>
+          <h2 className={`text-3xl font-black mb-4 ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('Trusted by healthcare leaders')}</h2>
           <p className={`text-xl max-w-2xl mx-auto ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
-            {t('Join the practices that have transformed their patient acquisition with NextGen.')}
+            {t('Join the practices that have transformed their patient acquisition with NexHealth.')}
           </p>
         </motion.div>
 
@@ -77,7 +77,13 @@ export default function TrustedBy() {
           <div className="flex flex-wrap justify-center items-center gap-8 opacity-60">
             {logos.map((logo, idx) => (
               <div key={idx} className="grayscale hover:grayscale-0 transition-all">
-                <img src={logo.image} alt={logo.name} className="h-12 w-auto object-contain" />
+                <img
+                  src={logo.image}
+                  alt={logo.name}
+                  loading="lazy"
+                  decoding="async"
+                  className="h-12 w-auto object-contain"
+                />
               </div>
             ))}
           </div>
@@ -107,6 +113,8 @@ export default function TrustedBy() {
                 <img 
                   src={localizedTestimonials[currentTestimonial].image} 
                   alt={localizedTestimonials[currentTestimonial].author}
+                  loading="lazy"
+                  decoding="async"
                   className="w-16 h-16 rounded-full object-cover"
                 />
                 <div className="text-left">

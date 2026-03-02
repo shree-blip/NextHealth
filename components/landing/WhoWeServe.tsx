@@ -37,7 +37,13 @@ function FlipCard({ audience, index }: { audience: AudienceCard, index: number }
           className="absolute inset-0 rounded-2xl overflow-hidden shadow-xl"
           style={{ backfaceVisibility: 'hidden' }}
         >
-          <img src={audience.image} alt={audience.title} className="w-full h-full object-cover" />
+          <img
+            src={audience.image}
+            alt={audience.title}
+            loading="lazy"
+            decoding="async"
+            className="w-full h-full object-cover"
+          />
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
           <div className="absolute bottom-0 left-0 right-0 p-6">
             <div className="text-4xl mb-2">{audience.icon}</div>
@@ -93,7 +99,7 @@ export default function WhoWeServe() {
           viewport={{ once: true }}
           className="text-center mb-16"
         >
-          <h2 className={`text-4xl font-black mb-4 ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('Who we serve')}</h2>
+          <h2 className={`text-3xl font-black mb-4 ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('Who we serve')}</h2>
           <p className={`text-xl max-w-2xl mx-auto ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
             {t('We exclusively serve healthcare practices that want to dominate their market.')}
           </p>

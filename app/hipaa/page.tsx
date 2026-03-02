@@ -4,8 +4,8 @@ import Footer from '@/components/Footer';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'HIPAA Compliance | NextGen Marketing Agency',
-  description: 'HIPAA Compliance Statement for NextGen Marketing Agency.',
+  title: 'HIPAA Compliance | NexHealth Healthcare Marketing',
+  description: 'HIPAA Compliance Statement for NexHealth Healthcare Marketing.',
 };
 
 export default function HIPAACompliance() {
@@ -26,12 +26,12 @@ export default function HIPAACompliance() {
             
             <h2 className="text-2xl font-bold mt-10 mb-4 text-slate-900">Our Commitment to Security</h2>
             <p className="text-slate-600 mb-6">
-              At NextGen Marketing Agency, we understand that protecting patient data is not just a regulatory requirement, but a fundamental trust between healthcare providers and their patients. We are fully committed to complying with the Health Insurance Portability and Accountability Act (HIPAA) and the Health Information Technology for Economic and Clinical Health (HITECH) Act.
+              At NexHealth Healthcare Marketing, we understand that protecting patient data is not just a regulatory requirement, but a fundamental trust between healthcare providers and their patients. We are fully committed to complying with the Health Insurance Portability and Accountability Act (HIPAA) and the Health Information Technology for Economic and Clinical Health (HITECH) Act.
             </p>
 
             <h2 className="text-2xl font-bold mt-10 mb-4 text-slate-900">Business Associate Agreements (BAA)</h2>
             <p className="text-slate-600 mb-6">
-              As a marketing and automation partner for healthcare facilities, NextGen Marketing Agency acts as a Business Associate. We execute comprehensive Business Associate Agreements (BAAs) with all our covered entity clients before handling any Protected Health Information (PHI).
+              As a marketing and automation partner for healthcare facilities, NexHealth Healthcare Marketing acts as a Business Associate. We execute comprehensive Business Associate Agreements (BAAs) with all our covered entity clients before handling any Protected Health Information (PHI).
             </p>
 
             <h2 className="text-2xl font-bold mt-10 mb-4 text-slate-900">Technical Safeguards</h2>
@@ -44,7 +44,7 @@ export default function HIPAACompliance() {
 
             <h2 className="text-2xl font-bold mt-10 mb-4 text-slate-900">Administrative Safeguards</h2>
             <ul className="list-disc pl-6 text-slate-600 mb-6 space-y-2">
-              <li><strong>Employee Training:</strong> All NextGen Marketing Agency employees undergo mandatory, rigorous HIPAA compliance training upon hire and annually thereafter.</li>
+              <li><strong>Employee Training:</strong> All NexHealth Healthcare Marketing employees undergo mandatory, rigorous HIPAA compliance training upon hire and annually thereafter.</li>
               <li><strong>Policies and Procedures:</strong> We maintain documented security policies and procedures that are regularly reviewed and updated.</li>
               <li><strong>Incident Response:</strong> We have a formal incident response plan in place to rapidly address and report any potential security breaches.</li>
             </ul>
@@ -57,7 +57,7 @@ export default function HIPAACompliance() {
             <h2 className="text-2xl font-bold mt-10 mb-4 text-slate-900">Contact Our Privacy Officer</h2>
             <p className="text-slate-600 mb-6">
               If you have any questions about our HIPAA compliance program or need to report a security concern, please contact our Privacy Officer at:<br />
-              privacy@nextgenmarketing.agency<br />
+              privacy@nexhealthmarketing.com<br />
               3001 Skyway Cir N, Irving, TX 75038
             </p>
           </div>

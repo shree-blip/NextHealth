@@ -118,7 +118,7 @@ const newsArticles = [
 <h2>How to Prepare Your Practice</h2>
 <p>Healthcare marketing agencies and in-house teams should immediately audit their existing campaigns, website content, and advertising materials to ensure compliance with the new guidelines. Early preparation will prevent costly penalties and protect your practice's reputation.</p>
 
-<p>At NextGen Marketing Agency, we specialize in HIPAA-compliant, regulation-aware healthcare marketing. Contact us for a free compliance audit of your current marketing materials.</p>`,
+<p>At NexHealth Healthcare Marketing, we specialize in HIPAA-compliant, regulation-aware healthcare marketing. Contact us for a free compliance audit of your current marketing materials.</p>`,
     coverImage: '/3.png',
     source: 'CMS / Modern Healthcare',
     seoTitle: 'CMS Healthcare Marketing Compliance Changes 2026 - What You Need to Know',

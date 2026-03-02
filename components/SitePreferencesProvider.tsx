@@ -43,8 +43,11 @@ export function SitePreferencesProvider({ children }: { children: React.ReactNod
 
   useEffect(() => {
     localStorage.setItem(THEME_KEY, theme);
-    document.documentElement.classList.remove('theme-light', 'theme-dark');
+    document.documentElement.classList.remove('theme-light', 'theme-dark', 'dark');
     document.documentElement.classList.add(theme === 'dark' ? 'theme-dark' : 'theme-light');
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    }
   }, [theme]);
 
   const value = useMemo(

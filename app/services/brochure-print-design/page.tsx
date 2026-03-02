@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   description: 'Professional brochure and print design for medical practices. Premium materials that elevate your practice and extend your digital branding to offline touchpoints.',
   keywords: 'healthcare brochure design, medical print design, clinic flyers, patient education materials, healthcare collateral',
   alternates: {
-    canonical: 'https://nextgenmarketing.agency/services/brochure-print-design',
+    canonical: 'https://nexhealthmarketing.com/services/brochure-print-design',
   }
 };
 

@@ -168,7 +168,7 @@
   "settings": { "executionOrder": "v1" },
   "meta": {
     "templateCredsSetupCompleted": false,
-    "instanceId": "nextgen-social-autoposter"
+    "instanceId": "nexhealth-social-autoposter"
   },
   "tags": [{ "name": "Healthcare" }, { "name": "Social Media" }, { "name": "AI Content" }, { "name": "Marketing" }]
 }

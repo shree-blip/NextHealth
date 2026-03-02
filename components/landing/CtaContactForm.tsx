@@ -61,7 +61,13 @@ export default function CtaContactForm() {
     <section className={`py-24 relative overflow-hidden ${isDark ? 'bg-gradient-to-br from-emerald-900 via-slate-900 to-emerald-800' : 'bg-gradient-to-br from-emerald-50 via-white to-blue-50'}`}>
       {/* Background image */}
       <div className={`absolute inset-0 ${isDark ? 'opacity-20' : 'opacity-10'}`}>
-        <img src="/11.png" alt="" className="w-full h-full object-cover" />
+        <img
+          src="/11.png"
+          alt=""
+          loading="lazy"
+          decoding="async"
+          className="w-full h-full object-cover"
+        />
       </div>
       <div className={`absolute inset-0 ${isDark ? 'bg-black/40' : 'bg-white/30'}`} />
 
@@ -73,7 +79,7 @@ export default function CtaContactForm() {
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
           >
-            <h2 className={`text-4xl lg:text-5xl font-black mb-6 ${isDark ? 'text-white' : 'text-slate-900'}`}>
+            <h2 className={`text-3xl font-black mb-6 ${isDark ? 'text-white' : 'text-slate-900'}`}>
               {t('Ready to dominate your market?')}
             </h2>
             <p className={`text-xl mb-8 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>

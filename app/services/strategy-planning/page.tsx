@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   description: 'Strategic healthcare marketing planning and custom marketing roadmaps aligned with your clinic growth goals. Data-driven strategy for sustainable patient acquisition.',
   keywords: 'healthcare marketing strategy, medical marketing plan, clinic growth strategy, healthcare marketing roadmap',
   alternates: {
-    canonical: 'https://nextgenmarketing.agency/services/strategy-planning',
+    canonical: 'https://nexhealthmarketing.com/services/strategy-planning',
   }
 };
 
@@ -99,7 +99,7 @@ export default function StrategyPlanningPage() {
         'Channel-specific tactics: what specific initiatives in each marketing channel',
         'Timeline and sequencing: optimal order and timing for implementing tactics',
         'Budget allocation: recommended spend across channels based on market analysis',
-        'Team requirements: internal staffing and external agency roles needed',
+        'Team requirements: internal staffing and external partner roles needed',
         'Technology stack recommendations: essential marketing tools and platforms',
         'Key performance indicators (KPIs) and success metrics for each channel'
       ]
@@ -134,8 +134,8 @@ export default function StrategyPlanningPage() {
       a: 'The initial planning phase typically takes 2-4 weeks depending on clinic complexity and data availability. We need time for research, competitive analysis, and stakeholder interviews. Once the initial plan is created, we transition to quarterly reviews (1-2 weeks each) for ongoing optimization and adjustment.'
     },
     {
-      q: 'Should we use an internal marketing person or agency?',
-      a: 'Depends on your size and complexity. Larger clinics ($5M+ revenue) often benefit from internal marketing leadership plus agency specialists. Smaller clinics are more cost-efficient with an agency managing everything. We\'ve helped clinics set up internal teams with agency oversight (hybrid model). The strategy should drive this decision.'
+      q: 'Should we use an internal marketing person or marketing partner?',
+      a: 'Depends on your size and complexity. Larger clinics ($5M+ revenue) often benefit from internal marketing leadership plus marketing specialists. Smaller clinics are more cost-efficient with a firm managing everything. We\'ve helped clinics set up internal teams with partner oversight (hybrid model). The strategy should drive this decision.'
     },
     {
       q: 'How do we measure if strategy is working?',
@@ -151,7 +151,7 @@ export default function StrategyPlanningPage() {
     },
     {
       q: 'Can we implement the roadmap ourselves?',
-      a: 'Some clinics do, but most find working with an agency more effective. Implementing a comprehensive marketing strategy requires specialized skills (SEO, paid ads, content creation, analytics). We recommend a hybrid approach: we recommend strategy, you execute some tactics with support, we execute specialized tactics. We\'ll outline internal vs. agency roles in the roadmap.'
+      a: 'Some clinics do, but most find working with a firm more effective. Implementing a comprehensive marketing strategy requires specialized skills (SEO, paid ads, content creation, analytics). We recommend a hybrid approach: we recommend strategy, you execute some tactics with support, we execute specialized tactics. We\'ll outline internal vs. partner roles in the roadmap.'
     }
   ];
 

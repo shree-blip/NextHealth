@@ -2,74 +2,140 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { TrendingUp, Phone, Globe, MapPin, Eye, Star, Loader2 } from 'lucide-react';
+import {
+  LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, AreaChart, Area,
+  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
+} from 'recharts';
+import { TrendingUp, FileText, Globe, Phone, DollarSign, Users, Loader2, Building2, ChevronDown, ArrowUpRight } from 'lucide-react';
 import { useSitePreferences } from '@/components/SitePreferencesProvider';
 
-interface AnalyticsData {
-  id: number;
-  date: string;
-  gscClicks: number;
-  gscImpressions: number;
-  gscCtr: number;
-  gscAvgPosition: number;
-  gmbPhoneCalls: number;
-  gmbWebsiteClicks: number;
-  gmbDirectionRequests: number;
-  gmbActions: number;
-  gmbProfileViews: number;
-  gmbReviewCount: number;
+interface WeeklyAnalytics {
+  id: string;
+  clinicId: string;
+  weekLabel: string;
+  year: number;
+  month: number;
+  weekNumber: number;
+  blogsPublished: number;
+  avgRanking: number;
+  totalTraffic: number;
+  callsRequested: number;
+  websiteVisits: number;
+  directionClicks: number;
+  metaImpressions: number;
+  metaClicks: number;
+  metaCTR: number;
+  metaConversions: number;
+  metaAdSpend: number;
+  googleImpressions: number;
+  googleClicks: number;
+  googleCTR: number;
+  googleCPC: number;
+  googleConversions: number;
+  googleCVR: number;
+  googleCostPerConversion: number;
+  googleTotalCost: number;
+  socialPosts: number;
+  socialViews: number;
+  patientCount: number;
+  digitalConversion: number;
+  conversionRate: number;
+  dailyPatientAvg: number;
 }
 
-interface AnalyticsSummary {
-  totalClicks: number;
-  totalImpressions: number;
-  avgCtr: number;
-  avgPosition: number;
-  totalPhoneCalls: number;
-  totalWebsiteClicks: number;
-  totalDirectionRequests: number;
-  totalActions: number;
+interface ClinicInfo {
+  id: string;
+  name: string;
+  type: string;
+  location: string;
 }
 
 const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
+const MONTH_NAMES: Record<number, string> = {
+  1: 'January', 2: 'February', 3: 'March', 4: 'April',
+  5: 'May', 6: 'June', 7: 'July', 8: 'August',
+  9: 'September', 10: 'October', 11: 'November', 12: 'December',
+};
+
 export default function ClientAnalyticsView() {
   const { theme } = useSitePreferences();
   const isDark = theme === 'dark';
-  const [analytics, setAnalytics] = useState<AnalyticsData[]>([]);
-  const [summary, setSummary] = useState<AnalyticsSummary | null>(null);
+  const [analytics, setAnalytics] = useState<WeeklyAnalytics[]>([]);
+  const [clinics, setClinics] = useState<ClinicInfo[]>([]);
+  const [selectedClinic, setSelectedClinic] = useState<string>('');
   const [loading, setLoading] = useState(true);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [selectedYear, setSelectedYear] = useState<string>('all');
+  const [selectedMonth, setSelectedMonth] = useState<string>('all');
+  const [selectedWeek, setSelectedWeek] = useState<string>('all');
+  const [dateFilter, setDateFilter] = useState<string>('');
 
   useEffect(() => {
-    fetchAnalytics();
+    fetchClinics();
   }, []);
 
-  const fetchAnalytics = async () => {
+  useEffect(() => {
+    if (selectedClinic) {
+      fetchAnalytics(selectedClinic);
+    }
+  }, [selectedClinic]);
+
+  const fetchClinics = async () => {
+    try {
+      setLoading(true);
+      // Get user's assigned clinics
+      const res = await fetch('/api/auth/me');
+      if (res.ok) {
+        const user = await res.json();
+        // Fetch user's clinic assignments
+        const assignRes = await fetch(`/api/client/clinics?userId=${user.id}`);
+        if (assignRes.ok) {
+          const data = await assignRes.json();
+          setClinics(data.clinics || []);
+          if (data.clinics && data.clinics.length > 0) {
+            setSelectedClinic(data.clinics[0].id);
+          } else {
+            setLoading(false);
+          }
+        } else {
+          console.error('Failed to fetch clinic assignments:', assignRes.status);
+          setLoading(false);
+        }
+      } else {
+        console.error('Failed to fetch user:', res.status);
+        setLoading(false);
+      }
+    } catch (err) {
+      console.error('Failed to fetch clinics:', err);
+      setLoading(false);
+    }
+  };
+
+  const fetchAnalytics = async (clinicId: string) => {
     setLoading(true);
     try {
-      const [resAnalytics, resSummary] = await Promise.all([
-        fetch('/api/analytics'),
-        fetch('/api/analytics/summary')
-      ]);
-
-      if (resAnalytics.ok) {
-        const data = await resAnalytics.json();
-        setAnalytics(data);
-      }
-
-      if (resSummary.ok) {
-        const data = await resSummary.json();
-        setSummary(data);
+      const res = await fetch(`/api/analytics/weekly?clinicId=${clinicId}`);
+      if (res.ok) {
+        const data = await res.json();
+        setAnalytics(data.analytics || []);
+        setSelectedYear('all');
+        setSelectedMonth('all');
+        setSelectedWeek('all');
+        setDateFilter('');
+      } else {
+        console.error('Failed to fetch analytics:', res.status);
+        setAnalytics([]);
       }
     } catch (err) {
       console.error('Failed to fetch analytics:', err);
+      setAnalytics([]);
     } finally {
       setLoading(false);
     }
   };
 
-  if (loading) {
+  if (loading && clinics.length === 0) {
     return (
       <div className="flex items-center justify-center py-24">
         <Loader2 className="h-8 w-8 animate-spin text-emerald-500" />
@@ -77,190 +143,510 @@ export default function ClientAnalyticsView() {
     );
   }
 
-  if (!analytics.length || !summary) {
+  if (clinics.length === 0) {
     return (
       <div className={`rounded-2xl p-8 border text-center ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
-        <TrendingUp className={`h-12 w-12 mx-auto mb-4 ${isDark ? 'text-slate-500' : 'text-slate-400'}`} />
-        <h3 className={`text-xl font-bold mb-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>No Analytics Data Yet</h3>
-        <p className={isDark ? 'text-slate-400' : 'text-slate-600'}>Your admin will add Google Search Console and Google My Business data here soon.</p>
+        <Building2 className={`h-12 w-12 mx-auto mb-4 ${isDark ? 'text-slate-500' : 'text-slate-400'}`} />
+        <h3 className={`text-xl font-bold mb-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>No Clinics Assigned</h3>
+        <p className={isDark ? 'text-slate-400' : 'text-slate-600'}>
+          Please contact your admin to assign clinics to your account.
+        </p>
       </div>
     );
   }
 
-  // Prepare chart data with proper formatting
-  const chartData = analytics.map(item => ({
-    date: new Date(item.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-    clicks: item.gscClicks,
-    impressions: item.gscImpressions,
-    ctr: parseFloat(item.gscCtr.toFixed(2)),
-    position: parseFloat(item.gscAvgPosition.toFixed(1)),
-    calls: item.gmbPhoneCalls,
-    websiteClicks: item.gmbWebsiteClicks,
-    directions: item.gmbDirectionRequests,
-    reviews: item.gmbReviewCount,
-  })).reverse();
+  if (analytics.length === 0) {
+    return (
+      <div className={`rounded-2xl p-8 border text-center ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
+        <TrendingUp className={`h-12 w-12 mx-auto mb-4 ${isDark ? 'text-slate-500' : 'text-slate-400'}`} />
+        <h3 className={`text-xl font-bold mb-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>No Analytics Data Yet</h3>
+        <p className={isDark ? 'text-slate-400' : 'text-slate-600'}>
+          Your admin will add weekly analytics data for your clinic soon.
+        </p>
+      </div>
+    );
+  }
 
-  // GMB breakdown for pie chart
-  const gmbBreakdown = [
-    { name: 'Phone Calls', value: summary.totalPhoneCalls },
-    { name: 'Website Clicks', value: summary.totalWebsiteClicks },
-    { name: 'Direction Requests', value: summary.totalDirectionRequests },
+  const availableYears = Array.from(new Set(analytics.map((entry) => entry.year))).sort((a, b) => b - a);
+  const availableMonths = Array.from(new Set(
+    analytics
+      .filter((entry) => selectedYear === 'all' || entry.year === Number(selectedYear))
+      .map((entry) => entry.month)
+  )).sort((a, b) => a - b);
+  const availableWeeks = Array.from(new Set(
+    analytics
+      .filter((entry) => (selectedYear === 'all' || entry.year === Number(selectedYear)))
+      .filter((entry) => (selectedMonth === 'all' || entry.month === Number(selectedMonth)))
+      .map((entry) => entry.weekNumber)
+  )).sort((a, b) => a - b);
+
+  const filteredAnalytics = analytics.filter((entry) => {
+    const yearMatch = selectedYear === 'all' || entry.year === Number(selectedYear);
+    const monthMatch = selectedMonth === 'all' || entry.month === Number(selectedMonth);
+    const weekMatch = selectedWeek === 'all' || entry.weekNumber === Number(selectedWeek);
+    const dateMatch = dateFilter.trim().length === 0 || entry.weekLabel.toLowerCase().includes(dateFilter.toLowerCase());
+
+    return yearMatch && monthMatch && weekMatch && dateMatch;
+  });
+
+  if (filteredAnalytics.length === 0) {
+    return (
+      <div className="space-y-6">
+        <div className={`rounded-2xl p-6 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
+          <h3 className={`text-lg font-bold mb-4 ${isDark ? 'text-white' : 'text-slate-900'}`}>Edit Report Filters</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <select
+              value={selectedYear}
+              onChange={(e) => {
+                setSelectedYear(e.target.value);
+                setSelectedMonth('all');
+                setSelectedWeek('all');
+              }}
+              className={`px-4 py-3 rounded-xl border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-100' : 'bg-white border-slate-200 text-slate-900'}`}
+            >
+              <option value="all">All Years</option>
+              {availableYears.map((year) => (
+                <option key={year} value={year}>{year}</option>
+              ))}
+            </select>
+            <select
+              value={selectedMonth}
+              onChange={(e) => {
+                setSelectedMonth(e.target.value);
+                setSelectedWeek('all');
+              }}
+              className={`px-4 py-3 rounded-xl border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-100' : 'bg-white border-slate-200 text-slate-900'}`}
+            >
+              <option value="all">All Months</option>
+              {availableMonths.map((month) => (
+                <option key={month} value={month}>{MONTH_NAMES[month] || `Month ${month}`}</option>
+              ))}
+            </select>
+            <select
+              value={selectedWeek}
+              onChange={(e) => setSelectedWeek(e.target.value)}
+              className={`px-4 py-3 rounded-xl border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-100' : 'bg-white border-slate-200 text-slate-900'}`}
+            >
+              <option value="all">All Weeks</option>
+              {availableWeeks.map((week) => (
+                <option key={week} value={week}>Week {week}</option>
+              ))}
+            </select>
+            <input
+              type="text"
+              value={dateFilter}
+              onChange={(e) => setDateFilter(e.target.value)}
+              placeholder="Filter by date/week label"
+              className={`px-4 py-3 rounded-xl border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-100 placeholder:text-slate-500' : 'bg-white border-slate-200 text-slate-900 placeholder:text-slate-400'}`}
+            />
+          </div>
+          <div className="mt-4">
+            <button
+              onClick={() => {
+                setSelectedYear('all');
+                setSelectedMonth('all');
+                setSelectedWeek('all');
+                setDateFilter('');
+              }}
+              className="px-4 py-2 rounded-lg bg-emerald-500 text-black font-bold hover:bg-emerald-400"
+            >
+              Reset Filters
+            </button>
+          </div>
+        </div>
+
+        <div className={`rounded-2xl p-8 border text-center ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
+          <TrendingUp className={`h-12 w-12 mx-auto mb-4 ${isDark ? 'text-slate-500' : 'text-slate-400'}`} />
+          <h3 className={`text-xl font-bold mb-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>No Data For Selected Filters</h3>
+          <p className={isDark ? 'text-slate-400' : 'text-slate-600'}>
+            Try changing year, month, week, or date label filters to see analytics results.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Calculate totals
+  const totals = filteredAnalytics.reduce((acc, week) => ({
+    traffic: acc.traffic + week.totalTraffic,
+    blogs: acc.blogs + week.blogsPublished,
+    calls: acc.calls + week.callsRequested,
+    metaSpend: acc.metaSpend + week.metaAdSpend,
+    googleSpend: acc.googleSpend + week.googleTotalCost,
+    socialViews: acc.socialViews + week.socialViews,
+  }), { traffic: 0, blogs: 0, calls: 0, metaSpend: 0, googleSpend: 0, socialViews: 0 });
+
+  // Prepare chart data
+  const trafficData = filteredAnalytics.map(w => ({
+    week: w.weekLabel,
+    traffic: w.totalTraffic,
+    ranking: w.avgRanking,
+  }));
+
+  const gmbData = filteredAnalytics.map(w => ({
+    week: w.weekLabel,
+    calls: w.callsRequested,
+    visits: w.websiteVisits,
+    directions: w.directionClicks,
+  }));
+
+  const adsData = filteredAnalytics.map(w => ({
+    week: w.weekLabel,
+    metaSpend: w.metaAdSpend,
+    googleSpend: w.googleTotalCost,
+    metaConversions: w.metaConversions,
+    googleConversions: w.googleConversions,
+  }));
+
+  const socialData = filteredAnalytics.map(w => ({
+    week: w.weekLabel,
+    posts: w.socialPosts,
+    views: w.socialViews,
+    patients: w.patientCount,
+  }));
+
+  // Pie chart data - Traffic Sources
+  const directTrafficValue = filteredAnalytics.reduce((sum, w) => {
+    const directTraffic = w.totalTraffic - w.websiteVisits;
+    return sum + (directTraffic > 0 ? directTraffic : 0);
+  }, 0);
+
+  const trafficSourcesData = [
+    { name: 'GMB Visits', value: filteredAnalytics.reduce((sum, w) => sum + w.websiteVisits, 0) },
+    { name: 'Direct Traffic', value: directTrafficValue },
+    { name: 'Directions', value: filteredAnalytics.reduce((sum, w) => sum + w.directionClicks, 0) },
   ].filter(item => item.value > 0);
 
+  const currentClinic = clinics.find(c => c.id === selectedClinic);
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
+      {/* Clinic Selector */}
+      {clinics.length > 1 && (
+        <div className="relative">
+          <button
+            onClick={() => setShowDropdown(!showDropdown)}
+            className={`px-6 py-3 rounded-xl font-bold flex items-center gap-3 border transition-all ${
+              isDark
+                ? 'bg-slate-800 border-slate-700 hover:border-emerald-500'
+                : 'bg-white border-slate-200 hover:border-emerald-500'
+            }`}
+          >
+            <Building2 className="h-5 w-5 text-emerald-500" />
+            <span>{currentClinic?.name || 'Select Clinic'}</span>
+            <ChevronDown className={`h-4 w-4 transition-transform ${showDropdown ? 'rotate-180' : ''}`} />
+          </button>
+          {showDropdown && (
+            <div className={`absolute top-full mt-2 w-full rounded-xl border shadow-xl z-10 ${
+              isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'
+            }`}>
+              {clinics.map(clinic => (
+                <button
+                  key={clinic.id}
+                  onClick={() => {
+                    setSelectedClinic(clinic.id);
+                    setShowDropdown(false);
+                  }}
+                  className={`w-full px-6 py-3 text-left hover:bg-emerald-50 dark:hover:bg-emerald-900/20 first:rounded-t-xl last:rounded-b-xl ${
+                    selectedClinic === clinic.id ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 font-bold' : ''
+                  }`}
+                >
+                  {clinic.name}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Edit Report Filters */}
+      <div className={`rounded-2xl p-6 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+          <h3 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Edit Report Filters</h3>
+          <button
+            onClick={() => {
+              setSelectedYear('all');
+              setSelectedMonth('all');
+              setSelectedWeek('all');
+              setDateFilter('');
+            }}
+            className="px-4 py-2 rounded-lg bg-emerald-500 text-black font-bold hover:bg-emerald-400"
+          >
+            Reset Filters
+          </button>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <select
+            value={selectedYear}
+            onChange={(e) => {
+              setSelectedYear(e.target.value);
+              setSelectedMonth('all');
+              setSelectedWeek('all');
+            }}
+            className={`px-4 py-3 rounded-xl border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-100' : 'bg-white border-slate-200 text-slate-900'}`}
+          >
+            <option value="all">All Years</option>
+            {availableYears.map((year) => (
+              <option key={year} value={year}>{year}</option>
+            ))}
+          </select>
+
+          <select
+            value={selectedMonth}
+            onChange={(e) => {
+              setSelectedMonth(e.target.value);
+              setSelectedWeek('all');
+            }}
+            className={`px-4 py-3 rounded-xl border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-100' : 'bg-white border-slate-200 text-slate-900'}`}
+          >
+            <option value="all">All Months</option>
+            {availableMonths.map((month) => (
+              <option key={month} value={month}>{MONTH_NAMES[month] || `Month ${month}`}</option>
+            ))}
+          </select>
+
+          <select
+            value={selectedWeek}
+            onChange={(e) => setSelectedWeek(e.target.value)}
+            className={`px-4 py-3 rounded-xl border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-100' : 'bg-white border-slate-200 text-slate-900'}`}
+          >
+            <option value="all">All Weeks</option>
+            {availableWeeks.map((week) => (
+              <option key={week} value={week}>Week {week}</option>
+            ))}
+          </select>
+
+          <input
+            type="text"
+            value={dateFilter}
+            onChange={(e) => setDateFilter(e.target.value)}
+            placeholder="Date/Week label (e.g. Nov Week 1)"
+            className={`px-4 py-3 rounded-xl border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-100 placeholder:text-slate-500' : 'bg-white border-slate-200 text-slate-900 placeholder:text-slate-400'}`}
+          />
+        </div>
+      </div>
+
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className={`rounded-2xl p-6 border ${isDark ? 'bg-blue-900/30 border-blue-800 text-blue-200' : 'bg-gradient-to-br from-blue-50 to-cyan-50 border-blue-200 text-blue-700'}`}>
-          <div className="flex items-center justify-between mb-2">
-            <span className={`text-sm font-bold ${isDark ? 'text-blue-300' : 'text-slate-600'}`}>Total Clicks</span>
-            <TrendingUp className="h-5 w-5 text-blue-500" />
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className={`rounded-2xl p-6 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}
+        >
+          <div className="flex items-center justify-between mb-3">
+            <Globe className="h-8 w-8 text-blue-500" />
+            <ArrowUpRight className="h-5 w-5 text-emerald-500" />
           </div>
-          <div className={`text-3xl font-black ${isDark ? 'text-blue-300' : 'text-blue-700'}`}>{summary.totalClicks.toLocaleString()}</div>
-          <p className={`text-xs mt-2 ${isDark ? 'text-blue-400/70' : 'text-slate-500'}`}>From Google Search</p>
+          <h3 className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{totals.traffic.toLocaleString()}</h3>
+          <p className={`text-sm font-semibold ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>Total Traffic</p>
         </motion.div>
 
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className={`rounded-2xl p-6 border ${isDark ? 'bg-purple-900/30 border-purple-800 text-purple-200' : 'bg-gradient-to-br from-purple-50 to-pink-50 border-purple-200 text-purple-700'}`}>
-          <div className="flex items-center justify-between mb-2">
-            <span className={`text-sm font-bold ${isDark ? 'text-purple-300' : 'text-slate-600'}`}>Impressions</span>
-            <Eye className="h-5 w-5 text-purple-500" />
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className={`rounded-2xl p-6 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}
+        >
+          <div className="flex items-center justify-between mb-3">
+            <Phone className="h-8 w-8 text-emerald-500" />
+            <ArrowUpRight className="h-5 w-5 text-emerald-500" />
           </div>
-          <div className={`text-3xl font-black ${isDark ? 'text-purple-300' : 'text-purple-700'}`}>{summary.totalImpressions.toLocaleString()}</div>
-          <p className={`text-xs mt-2 ${isDark ? 'text-purple-400/70' : 'text-slate-500'}`}>Avg CTR: {summary.avgCtr.toFixed(2)}%</p>
+          <h3 className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{totals.calls}</h3>
+          <p className={`text-sm font-semibold ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>GMB Calls</p>
         </motion.div>
 
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className={`rounded-2xl p-6 border ${isDark ? 'bg-orange-900/30 border-orange-800 text-orange-200' : 'bg-gradient-to-br from-orange-50 to-yellow-50 border-orange-200 text-orange-700'}`}>
-          <div className="flex items-center justify-between mb-2">
-            <span className={`text-sm font-bold ${isDark ? 'text-orange-300' : 'text-slate-600'}`}>Phone Calls</span>
-            <Phone className="h-5 w-5 text-orange-500" />
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className={`rounded-2xl p-6 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}
+        >
+          <div className="flex items-center justify-between mb-3">
+            <DollarSign className="h-8 w-8 text-indigo-500" />
+            <span className={`text-xs font-bold px-2 py-1 rounded-full ${isDark ? 'bg-indigo-900/30 text-indigo-400' : 'bg-indigo-100 text-indigo-600'}`}>
+              Ad Spend
+            </span>
           </div>
-          <div className={`text-3xl font-black ${isDark ? 'text-orange-300' : 'text-orange-700'}`}>{summary.totalPhoneCalls.toLocaleString()}</div>
-          <p className={`text-xs mt-2 ${isDark ? 'text-orange-400/70' : 'text-slate-500'}`}>From GMB Profile</p>
+          <h3 className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>${(totals.metaSpend + totals.googleSpend).toFixed(0)}</h3>
+          <p className={`text-sm font-semibold ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>Total Investment</p>
         </motion.div>
 
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className={`rounded-2xl p-6 border ${isDark ? 'bg-emerald-900/30 border-emerald-800 text-emerald-200' : 'bg-gradient-to-br from-emerald-50 to-teal-50 border-emerald-200 text-emerald-700'}`}>
-          <div className="flex items-center justify-between mb-2">
-            <span className={`text-sm font-bold ${isDark ? 'text-emerald-300' : 'text-slate-600'}`}>Website Clicks</span>
-            <Globe className="h-5 w-5 text-emerald-500" />
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className={`rounded-2xl p-6 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}
+        >
+          <div className="flex items-center justify-between mb-3">
+            <FileText className="h-8 w-8 text-purple-500" />
+            <span className={`text-xs font-bold px-2 py-1 rounded-full ${isDark ? 'bg-purple-900/30 text-purple-400' : 'bg-purple-100 text-purple-600'}`}>
+              Content
+            </span>
           </div>
-          <div className={`text-3xl font-black ${isDark ? 'text-emerald-300' : 'text-emerald-700'}`}>{summary.totalWebsiteClicks.toLocaleString()}</div>
-          <p className={`text-xs mt-2 ${isDark ? 'text-emerald-400/70' : 'text-slate-500'}`}>GMB Action</p>
+          <h3 className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{totals.blogs}</h3>
+          <p className={`text-sm font-semibold ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>Blogs Published</p>
         </motion.div>
       </div>
 
-      {/* Charts Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Clicks & Impressions Trend */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className={`rounded-2xl p-6 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
-          <h3 className={`text-lg font-bold mb-6 ${isDark ? 'text-white' : 'text-slate-900'}`}>Google Search Console Trend</h3>
+      {/* Traffic & SEO Chart */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.4 }}
+        className={`rounded-2xl p-6 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}
+      >
+        <h3 className={`text-xl font-bold mb-6 ${isDark ? 'text-white' : 'text-slate-900'}`}>
+          📈 SEO Performance Over Time
+        </h3>
+        <ResponsiveContainer width="100%" height={300}>
+          <LineChart data={trafficData}>
+            <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#334155' : '#e2e8f0'} />
+            <XAxis dataKey="week" stroke={isDark ? '#94a3b8' : '#64748b'} />
+            <YAxis stroke={isDark ? '#94a3b8' : '#64748b'} />
+            <Tooltip
+              contentStyle={{
+                backgroundColor: isDark ? '#1e293b' : '#ffffff',
+                border: `1px solid ${isDark ? '#475569' : '#e2e8f0'}`,
+                borderRadius: '12px',
+              }}
+            />
+            <Legend />
+            <Line type="monotone" dataKey="traffic" name="Traffic" stroke="#10b981" strokeWidth={3} dot={{ fill: '#10b981', r: 5 }} />
+            <Line type="monotone" dataKey="ranking" name="Avg Ranking" stroke="#3b82f6" strokeWidth={3} dot={{ fill: '#3b82f6', r: 5 }} />
+          </LineChart>
+        </ResponsiveContainer>
+      </motion.div>
+
+      {/* GMB Metrics */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.5 }}
+        className={`rounded-2xl p-6 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}
+      >
+        <h3 className={`text-xl font-bold mb-6 ${isDark ? 'text-white' : 'text-slate-900'}`}>
+          📍 Google My Business Activity
+        </h3>
+        <ResponsiveContainer width="100%" height={300}>
+          <BarChart data={gmbData}>
+            <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#334155' : '#e2e8f0'} />
+            <XAxis dataKey="week" stroke={isDark ? '#94a3b8' : '#64748b'} />
+            <YAxis stroke={isDark ? '#94a3b8' : '#64748b'} />
+            <Tooltip
+              contentStyle={{
+                backgroundColor: isDark ? '#1e293b' : '#ffffff',
+                border: `1px solid ${isDark ? '#475569' : '#e2e8f0'}`,
+                borderRadius: '12px',
+              }}
+            />
+            <Legend />
+            <Bar dataKey="calls" name="Calls" fill="#10b981" radius={[8, 8, 0, 0]} />
+            <Bar dataKey="visits" name="Website Visits" fill="#3b82f6" radius={[8, 8, 0, 0]} />
+            <Bar dataKey="directions" name="Directions" fill="#f59e0b" radius={[8, 8, 0, 0]} />
+          </BarChart>
+        </ResponsiveContainer>
+      </motion.div>
+
+      {/* Ad Performance & Traffic Sources Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Ad Spend Comparison */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.6 }}
+          className={`rounded-2xl p-6 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}
+        >
+          <h3 className={`text-xl font-bold mb-6 ${isDark ? 'text-white' : 'text-slate-900'}`}>
+            💰 Ad Spend & Conversions
+          </h3>
           <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#475569' : '#e5e7eb'} />
-              <XAxis dataKey="date" fontSize={12} stroke={isDark ? '#cbd5e1' : '#000'} />
-              <YAxis fontSize={12} stroke={isDark ? '#cbd5e1' : '#000'} />
-              <Tooltip contentStyle={{ backgroundColor: isDark ? '#1e293b' : '#fff', border: isDark ? '1px solid #475569' : 'none', borderRadius: '8px', color: isDark ? '#e2e8f0' : '#000' }} />
+            <AreaChart data={adsData}>
+              <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#334155' : '#e2e8f0'} />
+              <XAxis dataKey="week" stroke={isDark ? '#94a3b8' : '#64748b'} />
+              <YAxis stroke={isDark ? '#94a3b8' : '#64748b'} />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: isDark ? '#1e293b' : '#ffffff',
+                  border: `1px solid ${isDark ? '#475569' : '#e2e8f0'}`,
+                  borderRadius: '12px',
+                }}
+              />
               <Legend />
-              <Line type="monotone" dataKey="clicks" stroke="#3b82f6" strokeWidth={2} dot={false} name="Clicks" />
-              <Line type="monotone" dataKey="impressions" stroke="#10b981" strokeWidth={2} dot={false} name="Impressions" />
-            </LineChart>
+              <Area type="monotone" dataKey="metaSpend" name="Meta Spend" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.6} />
+              <Area type="monotone" dataKey="googleSpend" name="Google Spend" stroke="#10b981" fill="#10b981" fillOpacity={0.6} />
+            </AreaChart>
           </ResponsiveContainer>
         </motion.div>
 
-        {/* CTR & Position Trend */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className={`rounded-2xl p-6 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
-          <h3 className={`text-lg font-bold mb-6 ${isDark ? 'text-white' : 'text-slate-900'}`}>Click-Through Rate & Position</h3>
+        {/* Traffic Sources Pie Chart */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.7 }}
+          className={`rounded-2xl p-6 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}
+        >
+          <h3 className={`text-xl font-bold mb-6 ${isDark ? 'text-white' : 'text-slate-900'}`}>
+            🎯 Traffic Source Distribution
+          </h3>
           <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#475569' : '#e5e7eb'} />
-              <XAxis dataKey="date" fontSize={12} stroke={isDark ? '#cbd5e1' : '#000'} />
-              <YAxis yAxisId="left" fontSize={12} stroke={isDark ? '#cbd5e1' : '#000'} />
-              <YAxis yAxisId="right" orientation="right" fontSize={12} stroke={isDark ? '#cbd5e1' : '#000'} />
-              <Tooltip contentStyle={{ backgroundColor: isDark ? '#1e293b' : '#fff', border: isDark ? '1px solid #475569' : 'none', borderRadius: '8px', color: isDark ? '#e2e8f0' : '#000' }} />
-              <Legend />
-              <Line yAxisId="left" type="monotone" dataKey="ctr" stroke="#f59e0b" strokeWidth={2} dot={false} name="CTR (%)" />
-              <Line yAxisId="right" type="monotone" dataKey="position" stroke="#ef4444" strokeWidth={2} dot={false} name="Avg Position" />
-            </LineChart>
+            <PieChart>
+              <Pie
+                data={trafficSourcesData}
+                cx="50%"
+                cy="50%"
+                labelLine={false}
+                label={(entry) => {
+                  const percent = entry.percent || 0;
+                  return `${entry.name}: ${(percent * 100).toFixed(0)}%`;
+                }}
+                outerRadius={100}
+                fill="#8884d8"
+                dataKey="value"
+              >
+                {trafficSourcesData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                ))}
+              </Pie>
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: isDark ? '#1e293b' : '#ffffff',
+                  border: `1px solid ${isDark ? '#475569' : '#e2e8f0'}`,
+                  borderRadius: '12px',
+                }}
+              />
+            </PieChart>
           </ResponsiveContainer>
         </motion.div>
       </div>
 
-      {/* GMB Breakdown */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* GMB Actions Pie Chart */}
-        {gmbBreakdown.length > 0 && (
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className={`rounded-2xl p-6 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
-            <h3 className={`text-lg font-bold mb-6 ${isDark ? 'text-white' : 'text-slate-900'}`}>Google My Business Actions Breakdown</h3>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={gmbBreakdown}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ name, value }) => `${name}: ${value}`}
-                  outerRadius={80}
-                  fill="#8884d8"
-                  dataKey="value"
-                >
-                  {gmbBreakdown.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip contentStyle={{ backgroundColor: isDark ? '#1e293b' : '#fff', border: isDark ? '1px solid #475569' : 'none', borderRadius: '8px', color: isDark ? '#e2e8f0' : '#000' }} />
-              </PieChart>
-            </ResponsiveContainer>
-          </motion.div>
-        )}
-
-        {/* GMB Actions Over Time */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className={`rounded-2xl p-6 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
-          <h3 className={`text-lg font-bold mb-6 ${isDark ? 'text-white' : 'text-slate-900'}`}>GMB Actions Over Time</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#475569' : '#e5e7eb'} />
-              <XAxis dataKey="date" fontSize={12} stroke={isDark ? '#cbd5e1' : '#000'} />
-              <YAxis fontSize={12} stroke={isDark ? '#cbd5e1' : '#000'} />
-              <Tooltip contentStyle={{ backgroundColor: isDark ? '#1e293b' : '#fff', border: isDark ? '1px solid #475569' : 'none', borderRadius: '8px', color: isDark ? '#e2e8f0' : '#000' }} />
-              <Legend />
-              <Bar dataKey="calls" fill="#f59e0b" name="Phone Calls" />
-              <Bar dataKey="websiteClicks" fill="#3b82f6" name="Website Clicks" />
-              <Bar dataKey="directions" fill="#10b981" name="Directions" />
-            </BarChart>
-          </ResponsiveContainer>
-        </motion.div>
-      </div>
-
-      {/* Detailed Metrics Table */}
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className={`rounded-2xl p-6 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'} overflow-x-auto`}>
-        <h3 className={`text-lg font-bold mb-6 ${isDark ? 'text-white' : 'text-slate-900'}`}>Detailed Analytics</h3>
-        <table className="w-full text-sm">
-          <thead>
-            <tr className={`border-b ${isDark ? 'border-slate-700' : 'border-slate-200'}`}>
-              <th className={`text-left py-3 px-4 font-bold ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>Date</th>
-              <th className={`text-right py-3 px-4 font-bold ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>Clicks</th>
-              <th className={`text-right py-3 px-4 font-bold ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>Impressions</th>
-              <th className={`text-right py-3 px-4 font-bold ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>CTR</th>
-              <th className={`text-right py-3 px-4 font-bold ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>Position</th>
-              <th className={`text-right py-3 px-4 font-bold ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>Calls</th>
-              <th className={`text-right py-3 px-4 font-bold ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>Website</th>
-              <th className={`text-right py-3 px-4 font-bold ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>Directions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {chartData.map((row, idx) => (
-              <tr key={idx} className={`border-b transition-colors ${isDark ? 'border-slate-700 hover:bg-slate-700' : 'border-slate-100 hover:bg-slate-50'}`}>
-                <td className={`py-3 px-4 font-semibold ${isDark ? 'text-slate-300' : 'text-slate-900'}`}>{row.date}</td>
-                <td className={`text-right py-3 px-4 font-semibold ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>{row.clicks.toLocaleString()}</td>
-                <td className={`text-right py-3 px-4 font-semibold ${isDark ? 'text-purple-400' : 'text-purple-600'}`}>{row.impressions.toLocaleString()}</td>
-                <td className={`text-right py-3 px-4 font-semibold ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>{row.ctr}%</td>
-                <td className={`text-right py-3 px-4 font-semibold ${isDark ? 'text-red-400' : 'text-red-600'}`}>{row.position}</td>
-                <td className={`text-right py-3 px-4 font-semibold ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>{row.calls}</td>
-                <td className={`text-right py-3 px-4 font-semibold ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>{row.websiteClicks}</td>
-                <td className={`text-right py-3 px-4 font-semibold ${isDark ? 'text-cyan-400' : 'text-cyan-600'}`}>{row.directions}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      {/* Social Media Metrics */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.8 }}
+        className={`rounded-2xl p-6 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}
+      >
+        <h3 className={`text-xl font-bold mb-6 ${isDark ? 'text-white' : 'text-slate-900'}`}>
+          📱 Social Media Performance
+        </h3>
+        <ResponsiveContainer width="100%" height={300}>
+          <AreaChart data={socialData}>
+            <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#334155' : '#e2e8f0'} />
+            <XAxis dataKey="week" stroke={isDark ? '#94a3b8' : '#64748b'} />
+            <YAxis stroke={isDark ? '#94a3b8' : '#64748b'} />
+            <Tooltip
+              contentStyle={{
+                backgroundColor: isDark ? '#1e293b' : '#ffffff',
+                border: `1px solid ${isDark ? '#475569' : '#e2e8f0'}`,
+                borderRadius: '12px',
+              }}
+            />
+            <Legend />
+            <Area type="monotone" dataKey="views" name="Views" stroke="#8b5cf6" fill="#8b5cf6" fillOpacity={0.6} />
+            <Area type="monotone" dataKey="patients" name="Patient Count" stroke="#ec4899" fill="#ec4899" fillOpacity={0.6} />
+            <Area type="monotone" dataKey="posts" name="Posts" stroke="#06b6d4" fill="#06b6d4" fillOpacity={0.3} />
+          </AreaChart>
+        </ResponsiveContainer>
       </motion.div>
     </div>
   );

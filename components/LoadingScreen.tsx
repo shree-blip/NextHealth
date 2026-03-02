@@ -1,49 +1,44 @@
 "use client";
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { useEffect, useState } from 'react';
-// Logo image used instead of icons
-import {
-  FaFacebook,
-  FaInstagram,
-  FaLinkedin,
-  FaXTwitter,
-  FaYoutube,
-  FaTiktok,
-  FaPinterest,
-  FaSnapchat,
-  FaReddit,
-  FaWhatsapp,
-  FaTelegram,
-  FaDiscord,
-} from 'react-icons/fa6';
-
-const orbitIcons = [
-  { Icon: FaFacebook, color: '#1877F2' },
-  { Icon: FaInstagram, color: '#E4405F' },
-  { Icon: FaXTwitter, color: '#000000' },
-  { Icon: FaLinkedin, color: '#0A66C2' },
-  { Icon: FaYoutube, color: '#FF0000' },
-  { Icon: FaTiktok, color: '#25F4EE' },
-  { Icon: FaPinterest, color: '#E60023' },
-  { Icon: FaSnapchat, color: '#FFFC00' },
-  { Icon: FaReddit, color: '#FF4500' },
-  { Icon: FaWhatsapp, color: '#25D366' },
-  { Icon: FaTelegram, color: '#24A1DE' },
-  { Icon: FaDiscord, color: '#5865F2' },
-];
+import { useEffect, useState, useRef } from 'react';
+import Logo from '@/components/Logo';
 
 export default function LoadingScreen() {
   const [isLoading, setIsLoading] = useState(true);
+  const [progress, setProgress] = useState(0);
+  const rafRef = useRef<number>(0);
+  const startRef = useRef<number>(0);
+
+  const DURATION = 2000; // total loading time in ms
 
   useEffect(() => {
+    // Already loading, start progress
     document.body.style.overflow = 'hidden';
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-      document.body.style.overflow = '';
-    }, 1800);
+    // Remove CSS-based initial overlay
+    document.body.classList.add('loaded');
+    startRef.current = performance.now();
+
+    const tick = (now: number) => {
+      const elapsed = now - startRef.current;
+      const pct = Math.min(Math.round((elapsed / DURATION) * 100), 100);
+      setProgress(pct);
+
+      if (pct < 100) {
+        rafRef.current = requestAnimationFrame(tick);
+      } else {
+        // small delay after hitting 100% before dismissing
+        setTimeout(() => {
+          setIsLoading(false);
+          document.body.style.overflow = '';
+        }, 300);
+      }
+    };
+
+    rafRef.current = requestAnimationFrame(tick);
+
     return () => {
-      clearTimeout(timer);
+      cancelAnimationFrame(rafRef.current);
       document.body.style.overflow = '';
     };
   }, []);
@@ -55,80 +50,32 @@ export default function LoadingScreen() {
           initial={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.8, ease: [0.76, 0, 0.24, 1] }}
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950"
+          className="fixed inset-0 z-[10000] flex items-center justify-center bg-slate-950"
         >
-          <div className="relative flex items-center justify-center w-[320px] h-[320px] sm:w-[440px] sm:h-[440px] md:w-[540px] md:h-[540px]">
-            {/* Orbiting social icons */}
+          <div className="flex flex-col items-center gap-8">
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1, rotate: 360 }}
-              transition={{ opacity: { duration: 0.4, delay: 0.3 }, rotate: { duration: 16, ease: 'linear', repeat: Infinity } }}
-              className="absolute inset-0 pointer-events-none"
+              initial={{ scale: 0.7, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ duration: 0.6, ease: 'easeOut' }}
             >
-              {orbitIcons.map(({ Icon, color }, idx) => {
-                const angle = (idx * 360) / orbitIcons.length;
-                const rad = (angle * Math.PI) / 180;
-                // Position icons in a circle using percentage-based left/top
-                const x = 50 + 44 * Math.sin(rad); // 44% radius
-                const y = 50 - 44 * Math.cos(rad);
-                const left = `${x.toFixed(3)}%`;
-                const top = `${y.toFixed(3)}%`;
-                return (
-                  <div
-                    key={`${color}-${idx}`}
-                    className="absolute -translate-x-1/2 -translate-y-1/2"
-                    style={{
-                      left,
-                      top,
-                    }}
-                  >
-                    <div className="p-2 rounded-full bg-white/8 shadow-lg border border-white/10">
-                      <Icon size={18} color={color} />
-                    </div>
-                  </div>
-                );
-              })}
+              <Logo showText={true} iconSize={120} darkText={false} />
             </motion.div>
 
-            {/* Centered logo */}
-            <div className="relative z-10 flex flex-col items-center justify-center">
-              <motion.div
-                initial={{ scale: 0.6, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ duration: 0.6, ease: "easeOut" }}
-                className="relative"
-              >
-                {/* Glow behind logo */}
+            {/* Progress bar + percentage */}
+            <div className="w-64 sm:w-80 flex flex-col items-center gap-3">
+              <div className="w-full h-1.5 rounded-full bg-slate-800 overflow-hidden">
                 <motion.div
-                  className="absolute -inset-6 rounded-full"
+                  className="h-full rounded-full"
                   style={{
-                    background: 'radial-gradient(circle, rgba(16,185,129,0.35) 0%, transparent 70%)',
-                    filter: 'blur(14px)',
+                    background: 'linear-gradient(to right, #10b981, #3b82f6)',
+                    width: `${progress}%`,
                   }}
-                  animate={{
-                    scale: [1, 1.3, 1],
-                    opacity: [0.5, 1, 0.5],
-                  }}
-                  transition={{
-                    duration: 2,
-                    repeat: Infinity,
-                    ease: 'easeInOut',
-                  }}
+                  transition={{ duration: 0.05, ease: 'linear' }}
                 />
-                <motion.img
-                  src="/Client-review-image/nextgen_footerlogo.png"
-                  alt="NextGen Marketing Agency"
-                  className="h-20 md:h-28 w-auto object-contain relative z-10"
-                  animate={{
-                    y: [0, -6, 0],
-                  }}
-                  transition={{
-                    duration: 2.5,
-                    repeat: Infinity,
-                    ease: 'easeInOut',
-                  }}
-                />
-              </motion.div>
+              </div>
+              <span className="text-slate-400 text-sm font-mono tracking-wider">
+                {progress}%
+              </span>
             </div>
           </div>
         </motion.div>

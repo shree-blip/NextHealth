@@ -1,10 +1,5 @@
 @import "tailwindcss";
 
-@theme {
-  --font-sans: var(--font-inter);
-  --font-mono: var(--font-jetbrains-mono);
-}
-
 :root {
   --background: #f8fafc; /* slate-50 */
   --foreground: #0f172a; /* slate-900 */
@@ -25,11 +20,47 @@ body {
   background-color: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans);
+  overflow-x: hidden;
+}
+
+html {
+  overflow-y: scroll;
+}
+
+/* Prevent FOUC - hide content until loading screen appears */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: #020617;
+  z-index: 99999;
+  pointer-events: none;
+  opacity: 1;
+  transition: opacity 0.15s ease-out;
+}
+
+body.loaded::before {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Dark mode defaults for form elements */
+.dark input,
+.dark textarea,
+.dark select {
+  background-color: rgb(30 41 59); /* slate-800 */
+  color: rgb(226 232 240); /* slate-200 */
+  border-color: rgb(71 85 105); /* slate-600 */
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: rgb(148 163 184); /* slate-400 */
 }
 
 /* Typography utilities for consistent heading and paragraph sizes */
 .h1 {
-  /* Match landing page heading scale: text-4xl -> text-5xl */
+  /* Hero section heading - larger scale allowed */
   font-weight: 700;
   letter-spacing: -0.025em;
   font-size: 2.25rem; /* text-4xl */
@@ -40,44 +71,113 @@ body {
   }
 }
 .h2 {
-  /* reduce roughly 10px from both sizes */
-  @apply text-3xl md:text-5xl font-bold tracking-tight;
-}
-.h3 {
-  @apply text-2xl md:text-3xl font-semibold tracking-tight;
-}
-.h4 {
-  @apply text-xl md:text-2xl font-semibold tracking-tight;
-}
-.p {
-  @apply text-base md:text-lg leading-relaxed;
-}
-
-/* Ensure base HTML elements inherit the same font scales so every page uses
-   the landing page sizes by default.  This avoids inconsistencies when
-   components or pages use raw <h1> / <h2> / <p> tags instead of the utility
-   classes. */
-h1 {
+  /* Body heading - max 32px */
+  font-size: 1.5rem;
+  line-height: 2rem;
   font-weight: 700;
   letter-spacing: -0.025em;
-  font-size: 2.25rem; /* text-4xl */
 }
 @media (min-width: 768px) {
-  h1 {
-    font-size: 3rem; /* text-5xl */
+  .h2 {
+    font-size: 1.875rem;
+    line-height: 2.25rem;
   }
 }
-h2 {
-  @apply text-3xl md:text-5xl font-bold tracking-tight;
+.h3 {
+  font-size: 1.25rem;
+  line-height: 1.75rem;
+  font-weight: 600;
+  letter-spacing: -0.025em;
 }
-h3 {
-  @apply text-2xl md:text-3xl font-semibold tracking-tight;
+@media (min-width: 768px) {
+  .h3 {
+    font-size: 1.5rem;
+    line-height: 2rem;
+  }
 }
-h4 {
-  @apply text-xl md:text-2xl font-semibold tracking-tight;
+.h4 {
+  font-size: 1.125rem;
+  line-height: 1.75rem;
+  font-weight: 600;
+  letter-spacing: -0.025em;
 }
-p {
-  @apply text-base md:text-lg leading-relaxed;
+@media (min-width: 768px) {
+  .h4 {
+    font-size: 1.25rem;
+    line-height: 1.75rem;
+  }
+}
+.p {
+  font-size: 1rem;
+  line-height: 1.5;
+  letter-spacing: 0;
+}
+@media (min-width: 768px) {
+  .p {
+    font-size: 1.125rem;
+    line-height: 1.75rem;
+  }
+}
+
+/* Global HTML element styles - only for marketing/public pages, excluded from dashboards */
+:where(h1):not(.dashboard-scope *) {
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  font-size: 2.25rem; /* text-4xl - hero section size */
+}
+@media (min-width: 768px) {
+  :where(h1):not(.dashboard-scope *) {
+    font-size: 3rem; /* text-5xl - hero section size */
+  }
+}
+
+/* Body h2-h4: Limited to max 32px (text-3xl) */
+:where(h2):not(.dashboard-scope *) {
+  font-size: 1.5rem;
+  line-height: 2rem;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+}
+@media (min-width: 768px) {
+  :where(h2):not(.dashboard-scope *) {
+    font-size: 1.875rem;
+    line-height: 2.25rem;
+  }
+}
+:where(h3):not(.dashboard-scope *) {
+  font-size: 1.25rem;
+  line-height: 1.75rem;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+}
+@media (min-width: 768px) {
+  :where(h3):not(.dashboard-scope *) {
+    font-size: 1.5rem;
+    line-height: 2rem;
+  }
+}
+:where(h4):not(.dashboard-scope *) {
+  font-size: 1.125rem;
+  line-height: 1.75rem;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+}
+@media (min-width: 768px) {
+  :where(h4):not(.dashboard-scope *) {
+    font-size: 1.25rem;
+    line-height: 1.75rem;
+  }
+}
+:where(p):not(.dashboard-scope *) {
+  font-size: 1rem;
+  line-height: 1.5;
+  letter-spacing: 0;
+}
+@media (min-width: 768px) {
+  :where(p):not(.dashboard-scope *) {
+    font-size: 1.125rem;
+    line-height: 1.75rem;
+  }
 }
 
 .glass {
@@ -87,8 +187,31 @@ p {
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
 }
 
+.dark .glass,
+.theme-dark .glass {
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+}
+
+/* Rich Text Editor - Dark mode support */
+[contenteditable] {
+  color: rgb(15 23 42); /* slate-900 */
+}
+
+.dark [contenteditable],
+.theme-dark [contenteditable] {
+  color: rgb(226 232 240) !important; /* slate-200 */
+}
+
+.dark [contenteditable] *,
+.theme-dark [contenteditable] * {
+  color: inherit !important;
+}
+
 .text-gradient {
   background: linear-gradient(to right, #10b981, #3b82f6);
+  background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }

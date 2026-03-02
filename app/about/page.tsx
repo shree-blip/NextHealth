@@ -10,10 +10,10 @@ import { ShieldCheck, Target, Zap, CheckCircle2, Building, Users, Lock, Award } 
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'About NextGen Marketing Agency | Healthcare Marketing Experts in TX',
-  description: 'Learn about NextGen Marketing Agency, the premier healthcare marketing and automation firm in Irving, TX. We specialize in HIPAA-compliant growth systems for medical practices.',
+  title: 'About NexHealth Healthcare Marketing | Healthcare Marketing Experts in TX',
+  description: 'Learn about NexHealth Healthcare Marketing, the premier healthcare marketing and automation firm in Irving, TX. We specialize in HIPAA-compliant growth systems for medical practices.',
   alternates: {
-    canonical: 'https://nextgenmarketing.agency/about',
+    canonical: 'https://nexhealthmarketing.com/about',
   }
 };
 
@@ -22,8 +22,8 @@ const schema = {
   "@type": "AboutPage",
   "mainEntity": {
     "@type": "ProfessionalService",
-    "name": "NextGen Marketing Agency",
-    "description": "Healthcare marketing and automation agency based in Irving, Texas.",
+    "name": "NexHealth Healthcare Marketing",
+    "description": "Healthcare marketing and automation firm based in Irving, Texas.",
     "address": {
       "@type": "PostalAddress",
       "streetAddress": "3001 Skyway Cir N",
@@ -37,16 +37,16 @@ const schema = {
 
 const faqs = [
   {
-    q: "What makes NextGen Marketing Agency different from other marketing firms?",
+    q: "What makes NexHealth Healthcare Marketing different from other marketing firms?",
     a: "Most marketing agencies operate as vendors; they drive clicks and send you a monthly report. We operate as operational integrators. We recognized that driving raw leads to an overwhelmed front desk actually harms a clinic. Therefore, we built the 'Clinic Growth OS'—a system that not only generates high-acuity patient traffic through SEO and Paid Media but also provides the AI automation infrastructure required to intake, schedule, and process those patients without human intervention."
   },
   {
     q: "Are you exclusively focused on the healthcare industry?",
-    a: "Yes. We are a 100% healthcare-exclusive agency. The medical sector requires a profound understanding of patient acuity, complex insurance routing, and strict federal compliance (HIPAA). A generalist agency cannot navigate the nuances of marketing a Freestanding ER versus a Wellness Clinic. Our entire team—from copywriters to developers—is trained specifically in medical marketing."
+    a: "Yes. We are a 100% healthcare-exclusive firm. The medical sector requires a profound understanding of patient acuity, complex insurance routing, and strict federal compliance (HIPAA). A generalist firm cannot navigate the nuances of marketing a Freestanding ER versus a Wellness Clinic. Our entire team—from copywriters to developers—is trained specifically in medical marketing."
   },
   {
     q: "What is a Business Associate Agreement (BAA) and do you sign them?",
-    a: "A Business Associate Agreement (BAA) is a legally binding contract required by HIPAA. It dictates that any third-party vendor (like a marketing agency) that handles Protected Health Information (PHI) is legally responsible for safeguarding that data. Yes, we sign BAAs with all of our clients. We utilize secure, encrypted servers and compliant software stacks to ensure your clinic is never exposed to regulatory risk."
+    a: "A Business Associate Agreement (BAA) is a legally binding contract required by HIPAA. It dictates that any third-party vendor (like a healthcare marketing firm) that handles Protected Health Information (PHI) is legally responsible for safeguarding that data. Yes, we sign BAAs with all of our clients. We utilize secure, encrypted servers and compliant software stacks to ensure your clinic is never exposed to regulatory risk."
   },
   {
     q: "Where is your team located?",
@@ -81,13 +81,13 @@ export default function AboutPage() {
               <h2 className="text-3xl font-bold mb-6">Transcending the Vendor Relationship</h2>
               <div className="space-y-6 text-slate-600 text-lg leading-relaxed">
                 <p>
-                  The genesis of NextGen Marketing Agency was rooted in a singular observation: traditional marketing agencies were actively harming high-volume clinics. By successfully driving thousands of digital inquiries and phone calls to Freestanding ERs and Urgent Cares, these agencies were inadvertently crushing the administrative staff.
+                  The genesis of NexHealth Healthcare Marketing was rooted in a singular observation: traditional marketing agencies were actively harming high-volume clinics. By successfully driving thousands of digital inquiries and phone calls to Freestanding ERs and Urgent Cares, these agencies were inadvertently crushing the administrative staff.
                 </p>
                 <p>
                   Front desks became overwhelmed. Hold times skyrocketed. Patient satisfaction plummeted. The marketing was &quot;working,&quot; but the clinic was failing to process the volume.
                 </p>
                 <p>
-                  We realized that in the modern healthcare landscape, marketing and operations cannot exist in silos. We pivoted our entire agency model to become operational integrators. We don&apos;t just build Google Ads campaigns; we build the AI chatbots that answer the inquiries generated by those ads. We don&apos;t just do Local SEO; we build the automated digital intake forms that process the patients who find you on Google Maps.
+                  We realized that in the modern healthcare landscape, marketing and operations cannot exist in silos. We pivoted our entire model to become operational integrators. We don&apos;t just build Google Ads campaigns; we build the AI chatbots that answer the inquiries generated by those ads. We don&apos;t just do Local SEO; we build the automated digital intake forms that process the patients who find you on Google Maps.
                 </p>
               </div>
             </FadeIn>
@@ -195,7 +195,7 @@ export default function AboutPage() {
           <FadeIn className="text-center mb-16">
             <h2 className="h2 font-bold mb-6">About Us FAQ</h2>
             <p className="text-xl text-slate-600 max-w-2xl mx-auto">
-              Learn more about our agency structure, compliance, and operations.
+              Learn more about our company structure, compliance, and operations.
             </p>
           </FadeIn>
           <FadeIn delay={0.2}>

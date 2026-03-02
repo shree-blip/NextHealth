@@ -65,7 +65,7 @@ export default function TeamPage() {
       <Navbar />
       <Hero
         heading={<>The <span className="text-emerald-500">Infrastructure</span></>}
-        subheading="Meet the specialists engineering your clinical growth. We are more than an agency; we are your extended operations team."
+        subheading="Meet the specialists engineering your clinical growth. We are more than a firm; we are your extended operations team."
         primaryCTA={{ label: 'Work With Us', href: '/contact' }}
         secondaryCTA={{ label: 'View Open Roles', href: '#careers' }}
       />

@@ -46,7 +46,7 @@ export default function ProvenResultsContent() {
             transition={{ duration: 0.8 }}
             className="text-center mb-16"
           >
-            <h2 className={`text-4xl font-black mb-4 ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('Real Dashboard Analytics')}</h2>
+            <h2 className={`text-3xl font-black mb-4 ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('Real Dashboard Analytics')}</h2>
             <p className={`text-xl max-w-2xl mx-auto ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
               {t('Track exactly what matters: clicks, impressions, phone calls, website traffic, and patient engagement metrics from your Google properties.')}
             </p>
@@ -159,7 +159,7 @@ export default function ProvenResultsContent() {
             viewport={{ once: true }}
             className="text-center mb-16"
           >
-            <h2 className={`text-4xl font-black mb-4 ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('Medical Automation Results')}</h2>
+            <h2 className={`text-3xl font-black mb-4 ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('Medical Automation Results')}</h2>
             <p className={`text-xl max-w-3xl mx-auto ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
               {t('n8n and custom healthcare workflows that reduce front-desk load, speed response time, and recover missed revenue opportunities.')}
             </p>
@@ -209,7 +209,7 @@ export default function ProvenResultsContent() {
             viewport={{ once: true }}
             className="text-center mb-16"
           >
-            <h2 className="text-4xl font-black mb-4">{t('Average Client Improvements')}</h2>
+            <h2 className="text-3xl font-black mb-4">{t('Average Client Improvements')}</h2>
             <p className={`text-xl max-w-2xl mx-auto ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
               {t('Based on verified analytics data from our healthcare practice clients')}
             </p>
@@ -253,7 +253,7 @@ export default function ProvenResultsContent() {
             viewport={{ once: true }}
             className="text-center mb-16"
           >
-            <h2 className={`text-4xl font-black mb-4 ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('Success Stories')}</h2>
+            <h2 className={`text-3xl font-black mb-4 ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('Success Stories')}</h2>
             <p className={`text-xl max-w-2xl mx-auto ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
               {t('See how different healthcare practices achieved breakthrough results')}
             </p>

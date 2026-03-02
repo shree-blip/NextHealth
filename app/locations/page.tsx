@@ -10,10 +10,10 @@ import Link from 'next/link';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Texas Healthcare Marketing Locations | NextGen Marketing Agency',
+  title: 'Texas Healthcare Marketing Locations | NexHealth Healthcare Marketing',
   description: 'We provide hyper-local SEO and patient acquisition strategies for medical clinics across Texas, including Dallas, Houston, Austin, and high-growth suburbs.',
   alternates: {
-    canonical: 'https://nextgenmarketing.agency/locations',
+    canonical: 'https://nexhealthmarketing.com/locations',
   }
 };
 
@@ -23,7 +23,7 @@ const schema = {
   "serviceType": "Local Healthcare SEO & Marketing",
   "provider": {
     "@type": "ProfessionalService",
-    "name": "NextGen Marketing Agency",
+    "name": "NexHealth Healthcare Marketing",
     "address": {
       "@type": "PostalAddress",
       "streetAddress": "3001 Skyway Cir N",

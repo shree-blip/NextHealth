@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   description: 'Expert Google Business Profile optimization for healthcare practices. Dominate your local market and be the top choice patients find on Google Maps.',
   keywords: 'Google Business Profile optimization, Google My Business for doctors, local search optimization, healthcare GBP',
   alternates: {
-    canonical: 'https://nextgenmarketing.agency/services/google-business-profile',
+    canonical: 'https://nexhealthmarketing.com/services/google-business-profile',
   }
 };
 

@@ -37,7 +37,7 @@ export default function AdminBlogPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 p-8">
+    <div className="dashboard-scope min-h-screen bg-slate-50 dark:bg-slate-950 dark:text-slate-100 p-8">
       <div className="max-w-4xl mx-auto">
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold">Blog Management</h1>
@@ -52,12 +52,12 @@ export default function AdminBlogPage() {
         ) : (
           <ul className="space-y-4">
             {posts.map(post => (
-              <li key={post.id} className="bg-white p-4 rounded shadow flex justify-between items-center">
+              <li key={post.id} className="bg-white dark:bg-slate-900 p-4 rounded shadow dark:shadow-slate-800 flex justify-between items-center border dark:border-slate-700">
                 <div className="flex gap-4 items-center">
                   {post.coverImage && <img src={post.coverImage} alt="" className="w-16 h-16 object-cover rounded" />}
                   <div>
                     <div className="font-bold">{post.title}</div>
-                    <div className="text-sm text-slate-500">{post.slug}</div>
+                    <div className="text-sm text-slate-500 dark:text-slate-400">{post.slug}</div>
                   </div>
                 </div>
                 <div className="flex gap-2">

@@ -10,10 +10,10 @@ import { HeartPulse, Stethoscope, Activity, ShieldPlus, Target, TrendingUp, User
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Marketing for ERs, Urgent Cares & Wellness Clinics | NextGen Marketing Agency',
+  title: 'Marketing for ERs, Urgent Cares & Wellness Clinics | NexHealth Healthcare Marketing',
   description: 'Specialized marketing strategies for Freestanding ERs, Urgent Care centers, and Wellness & Longevity clinics across Texas. Dominate local search and acquire high-acuity patients.',
   alternates: {
-    canonical: 'https://nextgenmarketing.agency/industries',
+    canonical: 'https://nexhealthmarketing.com/industries',
   }
 };
 
@@ -23,7 +23,7 @@ const schema = {
   "serviceType": "Healthcare Industry Marketing",
   "provider": {
     "@type": "ProfessionalService",
-    "name": "NextGen Marketing Agency",
+    "name": "NexHealth Healthcare Marketing",
     "address": {
       "@type": "PostalAddress",
       "streetAddress": "3001 Skyway Cir N",

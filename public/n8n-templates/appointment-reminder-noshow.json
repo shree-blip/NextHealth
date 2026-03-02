@@ -140,7 +140,7 @@
   "settings": { "executionOrder": "v1" },
   "meta": {
     "templateCredsSetupCompleted": false,
-    "instanceId": "nextgen-appointment-reminders"
+    "instanceId": "nexhealth-appointment-reminders"
   },
   "tags": [{ "name": "Healthcare" }, { "name": "Appointments" }, { "name": "SMS" }, { "name": "No-Show Prevention" }]
 }

@@ -9,22 +9,23 @@ datasource db {
 
 // Blog models
 model Post {
-  id          Int       @id @default(autoincrement())
-  title       String
-  slug        String    @unique
-  excerpt     String?
-  content     String    // could be Markdown or richtext stored as plain text
-  coverImage  String?
-  seoTitle    String?
-  metaDesc    String?
-  canonical   String?
-  publishedAt DateTime?
-  updatedAt   DateTime  @updatedAt
-  author      Author?   @relation(fields: [authorId], references: [id])
-  authorId    Int?
-  categories  Category[] @relation("PostCategories")
-  tags        Tag[]      @relation("PostTags")
-  comments    Comment[]  @relation("PostComments")
+  id             Int       @id @default(autoincrement())
+  title          String
+  slug           String    @unique
+  excerpt        String?
+  content        String    // could be Markdown or richtext stored as plain text
+  coverImage     String?
+  coverImageAlt  String?
+  seoTitle       String?
+  metaDesc       String?
+  canonical      String?
+  publishedAt    DateTime?
+  updatedAt      DateTime  @updatedAt
+  author         Author?   @relation(fields: [authorId], references: [id])
+  authorId       Int?
+  categories     Category[] @relation("PostCategories")
+  tags           Tag[]      @relation("PostTags")
+  comments       Comment[]  @relation("PostComments")
 }
 
 model Author {
@@ -165,9 +166,94 @@ model User {
   name      String
   role      String   // "client" or "admin"
   avatar    String?  // URL to profile image
+  plan      String?  // Subscription plan name
+  planId    String?  // Subscription plan ID
+  stripeCustomerId     String?
+  stripeSubscriptionId String?
+  subscriptionStatus   String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   
+  clinicAssignments ClientClinic[]
+  
   @@index([email])
   @@index([role])
+}
+
+// Clinic/Site model for client sites
+model Clinic {
+  id          String   @id @default(cuid())
+  name        String
+  type        String   // "ER", "Urgent Care", "Wellness", "MedSpa", etc.
+  location    String
+  leads       Int      @default(0)
+  appointments Int     @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  clientAssignments ClientClinic[]
+  weeklyAnalytics   WeeklyAnalytics[]
+  
+  @@index([type])
+}
+
+// Many-to-many relationship between Clients and Clinics
+model ClientClinic {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  clinic    Clinic   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  clinicId  String
+  assignedAt DateTime @default(now())
+  
+  @@unique([userId, clinicId])
+  @@index([userId])
+  @@index([clinicId])
+}
+
+model WeeklyAnalytics {
+  id                       String   @id @default(cuid())
+  clinicId                 String
+  clinic                   Clinic   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  weekLabel                String
+  year                     Int
+  month                    Int
+  weekNumber               Int
+
+  blogsPublished           Int      @default(0)
+  avgRanking               Float    @default(0)
+  totalTraffic             Int      @default(0)
+
+  callsRequested           Int      @default(0)
+  websiteVisits            Int      @default(0)
+  directionClicks          Int      @default(0)
+
+  metaImpressions          Int      @default(0)
+  metaClicks               Int      @default(0)
+  metaCTR                  Float    @default(0)
+  metaConversions          Int      @default(0)
+  metaAdSpend              Float    @default(0)
+
+  googleImpressions        Int      @default(0)
+  googleClicks             Int      @default(0)
+  googleCTR                Float    @default(0)
+  googleCPC                Float    @default(0)
+  googleConversions        Int      @default(0)
+  googleCVR                Float    @default(0)
+  googleCostPerConversion  Float    @default(0)
+  googleTotalCost          Float    @default(0)
+
+  socialPosts              Int      @default(0)
+  socialViews              Int      @default(0)
+  patientCount             Int      @default(0)
+  digitalConversion        Int      @default(0)
+  conversionRate           Float    @default(0)
+  dailyPatientAvg          Float    @default(0)
+
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+
+  @@unique([clinicId, year, month, weekNumber])
+  @@index([clinicId])
+  @@index([year, month, weekNumber])
 }

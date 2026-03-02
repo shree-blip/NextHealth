@@ -32,7 +32,13 @@ export default function BlogInsights() {
               viewport={{ once: true }}
               transition={{ delay: idx * 0.1 }}
             >
-              <img src={p.image} alt={p.title} className="w-full h-48 object-cover" />
+              <img
+                src={p.image}
+                alt={p.title}
+                loading="lazy"
+                decoding="async"
+                className="w-full h-48 object-cover"
+              />
               <div className="p-6">
                 <div className="text-sm text-emerald-500 uppercase">{p.category}</div>
                 <h3 className="mt-2 text-xl font-semibold text-slate-900">{p.title}</h3>

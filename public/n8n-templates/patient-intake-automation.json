@@ -138,7 +138,7 @@
   "settings": { "executionOrder": "v1" },
   "meta": {
     "templateCredsSetupCompleted": false,
-    "instanceId": "nextgen-healthcare-automation"
+    "instanceId": "nexhealth-healthcare-automation"
   },
   "tags": [{ "name": "Healthcare" }, { "name": "Patient Intake" }, { "name": "HIPAA" }]
 }

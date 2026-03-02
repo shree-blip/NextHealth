@@ -2,6 +2,10 @@ import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  serverExternalPackages: ['@prisma/client', '.prisma'],
+  experimental: {
+    optimizePackageImports: ['lucide-react', 'react-icons'],
+  },
   eslint: {
     ignoreDuringBuilds: true,
   },
@@ -16,6 +20,12 @@ const nextConfig: NextConfig = {
         hostname: 'picsum.photos',
         port: '',
         pathname: '/**', // This allows any path under the hostname
+      },
+      {
+        protocol: 'https',
+        hostname: 'ca.slack-edge.com',
+        port: '',
+        pathname: '/**',
       },
     ],
   },

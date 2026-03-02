@@ -10,7 +10,7 @@ import NewsArticleContent from '@/components/NewsArticleContent';
 const prisma = new PrismaClient();
 export const revalidate = 300;
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://nextgenhealthcaremarketing.com';
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://nexhealthmarketing.com';
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
@@ -52,7 +52,7 @@ export default async function NewsArticlePage({ params }: { params: Promise<{ sl
     dateModified: article.updatedAt.toISOString(),
     publisher: {
       '@type': 'Organization',
-      name: 'NextGen Healthcare Marketing',
+      name: 'NexHealth Healthcare Marketing',
       url: SITE_URL,
     },
     mainEntityOfPage: {
@@ -76,7 +76,7 @@ export default async function NewsArticlePage({ params }: { params: Promise<{ sl
   }));
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-50">
+    <main className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(newsSchema) }}
@@ -93,11 +93,11 @@ export default async function NewsArticlePage({ params }: { params: Promise<{ sl
             className="object-cover"
             priority
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/30 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/30 to-transparent dark:from-slate-950/90 dark:via-slate-950/50" />
           <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-10 lg:p-16">
             <div className="mx-auto max-w-4xl">
               {article.source && (
-                <span className="inline-flex items-center px-3 py-1 bg-blue-600/90 text-white text-xs font-bold rounded-full mb-4 backdrop-blur-sm">
+                <span className="inline-flex items-center px-3 py-1 bg-blue-600/90 dark:bg-blue-500/90 text-white text-xs font-bold rounded-full mb-4 backdrop-blur-sm">
                   {article.source}
                 </span>
               )}

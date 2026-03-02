@@ -3,7 +3,7 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://nextgenhealthcaremarketing.com';
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://nexhealthmarketing.com';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Static pages

@@ -17,6 +17,8 @@ export default function MapSection({ address }: MapSectionProps) {
         height="100%"
         frameBorder="0"
         src={src}
+        loading="lazy"
+        referrerPolicy="no-referrer-when-downgrade"
         allowFullScreen
         className="border-0"
       />

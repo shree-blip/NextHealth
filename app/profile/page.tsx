@@ -58,7 +58,7 @@ export default function ProfilePage() {
       <div className="container mx-auto px-4 max-w-2xl">
         {/* Back Button */}
         <Link
-          href={user.role === 'admin' ? '/dashboard/admin' : '/dashboard/client'}
+          href={user.role === 'admin' ? '/dashboard/admin?view=profile' : '/dashboard/client?view=profile'}
           className="inline-flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 mb-6 transition-colors"
         >
           <ArrowLeft className="h-4 w-4" />

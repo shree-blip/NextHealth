@@ -54,8 +54,8 @@ export default function ChatBot() {
         id: 'greeting',
         role: 'assistant',
         content: language === 'es'
-          ? '¡Hola! 👋 Soy el asistente de NextGen Healthcare Marketing. Estoy disponible 24/7 para ayudarle con preguntas sobre nuestros servicios de marketing médico. ¿En qué puedo ayudarle hoy?'
-          : "Hi there! 👋 I'm NextGen Healthcare Marketing's AI assistant. I'm available 24/7 to help with questions about our healthcare marketing services. How can I help you today?",
+          ? '¡Hola! 👋 Soy el asistente de NexHealth Healthcare Marketing. Estoy disponible 24/7 para ayudarle con preguntas sobre nuestros servicios de marketing médico. ¿En qué puedo ayudarle hoy?'
+          : "Hi there! 👋 I'm NexHealth Healthcare Marketing's AI assistant. I'm available 24/7 to help with questions about our healthcare marketing services. How can I help you today?",
         timestamp: new Date(),
       };
       setMessages([greeting]);
@@ -192,7 +192,7 @@ export default function ChatBot() {
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
             ref={chatContainerRef}
-            className={`fixed bottom-4 right-4 z-50 w-[calc(100vw-2rem)] sm:w-[420px] h-[600px] max-h-[85vh] flex flex-col rounded-3xl shadow-2xl border overflow-hidden ${
+            className={`fixed bottom-4 right-4 z-50 w-[calc(100%-2rem)] sm:w-[420px] h-[600px] max-h-[85vh] flex flex-col rounded-3xl shadow-2xl border overflow-hidden ${
               isDark
                 ? 'bg-slate-950 border-slate-800 shadow-black/40'
                 : 'bg-white border-slate-200 shadow-slate-300/40'
@@ -215,7 +215,7 @@ export default function ChatBot() {
                   <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-400 rounded-full border-2 border-emerald-600" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-sm">NextGen Assistant</h3>
+                  <h3 className="font-bold text-sm">NexHealth Assistant</h3>
                   <p className="text-[11px] text-emerald-100 flex items-center gap-1">
                     <Sparkles className="h-3 w-3" />
                     {language === 'es' ? 'IA · En línea 24/7' : 'AI-Powered · Online 24/7'}

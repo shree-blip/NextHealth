@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   description: 'Targeted Facebook and Instagram ads that convert scrollers into patients. Strategic Meta advertising campaigns designed specifically for healthcare practices.',
   keywords: 'Facebook ads for doctors, Instagram ads healthcare, Meta ads medical, healthcare social media advertising',
   alternates: {
-    canonical: 'https://nextgenmarketing.agency/services/meta-ads',
+    canonical: 'https://nexhealthmarketing.com/services/meta-ads',
   }
 };
 

@@ -1,10 +1,10 @@
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Healthcare Automation & Free N8N Templates | NextGen Marketing Agency',
+  title: 'Healthcare Automation & Free N8N Templates | NexHealth Healthcare Marketing',
   description: 'Download free, HIPAA-ready N8N automation templates for healthcare practices. Patient intake, appointment reminders, review collection, insurance verification, AI chatbots, and more.',
   alternates: {
-    canonical: 'https://nextgenmarketing.agency/automation',
+    canonical: 'https://nexhealthmarketing.com/automation',
   },
 };
 
@@ -14,7 +14,7 @@ const schema = {
   "serviceType": "Healthcare Automation",
   "provider": {
     "@type": "ProfessionalService",
-    "name": "NextGen Marketing Agency",
+    "name": "NexHealth Healthcare Marketing",
     "address": {
       "@type": "PostalAddress",
       "streetAddress": "3001 Skyway Cir N",

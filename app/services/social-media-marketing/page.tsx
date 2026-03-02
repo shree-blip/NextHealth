@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   description: 'Strategic social media marketing for healthcare practices. We own every platform—Instagram, TikTok, Facebook, LinkedIn—building community trust and driving patient acquisition.',
   keywords: 'healthcare social media marketing, medical social media, doctor social media, healthcare content marketing',
   alternates: {
-    canonical: 'https://nextgenmarketing.agency/services/social-media-marketing',
+    canonical: 'https://nexhealthmarketing.com/services/social-media-marketing',
   }
 };
 
@@ -19,7 +19,7 @@ const schema = {
   "description": "Strategic social media marketing for healthcare practices across Instagram, TikTok, Facebook, and LinkedIn.",
   "provider": {
     "@type": "ProfessionalService",
-    "name": "NextGen Marketing Agency"
+    "name": "NexHealth Healthcare Marketing"
   }
 };
 

@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   description: 'Real-time marketing analytics dashboards for healthcare practices. Know exactly what\'s working—appointments booked, revenue driven, and patient acquisition cost.',
   keywords: 'healthcare marketing analytics, medical marketing reports, healthcare marketing ROI, patient acquisition tracking',
   alternates: {
-    canonical: 'https://nextgenmarketing.agency/services/analytics-reporting',
+    canonical: 'https://nexhealthmarketing.com/services/analytics-reporting',
   }
 };
 

@@ -2,24 +2,25 @@ import Navbar from '@/components/Navbar';
 import Hero from '@/components/Hero';
 import Footer from '@/components/Footer';
 import dynamic from 'next/dynamic';
+import PricingCard from '@/components/PricingCard';
 
 const FadeIn = dynamic(() => import('@/components/FadeIn'));
 const FAQ = dynamic(() => import('@/components/FAQ'));
-import { Check, Zap, Shield, Rocket, BarChart, Clock, Users, ShieldCheck } from 'lucide-react';
+import { Check, BarChart, Clock, Users, ShieldCheck } from 'lucide-react';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Healthcare Marketing Pricing & Retainers | NextGen Marketing Agency',
+  title: 'Healthcare Marketing Pricing & Retainers | NexHealth Healthcare Marketing',
   description: 'Transparent pricing for healthcare marketing and clinical automation. View our retainer models for Wellness Clinics, Urgent Cares, and ERs in Texas.',
   alternates: {
-    canonical: 'https://nextgenmarketing.agency/pricing',
+    canonical: 'https://nexhealthmarketing.com/pricing',
   }
 };
 
 const schema = {
   "@context": "https://schema.org",
   "@type": "WebPage",
-  "name": "Pricing - NextGen Marketing Agency",
+  "name": "Pricing - NexHealth Healthcare Marketing",
   "description": "Transparent pricing and retainer models for healthcare marketing and automation services.",
   "mainEntity": {
     "@type": "ItemList",
@@ -44,61 +45,60 @@ const schema = {
 
 const plans = [
   {
-    name: "Silver",
-    price: "5,000",
+    name: "Wellness & Longevity",
+    price: "$5,000",
+    period: "/ Month",
     description: "Perfect for elective procedures and high-research patient journeys.",
     features: [
-      "Targeted Social Retargeting (Meta/IG)",
-      "Long-form Semantic SEO & Content",
-      "Automated Email Nurture Sequences",
-      "Aesthetic Website Design & Hosting",
-      "Basic AI Intake & Scheduling Bot",
-      "Monthly ROI & LTV Reports",
-      "HIPAA Compliant CRM Setup"
+      "Advanced SEO & Local Search Optimization",
+      "Google My Business Management",
+      "Targeted Google Ads & Meta Campaigns",
+      "AI Chatbot & Call Tracking Setup",
+      "Monthly Strategy & Performance Reports",
+      "Content Creation & Social Media"
     ],
-    icon: Shield,
-    color: "silver"
+    variant: 'professional' as const
   },
   {
-    name: "Gold",
-    price: "10,000",
+    name: "ER & Urgent Care",
+    price: "$10,000",
+    period: "/ Month",
     description: "High-acuity, rapid-response systems for immediate-need facilities.",
     features: [
-      "Localized PPC Dominance (Google Ads)",
-      "Zero-Click Maps Optimization (Local Pack)",
+      "High-Budget Google Ads Management",
       "Advanced AI Call Handling & Triage",
-      "Automated Insurance Verification Bot",
-      "4-Hour Critical SLA Response Time",
-      "Digital PR & News Distribution",
-      "Custom EHR/EMR Integration",
-      "Competitor Geofencing Campaigns"
+      "Real-Time Insurance Verification Bots",
+      "Priority Support & Rapid Response SLA",
+      "Multi-Location Campaign Orchestration",
+      "24/7 Performance Monitoring",
+      "Dedicated Account Manager"
     ],
-    icon: Rocket,
-    color: "gold",
+    variant: 'professional' as const,
     popular: true
   },
   {
-    name: "Platinum",
+    name: "Enterprise",
     price: "Custom",
+    period: "",
     description: "Comprehensive growth engine for large healthcare networks.",
     features: [
-      "Full Clinic Growth OS Deployment",
-      "Multi-location SEO Management",
-      "Custom AI Agent Training & Logic",
-      "Dedicated Account & Strategy Team",
-      "Enterprise Data Security & BAAs",
-      "White-label Analytics Dashboards",
-      "API Development & Custom Workflows"
+      "Custom Software Development",
+      "HIPAA-Compliant API Integrations",
+      "Multi-State Network Management",
+      "Advanced Analytics & BI Dashboards",
+      "Custom Automation Workflows",
+      "White-Glove Onboarding",
+      "Dedicated Development Team",
+      "Enterprise SLA & Support"
     ],
-    icon: Zap,
-    color: "platinum"
+    variant: 'premium' as const
   }
 ];
 
 const faqs = [
   {
     q: "Are there any hidden fees or setup costs?",
-    a: "No. We believe in absolute financial clarity. Our retainers cover all agency services, software access, and management fees. The only additional cost is your actual advertising spend (paid directly to Google/Meta) and any third-party API costs if you require highly customized EHR integrations. We explicitly differentiate between what you pay in ad spend versus what the agency retainer includes."
+    a: "No. We believe in absolute financial clarity. Our retainers cover all professional services, software access, and management fees. The only additional cost is your actual advertising spend (paid directly to Google/Meta) and any third-party API costs if you require highly customized EHR integrations. We explicitly differentiate between what you pay in ad spend versus what the retainer includes."
   },
   {
     q: "Do you require long-term contracts?",
@@ -106,7 +106,7 @@ const faqs = [
   },
   {
     q: "What is the '30-Day Launch Sprint'?",
-    a: "The first month of our partnership is highly structured to neutralize the common administrative fear of agency onboarding delays. During the 30-Day Launch Sprint, we execute a Technical SEO Audit, integrate your CRM/EHR, set up HIPAA-compliant call tracking, build the initial AI chatbot logic, and launch the first wave of Paid Media campaigns. You will see tangible operational changes within the first 30 days."
+    a: "The first month of our partnership is highly structured to neutralize the common administrative fear of onboarding delays. During the 30-Day Launch Sprint, we execute a Technical SEO Audit, integrate your CRM/EHR, set up HIPAA-compliant call tracking, build the initial AI chatbot logic, and launch the first wave of Paid Media campaigns. You will see tangible operational changes within the first 30 days."
   },
   {
     q: "Why is the ER & Urgent Care plan more expensive?",
@@ -136,62 +136,22 @@ export default function PricingPage() {
       {/* Pricing Cards */}
       <section className="py-24 border-b border-slate-200">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {plans.map((plan, index) => {
-              let baseBg = '';
-              let hoverBg = 'hover:bg-gradient-to-br hover:from-emerald-500 hover:to-emerald-700 hover:text-white';
-              let textColor = 'text-slate-900';
-              let borderColor = '';
-              if (plan.color === 'silver') {
-                baseBg = 'bg-gradient-to-br from-zinc-100 via-zinc-200 to-zinc-300';
-                borderColor = 'border-zinc-300';
-              } else if (plan.color === 'gold') {
-                baseBg = 'bg-gradient-to-br from-amber-50 via-yellow-100 to-amber-200';
-                borderColor = 'border-amber-300';
-              } else if (plan.color === 'platinum') {
-                baseBg = 'bg-gradient-to-br from-blue-50 via-slate-100 to-blue-200';
-                borderColor = 'border-blue-300';
-              }
-              return (
-                <FadeIn
-                  key={index}
-                  delay={index * 0.1}
-                  className={`relative flex flex-col p-8 rounded-[2.5rem] border-2 ${baseBg} ${textColor} ${borderColor} transition-all duration-300 hover:scale-105 ${hoverBg}`}
-                >
-                  {plan.popular && (
-                    <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-emerald-500 text-black text-xs font-bold px-4 py-1 rounded-full uppercase tracking-widest">
-                      Most Popular
-                    </div>
-                  )}
-                  <div className="mb-8">
-                    <plan.icon className="h-12 w-12 mb-6 text-slate-600" />
-                    <h3 className="text-2xl font-bold mb-2">{plan.name}</h3>
-                    <p className="text-slate-600 text-sm leading-relaxed">{plan.description}</p>
-                  </div>
-                  <div className="mb-8">
-                    <div className="flex items-baseline gap-1">
-                      <span className="text-4xl font-bold">$</span>
-                      <span className="text-6xl font-bold tracking-tighter">{plan.price}</span>
-                      {plan.price !== 'Custom' && <span className="text-slate-500">/mo</span>}
-                    </div>
-                  </div>
-                  <ul className="space-y-4 mb-10 flex-grow">
-                    {plan.features.map((feature, i) => (
-                      <li key={i} className="flex items-start gap-3 text-sm text-slate-700">
-                        <Check className="h-5 w-5 text-emerald-600 shrink-0" />
-                        <span className="leading-relaxed">{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  <a
-                    href="/signup"
-                    className="w-full py-4 rounded-2xl font-bold bg-white text-emerald-600 hover:bg-emerald-500 hover:text-white transition-all hover:scale-105 block text-center"
-                  >
-                    Sign Up
-                  </a>
-                </FadeIn>
-              );
-            })}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+            {plans.map((plan, index) => (
+              <PricingCard
+                key={plan.name}
+                name={plan.name}
+                price={plan.price}
+                period={plan.period}
+                description={plan.description}
+                features={plan.features}
+                cta="Get started"
+                ctaHref="/signup"
+                popular={plan.popular}
+                variant={plan.variant}
+                delay={index * 0.1}
+              />
+            ))}
           </div>
         </div>
       </section>

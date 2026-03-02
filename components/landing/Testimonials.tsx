@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 const items = [
-  { quote: 'This agency took our product to the next level.', name: 'Alice Johnson', role: 'CEO, HealthApp', photo: '/team1.jpg' },
+  { quote: 'This team took our product to the next level.', name: 'Alice Johnson', role: 'CEO, HealthApp', photo: '/team1.jpg' },
   { quote: 'Their AI chatbots cut our intake time in half.', name: 'Bob Lee', role: 'CTO, MedTech', photo: '/team2.jpg' },
   { quote: 'Professional and data-driven from day one.', name: 'Cara Smith', role: 'Product Lead, EduPlatform', photo: '/team3.jpg' },
 ];

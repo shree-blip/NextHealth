@@ -34,15 +34,15 @@ export default function AdminNewsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 p-8">
+    <div className="dashboard-scope min-h-screen bg-slate-50 dark:bg-slate-950 dark:text-slate-100 p-8">
       <div className="max-w-4xl mx-auto">
         <div className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-3xl font-bold">Healthcare News Management</h1>
-            <p className="text-slate-500 mt-1">Create and manage healthcare news articles</p>
+            <p className="text-slate-500 dark:text-slate-400 mt-1">Create and manage healthcare news articles</p>
           </div>
           <div className="flex gap-3">
-            <Link href="/dashboard/admin" className="px-4 py-2 bg-slate-200 text-slate-700 rounded hover:bg-slate-300">
+            <Link href="/dashboard/admin" className="px-4 py-2 bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded hover:bg-slate-300 dark:hover:bg-slate-700">
               ← Back to Admin
             </Link>
             <Link href="/dashboard/admin/news/new" className="px-4 py-2 bg-emerald-600 text-white rounded hover:bg-emerald-500">
@@ -53,16 +53,16 @@ export default function AdminNewsPage() {
         {loading ? (
           <p>Loading...</p>
         ) : articles.length === 0 ? (
-          <p className="text-slate-500">No news articles yet. Create your first one!</p>
+          <p className="text-slate-500 dark:text-slate-400">No news articles yet. Create your first one!</p>
         ) : (
           <ul className="space-y-4">
             {articles.map(article => (
-              <li key={article.id} className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex justify-between items-center">
+              <li key={article.id} className="bg-white dark:bg-slate-900 p-4 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 flex justify-between items-center">
                 <div className="flex gap-4 items-center">
                   {article.coverImage && <img src={article.coverImage} alt="" className="w-20 h-14 object-cover rounded-lg" />}
                   <div>
-                    <div className="font-bold text-slate-900">{article.title}</div>
-                    <div className="text-sm text-slate-500 flex gap-3 mt-1">
+                    <div className="font-bold text-slate-900 dark:text-white">{article.title}</div>
+                    <div className="text-sm text-slate-500 dark:text-slate-400 flex gap-3 mt-1">
                       <span>/{article.slug}</span>
                       {article.source && <span className="text-emerald-600">Source: {article.source}</span>}
                       {article.publishedAt && <span>{new Date(article.publishedAt).toLocaleDateString()}</span>}

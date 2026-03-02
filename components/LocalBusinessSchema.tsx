@@ -1,18 +1,18 @@
 export default function LocalBusinessSchema() {
-  const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://nextgenhealthcaremarketing.com';
+  const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://nexhealthmarketing.com';
 
   const schema = {
     '@context': 'https://schema.org',
     '@type': 'LocalBusiness',
     '@id': `${SITE_URL}/#organization`,
-    name: 'NextGen Healthcare Marketing',
-    alternateName: 'NextGen Marketing Agency',
+    name: 'NexHealth Healthcare Marketing',
+    alternateName: 'NexHealth Healthcare Marketing',
     description:
-      'Specialized digital marketing agency for healthcare providers — ERs, urgent care, MedSpas, and wellness clinics. Services include SEO, Google Ads, Meta Ads, web design, and AI-powered marketing automation.',
+      'Specialized digital healthcare marketing firm for healthcare providers — ERs, urgent care, MedSpas, and wellness clinics. Services include SEO, Google Ads, Meta Ads, web design, and AI-powered marketing automation.',
     url: SITE_URL,
-    logo: `${SITE_URL}/Client-review-image/nextgen_footerlogo.png`,
-    image: `${SITE_URL}/Client-review-image/nextgen_footerlogo.png`,
-    email: 'info@nextgenhealthcaremarketing.com',
+    logo: `${SITE_URL}/Client-review-image/nexhealth_logo.png`,
+    image: `${SITE_URL}/Client-review-image/nexhealth_logo.png`,
+    email: 'info@nexhealthmarketing.com',
     address: {
       '@type': 'PostalAddress',
       streetAddress: '3811 Turtle Creek Blvd, Suite 600',
@@ -51,10 +51,10 @@ export default function LocalBusinessSchema() {
       'Marketing Automation',
     ],
     sameAs: [
-      'https://www.facebook.com/nextgenhealthcaremarketing',
-      'https://www.instagram.com/nextgenhealthcaremarketing',
-      'https://www.linkedin.com/company/nextgenhealthcaremarketing',
-      'https://twitter.com/nextgenhealth',
+      'https://www.facebook.com/nexhealthmarketing',
+      'https://www.instagram.com/nexhealthmarketing',
+      'https://www.linkedin.com/company/nexhealthmarketing',
+      'https://twitter.com/nexhealth',
     ],
     aggregateRating: {
       '@type': 'AggregateRating',
@@ -97,7 +97,7 @@ export default function LocalBusinessSchema() {
   const websiteSchema = {
     '@context': 'https://schema.org',
     '@type': 'WebSite',
-    name: 'NextGen Healthcare Marketing',
+    name: 'NexHealth Healthcare Marketing',
     url: SITE_URL,
     potentialAction: {
       '@type': 'SearchAction',

@@ -1,5 +1,6 @@
 'use client';
 import { useSitePreferences } from '@/components/SitePreferencesProvider';
+import Logo from '@/components/Logo';
 
 export default function LandingFooter() {
   const { theme } = useSitePreferences();
@@ -9,6 +10,7 @@ export default function LandingFooter() {
     <footer className={`py-12 mt-12 ${isDark ? 'bg-slate-900 text-white' : 'bg-slate-50 text-slate-900'}`}>
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-3 gap-8">
         <div className="space-y-4">
+          <Logo showText={false} iconSize={48} darkText={!isDark} />
           <h4 className="font-bold">Services</h4>
           <ul className="space-y-2">
             <li><a href="/services" className={`transition-colors ${isDark ? 'text-slate-300 hover:text-white' : 'text-slate-600 hover:text-emerald-600'}`}>All Services</a></li>
@@ -34,7 +36,7 @@ export default function LandingFooter() {
         </div>
       </div>
       <div className={`mt-8 text-center text-sm ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
-        © {new Date().getFullYear()} Your Company. All rights reserved.
+        © {new Date().getFullYear()} NexHealth Healthcare Marketing. All rights reserved.
       </div>
     </footer>
   );

@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   description: 'HIPAA-compliant email marketing and drip campaigns for healthcare. Nurture leads and keep patients coming back with strategic email automation.',
   keywords: 'healthcare email marketing, medical email campaigns, patient email automation, healthcare drip campaigns',
   alternates: {
-    canonical: 'https://nextgenmarketing.agency/services/email-drip-campaigns',
+    canonical: 'https://nexhealthmarketing.com/services/email-drip-campaigns',
   }
 };
 

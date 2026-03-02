@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import prisma from '@/lib/prisma';
 import crypto from 'crypto';
 import { sessions } from '@/lib/sessions';
-
-const prisma = new PrismaClient();
 
 // Admin emails – add more as needed
 const ADMIN_EMAILS = ['shree@focusyourfinance.com'];
@@ -15,14 +13,18 @@ function isAdminEmail(email: string): boolean {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { email, password } = body;
+    const { email, password, name: providedName, role: providedRole } = body;
 
     if (!email) {
       return NextResponse.json({ error: 'Email is required' }, { status: 400 });
     }
 
-    // Auto-detect role from email
-    const role = isAdminEmail(email) ? 'admin' : 'client';
+    if (!password) {
+      return NextResponse.json({ error: 'Password is required' }, { status: 400 });
+    }
+
+    // Auto-detect role from email if not explicitly provided
+    const role = providedRole || (isAdminEmail(email) ? 'admin' : 'client');
 
     // Try to find or create user in database
     let user;
@@ -30,27 +32,28 @@ export async function POST(req: NextRequest) {
       user = await prisma.user.findUnique({ where: { email } });
 
       if (!user) {
-        user = await prisma.user.create({
-          data: {
-            email,
-            password: password || 'demo',
-            name: email.split('@')[0],
-            role,
-          },
-        });
+        // No account exists — only auto-create if signing up (role explicitly provided)
+        if (providedRole) {
+          user = await prisma.user.create({
+            data: {
+              email,
+              password: password,
+              name: providedName || email.split('@')[0],
+              role,
+            },
+          });
+        } else {
+          return NextResponse.json({ error: 'No account found with this email. Please contact your administrator.' }, { status: 401 });
+        }
+      } else {
+        // User exists — verify password
+        if (user.password !== password) {
+          return NextResponse.json({ error: 'Invalid password' }, { status: 401 });
+        }
       }
     } catch (dbError) {
-      console.warn('Database error, using session-only auth:', dbError);
-      user = {
-        id: crypto.randomUUID(),
-        email,
-        name: email.split('@')[0],
-        role,
-        avatar: null,
-        password: 'demo',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
+      console.error('Database error during login:', dbError);
+      return NextResponse.json({ error: 'Login failed. Please try again.' }, { status: 500 });
     }
 
     // Create session

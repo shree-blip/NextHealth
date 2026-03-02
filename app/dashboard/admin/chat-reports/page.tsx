@@ -51,14 +51,14 @@ export default function AdminChatReportsPage() {
   }, [sessions]);
 
   return (
-    <div className="min-h-screen bg-slate-50 p-8">
+    <div className="dashboard-scope min-h-screen bg-slate-50 dark:bg-slate-950 dark:text-slate-100 p-8">
       <div className="max-w-7xl mx-auto">
         <div className="flex flex-wrap justify-between items-center gap-3 mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-slate-900">Chat Conversation Reports</h1>
-            <p className="text-slate-500 mt-1">Track visitor conversations, timestamps, and AI-generated summaries</p>
+            <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Chat Conversation Reports</h1>
+            <p className="text-slate-500 dark:text-slate-400 mt-1">Track visitor conversations, timestamps, and AI-generated summaries</p>
           </div>
-          <Link href="/dashboard/admin" className="px-4 py-2 bg-slate-200 text-slate-700 rounded hover:bg-slate-300">
+          <Link href="/dashboard/admin" className="px-4 py-2 bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded hover:bg-slate-300 dark:hover:bg-slate-700">
             ← Back to Admin
           </Link>
         </div>
@@ -70,40 +70,40 @@ export default function AdminChatReportsPage() {
         </div>
 
         {loading ? (
-          <div className="bg-white border border-slate-200 rounded-2xl p-8 text-slate-500">Loading chat reports...</div>
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-8 text-slate-500 dark:text-slate-400">Loading chat reports...</div>
         ) : sessions.length === 0 ? (
-          <div className="bg-white border border-slate-200 rounded-2xl p-8 text-slate-500">No chatbot conversations recorded yet.</div>
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-8 text-slate-500 dark:text-slate-400">No chatbot conversations recorded yet.</div>
         ) : (
           <div className="space-y-4">
             {sessions.map((session) => {
               const isExpanded = expandedSessionId === session.id;
               return (
-                <article key={session.id} className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+                <article key={session.id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-sm overflow-hidden">
                   <button
-                    className="w-full text-left p-5 hover:bg-slate-50 transition-colors"
+                    className="w-full text-left p-5 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
                     onClick={() => setExpandedSessionId(isExpanded ? null : session.id)}
                   >
                     <div className="flex flex-wrap items-start justify-between gap-4">
                       <div>
-                        <h2 className="text-lg font-bold text-slate-900">Session {session.sessionKey.slice(0, 12)}...</h2>
-                        <p className="text-sm text-slate-500 mt-1">
+                        <h2 className="text-lg font-bold text-slate-900 dark:text-white">Session {session.sessionKey.slice(0, 12)}...</h2>
+                        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
                           {new Date(session.startedAt).toLocaleString()} · Last activity {new Date(session.lastMessageAt).toLocaleString()}
                         </p>
-                        <p className="text-sm text-slate-600 mt-2">{session.summary || 'No summary generated yet.'}</p>
+                        <p className="text-sm text-slate-600 dark:text-slate-400 mt-2">{session.summary || 'No summary generated yet.'}</p>
                       </div>
                       <div className="flex flex-col items-end gap-2">
-                        <span className="text-xs px-2.5 py-1 rounded-full bg-slate-100 text-slate-700">{session.language || 'en'}</span>
-                        <span className="text-xs px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700">{session.totalMessages} messages</span>
+                        <span className="text-xs px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">{session.language || 'en'}</span>
+                        <span className="text-xs px-2.5 py-1 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300">{session.totalMessages} messages</span>
                       </div>
                     </div>
                   </button>
 
                   {isExpanded && (
-                    <div className="border-t border-slate-200 p-5 space-y-5">
-                      <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                        <h3 className="font-semibold text-slate-900 mb-1">Admin Report</h3>
-                        <p className="text-sm text-slate-700">{session.report || 'No report generated yet.'}</p>
-                        <p className="text-xs text-slate-500 mt-2">Visitor ID: {session.visitorId || 'anonymous'}</p>
+                    <div className="border-t border-slate-200 dark:border-slate-700 p-5 space-y-5">
+                      <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 p-4">
+                        <h3 className="font-semibold text-slate-900 dark:text-white mb-1">Admin Report</h3>
+                        <p className="text-sm text-slate-700 dark:text-slate-300">{session.report || 'No report generated yet.'}</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">Visitor ID: {session.visitorId || 'anonymous'}</p>
                       </div>
 
                       <div className="space-y-3 max-h-[420px] overflow-y-auto pr-1">
@@ -112,15 +112,15 @@ export default function AdminChatReportsPage() {
                             key={message.id}
                             className={`rounded-xl p-3 border ${
                               message.role === 'user'
-                                ? 'bg-emerald-50 border-emerald-200'
-                                : 'bg-slate-50 border-slate-200'
+                                ? 'bg-emerald-50 dark:bg-emerald-900/30 border-emerald-200 dark:border-emerald-800'
+                                : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700'
                             }`}
                           >
                             <div className="flex items-center justify-between gap-2 mb-1">
-                              <span className="text-xs font-semibold uppercase tracking-wide text-slate-600">{message.role}</span>
-                              <time className="text-xs text-slate-500">{new Date(message.createdAt).toLocaleString()}</time>
+                              <span className="text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-400">{message.role}</span>
+                              <time className="text-xs text-slate-500 dark:text-slate-400">{new Date(message.createdAt).toLocaleString()}</time>
                             </div>
-                            <p className="text-sm text-slate-800 whitespace-pre-wrap">{message.content}</p>
+                            <p className="text-sm text-slate-800 dark:text-slate-200 whitespace-pre-wrap">{message.content}</p>
                           </div>
                         ))}
                       </div>
@@ -138,9 +138,9 @@ export default function AdminChatReportsPage() {
 
 function StatCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="bg-white border border-slate-200 rounded-2xl p-5">
-      <p className="text-sm text-slate-500">{label}</p>
-      <p className="text-2xl font-bold text-slate-900 mt-1">{value}</p>
+    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-5">
+      <p className="text-sm text-slate-500 dark:text-slate-400">{label}</p>
+      <p className="text-2xl font-bold text-slate-900 dark:text-white mt-1">{value}</p>
     </div>
   );
 }

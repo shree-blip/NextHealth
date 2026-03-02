@@ -1,6 +1,7 @@
 'use client';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
+import Image from 'next/image';
 import {
   FaFacebook,
   FaInstagram,
@@ -134,7 +135,15 @@ export default function HeroNew() {
             className="relative"
           >
             <div className="relative rounded-2xl overflow-hidden shadow-2xl">
-              <img src="/5.png" alt="Healthcare Marketing Dashboard" className="w-full h-auto" />
+              <Image
+                src="/5.png"
+                alt="Healthcare Marketing Dashboard"
+                width={1400}
+                height={1000}
+                priority
+                sizes="(min-width: 1024px) 50vw, 100vw"
+                className="w-full h-auto"
+              />
               <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
             </div>
           </motion.div>

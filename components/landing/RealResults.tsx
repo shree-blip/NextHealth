@@ -48,7 +48,7 @@ export default function RealResults() {
           viewport={{ once: true }}
           className="text-center mb-16"
         >
-          <h2 className={`text-4xl font-black mb-4 ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('Real results')}</h2>
+          <h2 className={`text-3xl font-black mb-4 ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('Real results')}</h2>
           <p className={`text-xl max-w-2xl mx-auto ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
             {t("We don't just talk—we deliver measurable outcomes for healthcare practices.")}
           </p>
@@ -69,6 +69,8 @@ export default function RealResults() {
                   <img 
                     src={result.image} 
                     alt={result.client} 
+                    loading="lazy"
+                    decoding="async"
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
                 </div>
@@ -133,11 +135,11 @@ export default function RealResults() {
           <div className="mt-6 flex justify-center gap-6 text-sm">
             <div className="flex items-center gap-2">
               <div className={`w-4 h-4 rounded ${isDark ? 'bg-slate-600' : 'bg-slate-300'}`} />
-              <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>{t('Before NextGen')}</span>
+              <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>{t('Before NexHealth')}</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-4 h-4 bg-emerald-500 rounded" />
-              <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>{t('After NextGen')}</span>
+              <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>{t('After NexHealth')}</span>
             </div>
           </div>
         </motion.div>
@@ -161,6 +163,8 @@ export default function RealResults() {
               <img 
                 src="/Search_console_dahbord.png" 
                 alt="Google Search Console Dashboard" 
+                loading="lazy"
+                decoding="async"
                 className="w-full h-auto object-cover hover:opacity-90 transition-opacity"
               />
               <div className={`p-6 ${isDark ? 'bg-slate-800' : 'bg-white border-t border-slate-200'}`}>
@@ -175,6 +179,8 @@ export default function RealResults() {
               <img 
                 src="/GMB-Dashboard.png" 
                 alt="Google My Business Dashboard" 
+                loading="lazy"
+                decoding="async"
                 className="w-full h-auto object-cover hover:opacity-90 transition-opacity"
               />
               <div className={`p-6 ${isDark ? 'bg-slate-800' : 'bg-white border-t border-slate-200'}`}>

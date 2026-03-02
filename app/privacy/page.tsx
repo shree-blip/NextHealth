@@ -4,8 +4,8 @@ import Footer from '@/components/Footer';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Privacy Policy | NextGen Marketing Agency',
-  description: 'Privacy Policy for NextGen Marketing Agency.',
+  title: 'Privacy Policy | NexHealth Healthcare Marketing',
+  description: 'Privacy Policy for NexHealth Healthcare Marketing.',
 };
 
 export default function PrivacyPolicy() {
@@ -27,7 +27,7 @@ export default function PrivacyPolicy() {
             
             <h2 className="text-2xl font-bold mt-10 mb-4 text-slate-900">1. Introduction</h2>
             <p className="text-slate-600 mb-6">
-              NextGen Marketing Agency (&quot;we,&quot; &quot;our,&quot; or &quot;us&quot;) respects your privacy and is committed to protecting it through our compliance with this policy. This policy describes the types of information we may collect from you or that you may provide when you visit the website nextgenmarketing.agency (our &quot;Website&quot;) and our practices for collecting, using, maintaining, protecting, and disclosing that information.
+              NexHealth Healthcare Marketing (&quot;we,&quot; &quot;our,&quot; or &quot;us&quot;) respects your privacy and is committed to protecting it through our compliance with this policy. This policy describes the types of information we may collect from you or that you may provide when you visit the website nexhealthmarketing.com (our &quot;Website&quot;) and our practices for collecting, using, maintaining, protecting, and disclosing that information.
             </p>
 
             <h2 className="text-2xl font-bold mt-10 mb-4 text-slate-900">2. Information We Collect</h2>
@@ -70,7 +70,7 @@ export default function PrivacyPolicy() {
             <h2 className="text-2xl font-bold mt-10 mb-4 text-slate-900">6. Contact Information</h2>
             <p className="text-slate-600 mb-6">
               To ask questions or comment about this privacy policy and our privacy practices, contact us at:<br />
-              hello@nextgenmarketing.agency<br />
+              hello@nexhealthmarketing.com<br />
               3001 Skyway Cir N, Irving, TX 75038
             </p>
           </div>

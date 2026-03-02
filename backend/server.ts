@@ -12,7 +12,7 @@ const adminJs = new AdminJS({
   databases: [prisma],
   rootPath: '/admin',
   branding: {
-    companyName: 'NextGen Marketing Admin',
+    companyName: 'NexHealth Marketing Admin',
   },
 });
 
