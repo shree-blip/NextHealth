@@ -1,13 +1,7 @@
 {
   "buildCommand": "npm run build && npx prisma migrate deploy",
   "env": {
-    "NODE_ENV": "production",
-    "JWT_SECRET": "@JWT_SECRET",
-    "DATABASE_URL": "@DATABASE_URL",
-    "STRIPE_SECRET_KEY": "@STRIPE_SECRET_KEY",
-    "STRIPE_SILVER_PRICE_ID": "@STRIPE_SILVER_PRICE_ID",
-    "STRIPE_GOLD_PRICE_ID": "@STRIPE_GOLD_PRICE_ID",
-    "STRIPE_PLATINUM_PRICE_ID": "@STRIPE_PLATINUM_PRICE_ID"
+    "NODE_ENV": "production"
   },
   "regions": ["iad1"]
 }
