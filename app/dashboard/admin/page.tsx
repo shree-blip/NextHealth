@@ -683,7 +683,6 @@ function AdminDashboardContent() {
           isDark={dark}
           analyticsRefreshKey={analyticsRefreshKey}
           setAnalyticsRefreshKey={setAnalyticsRefreshKey}
-          socketRef={socketRef}
         />
       </main>
     </div>
@@ -1398,7 +1397,6 @@ function ContentForSection(props: {
   isDark: boolean;
   analyticsRefreshKey: number;
   setAnalyticsRefreshKey: React.Dispatch<React.SetStateAction<number>>;
-  socketRef: React.RefObject<Socket | null>;
 }) {
   const {
     section,
@@ -1423,7 +1421,6 @@ function ContentForSection(props: {
     isDark,
     analyticsRefreshKey,
     setAnalyticsRefreshKey,
-    socketRef,
   } = props;
 
   switch(section) {
@@ -1900,10 +1897,7 @@ function ContentForSection(props: {
           <AnalyticsForm
             onSaved={() => {
               setAnalyticsRefreshKey((k) => k + 1);
-              // Broadcast via socket so connected client dashboards refresh
-              if (socketRef.current) {
-                socketRef.current.emit('analytics_updated');
-              }
+              // Note: Socket.io is disabled for Vercel serverless deployment
             }}
           />
 
