@@ -1,5 +1,5 @@
 {
-  "buildCommand": "npm run build && npx prisma migrate deploy",
+  "buildCommand": "npx prisma generate && npm run build && npx prisma migrate deploy",
   "env": {
     "NODE_ENV": "production"
   },
