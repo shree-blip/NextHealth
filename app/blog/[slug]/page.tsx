@@ -28,9 +28,9 @@ export async function generateStaticParams() {
   return [];
 }
 
-export default async function BlogPost({ params }: { params: { slug: string } }) {
+export default async function BlogPost({ params }: { params: Promise<{ slug: string }> }) {
   // Fetch data at runtime (SSR)
-  const { slug } = params;
+  const { slug } = await params;
   let post = null;
   let relatedPosts = [];
   try {
