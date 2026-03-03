@@ -6,7 +6,7 @@ import PricingCard from '@/components/PricingCard';
 
 const plans = [
   {
-    name: 'Wellness & Longevity',
+    name: 'Starter Care',
     price: '$5,000',
     period: '/ Month',
     description: 'Perfect for practices just getting started with digital marketing.',
@@ -23,7 +23,7 @@ const plans = [
     popular: false,
   },
   {
-    name: 'ER & Urgent Care',
+    name: 'Growth Pro',
     price: '$10,000',
     period: '/ Month',
     description: 'For practices ready to accelerate their patient acquisition.',
@@ -41,7 +41,7 @@ const plans = [
     popular: true,
   },
   {
-    name: 'Enterprise',
+    name: 'Scale Elite',
     price: 'Custom',
     period: '',
     description: 'Enterprise solutions for multi-location practices.',

@@ -54,8 +54,8 @@ export default function ChatBot() {
         id: 'greeting',
         role: 'assistant',
         content: language === 'es'
-          ? '¡Hola! 👋 Soy el asistente de NexHealth Healthcare Marketing. Estoy disponible 24/7 para ayudarle con preguntas sobre nuestros servicios de marketing médico. ¿En qué puedo ayudarle hoy?'
-          : "Hi there! 👋 I'm NexHealth Healthcare Marketing's AI assistant. I'm available 24/7 to help with questions about our healthcare marketing services. How can I help you today?",
+          ? '¡Hola! 👋 Soy el asistente de The NextGen. Estoy disponible 24/7 para ayudarle con preguntas sobre nuestros servicios de marketing médico. ¿En qué puedo ayudarle hoy?'
+          : "Hi there! 👋 I'm The NextGen's AI assistant. I'm available 24/7 to help with questions about our healthcare marketing services. How can I help you today?",
         timestamp: new Date(),
       };
       setMessages([greeting]);
@@ -215,7 +215,7 @@ export default function ChatBot() {
                   <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-400 rounded-full border-2 border-emerald-600" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-sm">NexHealth Assistant</h3>
+                  <h3 className="font-bold text-sm">The NextGen Assistant</h3>
                   <p className="text-[11px] text-emerald-100 flex items-center gap-1">
                     <Sparkles className="h-3 w-3" />
                     {language === 'es' ? 'IA · En línea 24/7' : 'AI-Powered · Online 24/7'}

@@ -216,8 +216,8 @@ async function main() {
             weekNumber: rec.weekNumber,
           },
         },
-        create: rec,
-        update: rec,
+        create: rec as any,
+        update: rec as any,
       });
       totalUpserted++;
     }

@@ -1,18 +1,18 @@
 export default function LocalBusinessSchema() {
-  const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://nexhealthmarketing.com';
+  const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://thenextgenhealth.com';
 
   const schema = {
     '@context': 'https://schema.org',
     '@type': 'LocalBusiness',
     '@id': `${SITE_URL}/#organization`,
-    name: 'NexHealth Healthcare Marketing',
-    alternateName: 'NexHealth Healthcare Marketing',
+    name: 'The NextGen Healthcare Marketing',
+    alternateName: 'The NextGen Healthcare Marketing',
     description:
       'Specialized digital healthcare marketing firm for healthcare providers — ERs, urgent care, MedSpas, and wellness clinics. Services include SEO, Google Ads, Meta Ads, web design, and AI-powered marketing automation.',
     url: SITE_URL,
     logo: `${SITE_URL}/Client-review-image/nexhealth_logo.png`,
     image: `${SITE_URL}/Client-review-image/nexhealth_logo.png`,
-    email: 'info@nexhealthmarketing.com',
+    email: 'info@thenextgenhealth.com',
     address: {
       '@type': 'PostalAddress',
       streetAddress: '3811 Turtle Creek Blvd, Suite 600',
@@ -97,7 +97,7 @@ export default function LocalBusinessSchema() {
   const websiteSchema = {
     '@context': 'https://schema.org',
     '@type': 'WebSite',
-    name: 'NexHealth Healthcare Marketing',
+    name: 'The NextGen Healthcare Marketing',
     url: SITE_URL,
     potentialAction: {
       '@type': 'SearchAction',

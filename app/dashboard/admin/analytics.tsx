@@ -37,6 +37,8 @@ const METRIC_FIELDS = [
   'metaCTR',
   'metaConversions',
   'metaAdSpend',
+  'metaCPC',
+  'metaCostPerConversion',
   'googleImpressions',
   'googleClicks',
   'googleCTR',
@@ -55,6 +57,119 @@ const METRIC_FIELDS = [
 
 type MetricField = typeof METRIC_FIELDS[number];
 type FormMetrics = Record<MetricField, string>;
+
+const FLOAT_FIELDS = new Set<MetricField>([
+  'avgRanking',
+  'metaCTR',
+  'metaAdSpend',
+  'metaCPC',
+  'metaCostPerConversion',
+  'googleCTR',
+  'googleCPC',
+  'googleCVR',
+  'googleCostPerConversion',
+  'googleTotalCost',
+  'conversionRate',
+  'dailyPatientAvg',
+]);
+
+const INT_FIELDS = METRIC_FIELDS.filter((field) => !FLOAT_FIELDS.has(field));
+
+// Helper functions for calculations
+function calcPercentage(numerator: number, denominator: number): number {
+  if (!denominator || denominator === 0) return 0;
+  return Number(((numerator / denominator) * 100).toFixed(2));
+}
+
+function calcMoney(numerator: number, denominator: number): number {
+  if (!denominator || denominator === 0) return 0;
+  return Number((numerator / denominator).toFixed(2));
+}
+
+function formatCalcDisplay(value: number, isPercentage: boolean = false): string {
+  if (value === 0) return 'Needs data';
+  return isPercentage ? `${value}%` : `$${value}`;
+}
+
+function calculateAllMetrics(metrics: FormMetrics): Partial<Record<MetricField, number>> {
+  const calculated: Partial<Record<MetricField, number>> = {};
+
+  // Parse manual inputs
+  const metaImpressions = Number(metrics.metaImpressions) || 0;
+  const metaClicks = Number(metrics.metaClicks) || 0;
+  const metaAdSpend = Number(metrics.metaAdSpend) || 0;
+  const metaConversions = Number(metrics.metaConversions) || 0;
+
+  const googleImpressions = Number(metrics.googleImpressions) || 0;
+  const googleClicks = Number(metrics.googleClicks) || 0;
+  const googleTotalCost = Number(metrics.googleTotalCost) || 0;
+  const googleConversions = Number(metrics.googleConversions) || 0;
+
+  const patientCount = Number(metrics.patientCount) || 0;
+  const digitalConversion = Number(metrics.digitalConversion) || 0;
+
+  // Meta calculations
+  calculated.metaCTR = calcPercentage(metaClicks, metaImpressions);
+  calculated.metaCPC = calcMoney(metaAdSpend, metaClicks);
+  calculated.metaCostPerConversion = calcMoney(metaAdSpend, metaConversions);
+
+  // Google calculations
+  calculated.googleCTR = calcPercentage(googleClicks, googleImpressions);
+  calculated.googleCPC = calcMoney(googleTotalCost, googleClicks);
+  calculated.googleCVR = calcPercentage(googleConversions, googleClicks);
+  calculated.googleCostPerConversion = calcMoney(googleTotalCost, googleConversions);
+
+  // Patient/Conversion calculations
+  calculated.dailyPatientAvg = Number((patientCount / 7).toFixed(2));
+  calculated.conversionRate = calcPercentage(digitalConversion, patientCount);
+
+  return calculated;
+}
+
+function parseMetricsForSave(source: FormMetrics): { values: Partial<Record<MetricField, number>>; error?: string } {
+  const values: Partial<Record<MetricField, number>> = {};
+
+  // List of fields that should NOT be manually saved (they're auto-calculated)
+  const autoCalculatedFields = new Set<MetricField>([
+    'metaCTR',
+    'googleCTR',
+    'googleCPC',
+    'googleCVR',
+    'googleCostPerConversion',
+    'dailyPatientAvg',
+    'conversionRate',
+  ]);
+
+  for (const field of METRIC_FIELDS) {
+    // Skip auto-calculated fields - they will be computed below
+    if (autoCalculatedFields.has(field)) continue;
+
+    const raw = source[field].trim();
+    if (raw === '') continue;
+
+    const numeric = Number(raw);
+    if (Number.isNaN(numeric)) {
+      return { values, error: `Invalid numeric value for ${field}` };
+    }
+
+    if (FLOAT_FIELDS.has(field)) {
+      values[field] = numeric;
+      continue;
+    }
+
+    if (!Number.isInteger(numeric)) {
+      return { values, error: `${field} must be a whole number` };
+    }
+
+    values[field] = numeric;
+  }
+
+  // Calculate all derived fields and add to values
+  const calculated = calculateAllMetrics(source);
+  Object.assign(values, calculated);
+
+  return { values };
+}
 
 function emptyMetrics(): FormMetrics {
   return METRIC_FIELDS.reduce((acc, key) => {
@@ -129,39 +244,175 @@ function analyticsToFormMetrics(record: any): FormMetrics {
   return next;
 }
 
-function MetricsInputGrid({ metrics, onChange }: { metrics: FormMetrics; onChange: (e: React.ChangeEvent<HTMLInputElement>) => void }) {
+interface SectionInputProps {
+  label: string;
+  name: string;
+  type?: 'number' | 'text';
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  step?: string;
+  min?: string;
+  helperText?: string;
+  readOnly?: boolean;
+}
+
+function SectionInput({ label, name, type = 'number', value, onChange, step, min = '0', helperText, readOnly = false }: SectionInputProps) {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <div><label className="block text-sm font-bold mb-2">Blogs Published</label><input type="number" name="blogsPublished" value={metrics.blogsPublished} onChange={onChange} min="0" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 dark:text-slate-200" /></div>
-      <div><label className="block text-sm font-bold mb-2">Avg Ranking</label><input type="number" name="avgRanking" value={metrics.avgRanking} onChange={onChange} min="0" step="0.1" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 dark:text-slate-200" /></div>
-      <div><label className="block text-sm font-bold mb-2">Total Traffic</label><input type="number" name="totalTraffic" value={metrics.totalTraffic} onChange={onChange} min="0" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 dark:text-slate-200" /></div>
-      <div><label className="block text-sm font-bold mb-2">Calls Requested</label><input type="number" name="callsRequested" value={metrics.callsRequested} onChange={onChange} min="0" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 dark:text-slate-200" /></div>
-      <div><label className="block text-sm font-bold mb-2">Website Visits</label><input type="number" name="websiteVisits" value={metrics.websiteVisits} onChange={onChange} min="0" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 dark:text-slate-200" /></div>
-      <div><label className="block text-sm font-bold mb-2">Direction Clicks</label><input type="number" name="directionClicks" value={metrics.directionClicks} onChange={onChange} min="0" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 dark:text-slate-200" /></div>
-      <div><label className="block text-sm font-bold mb-2">Meta Impressions</label><input type="number" name="metaImpressions" value={metrics.metaImpressions} onChange={onChange} min="0" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 dark:text-slate-200" /></div>
-      <div><label className="block text-sm font-bold mb-2">Meta Clicks</label><input type="number" name="metaClicks" value={metrics.metaClicks} onChange={onChange} min="0" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 dark:text-slate-200" /></div>
-      <div><label className="block text-sm font-bold mb-2">Meta CTR %</label><input type="number" name="metaCTR" value={metrics.metaCTR} onChange={onChange} min="0" step="0.1" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 dark:text-slate-200" /></div>
-      <div><label className="block text-sm font-bold mb-2">Meta Conversions</label><input type="number" name="metaConversions" value={metrics.metaConversions} onChange={onChange} min="0" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 dark:text-slate-200" /></div>
-      <div><label className="block text-sm font-bold mb-2">Meta Ad Spend ($)</label><input type="number" name="metaAdSpend" value={metrics.metaAdSpend} onChange={onChange} min="0" step="0.01" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 dark:text-slate-200" /></div>
-      <div><label className="block text-sm font-bold mb-2">Google Impressions</label><input type="number" name="googleImpressions" value={metrics.googleImpressions} onChange={onChange} min="0" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 dark:text-slate-200" /></div>
-      <div><label className="block text-sm font-bold mb-2">Google Clicks</label><input type="number" name="googleClicks" value={metrics.googleClicks} onChange={onChange} min="0" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 dark:text-slate-200" /></div>
-      <div><label className="block text-sm font-bold mb-2">Google CTR %</label><input type="number" name="googleCTR" value={metrics.googleCTR} onChange={onChange} min="0" step="0.1" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 dark:text-slate-200" /></div>
-      <div><label className="block text-sm font-bold mb-2">Google CPC ($)</label><input type="number" name="googleCPC" value={metrics.googleCPC} onChange={onChange} min="0" step="0.01" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 dark:text-slate-200" /></div>
-      <div><label className="block text-sm font-bold mb-2">Google Conversions</label><input type="number" name="googleConversions" value={metrics.googleConversions} onChange={onChange} min="0" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 dark:text-slate-200" /></div>
-      <div><label className="block text-sm font-bold mb-2">Google CVR %</label><input type="number" name="googleCVR" value={metrics.googleCVR} onChange={onChange} min="0" step="0.1" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 dark:text-slate-200" /></div>
-      <div><label className="block text-sm font-bold mb-2">Google Cost Per Conv ($)</label><input type="number" name="googleCostPerConversion" value={metrics.googleCostPerConversion} onChange={onChange} min="0" step="0.01" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 dark:text-slate-200" /></div>
-      <div><label className="block text-sm font-bold mb-2">Google Total Cost ($)</label><input type="number" name="googleTotalCost" value={metrics.googleTotalCost} onChange={onChange} min="0" step="0.01" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 dark:text-slate-200" /></div>
-      <div><label className="block text-sm font-bold mb-2">Social Posts</label><input type="number" name="socialPosts" value={metrics.socialPosts} onChange={onChange} min="0" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 dark:text-slate-200" /></div>
-      <div><label className="block text-sm font-bold mb-2">Social Views</label><input type="number" name="socialViews" value={metrics.socialViews} onChange={onChange} min="0" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 dark:text-slate-200" /></div>
-      <div><label className="block text-sm font-bold mb-2">Patient Count</label><input type="number" name="patientCount" value={metrics.patientCount} onChange={onChange} min="0" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 dark:text-slate-200" /></div>
-      <div><label className="block text-sm font-bold mb-2">Digital Conversion</label><input type="number" name="digitalConversion" value={metrics.digitalConversion} onChange={onChange} min="0" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 dark:text-slate-200" /></div>
-      <div><label className="block text-sm font-bold mb-2">Conversion Rate %</label><input type="number" name="conversionRate" value={metrics.conversionRate} onChange={onChange} min="0" step="0.1" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 dark:text-slate-200" /></div>
-      <div><label className="block text-sm font-bold mb-2">Daily Patient Avg</label><input type="number" name="dailyPatientAvg" value={metrics.dailyPatientAvg} onChange={onChange} min="0" step="0.1" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 dark:text-slate-200" /></div>
+    <div>
+      <label className="block text-sm font-bold mb-2 text-slate-700 dark:text-slate-300">{label}</label>
+      <input
+        type={type}
+        name={name}
+        value={value}
+        onChange={onChange}
+        min={min}
+        step={step}
+        readOnly={readOnly}
+        className={`w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 dark:text-slate-200 ${readOnly ? 'bg-slate-100 dark:bg-slate-700 cursor-not-allowed' : ''}`}
+      />
+      {helperText && <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{helperText}</p>}
     </div>
   );
 }
 
-export default function AnalyticsForm() {
+function MetricsInputGrid({ metrics, onChange }: { metrics: FormMetrics; onChange: (e: React.ChangeEvent<HTMLInputElement>) => void }) {
+  // Auto-calculate all derived metrics
+  const metaImpressions = Number(metrics.metaImpressions) || 0;
+  const metaClicks = Number(metrics.metaClicks) || 0;
+  const metaAdSpend = Number(metrics.metaAdSpend) || 0;
+  const metaConversions = Number(metrics.metaConversions) || 0;
+
+  const googleImpressions = Number(metrics.googleImpressions) || 0;
+  const googleClicks = Number(metrics.googleClicks) || 0;
+  const googleTotalCost = Number(metrics.googleTotalCost) || 0;
+  const googleConversions = Number(metrics.googleConversions) || 0;
+
+  const patientCount = Number(metrics.patientCount) || 0;
+  const digitalConversion = Number(metrics.digitalConversion) || 0;
+
+  // Meta calculations
+  const metaCTR = calcPercentage(metaClicks, metaImpressions);
+  const metaCPC = calcMoney(metaAdSpend, metaClicks);
+  const metaCostPerConv = calcMoney(metaAdSpend, metaConversions);
+
+  // Google calculations
+  const googleCTR = calcPercentage(googleClicks, googleImpressions);
+  const googleCPC = calcMoney(googleTotalCost, googleClicks);
+  const googleCVR = calcPercentage(googleConversions, googleClicks);
+  const googleCostPerConv = calcMoney(googleTotalCost, googleConversions);
+
+  // Patient/Conversion calculations
+  const dailyPatientAvg = (patientCount / 7).toFixed(2);
+  const conversionRate = calcPercentage(digitalConversion, patientCount);
+
+  return (
+    <div className="space-y-6">
+      {/* SECTION 1: Content & SEO */}
+      <div className="p-4 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
+        <h4 className="font-bold text-blue-600 dark:text-blue-400 mb-4 text-sm uppercase tracking-wider">📊 Content & SEO</h4>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <SectionInput label="Blogs Published" name="blogsPublished" value={metrics.blogsPublished} onChange={onChange} />
+          <SectionInput label="Avg Ranking" name="avgRanking" value={metrics.avgRanking} onChange={onChange} step="any" />
+          <SectionInput label="Total Traffic" name="totalTraffic" value={metrics.totalTraffic} onChange={onChange} />
+        </div>
+      </div>
+
+      {/* SECTION 2: Google My Business (GMB) */}
+      <div className="p-4 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
+        <h4 className="font-bold text-orange-600 dark:text-orange-400 mb-4 text-sm uppercase tracking-wider">🗺️ Google My Business</h4>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <SectionInput label="Calls Requested" name="callsRequested" value={metrics.callsRequested} onChange={onChange} />
+          <SectionInput label="Website Visits" name="websiteVisits" value={metrics.websiteVisits} onChange={onChange} />
+          <SectionInput label="Direction Clicks" name="directionClicks" value={metrics.directionClicks} onChange={onChange} />
+        </div>
+      </div>
+
+      {/* SECTION 3: Meta (Facebook/Instagram) */}
+      <div className="p-4 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
+        <h4 className="font-bold text-indigo-600 dark:text-indigo-400 mb-4 text-sm uppercase tracking-wider">📘 Meta (Facebook/Instagram)</h4>
+        
+        {/* Meta Manual Inputs */}
+        <div className="mb-4 pb-4 border-b border-slate-300 dark:border-slate-600">
+          <p className="text-xs font-semibold text-slate-600 dark:text-slate-400 mb-3 uppercase">Manual Inputs</p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <SectionInput label="Impressions" name="metaImpressions" value={metrics.metaImpressions} onChange={onChange} />
+            <SectionInput label="Clicks" name="metaClicks" value={metrics.metaClicks} onChange={onChange} />
+            <SectionInput label="Conversions" name="metaConversions" value={metrics.metaConversions} onChange={onChange} />
+            <SectionInput label="Ad Spend ($)" name="metaAdSpend" value={metrics.metaAdSpend} onChange={onChange} step="any" />
+          </div>
+        </div>
+
+        {/* Meta Auto-Calculated */}
+        <p className="text-xs font-semibold text-slate-600 dark:text-slate-400 mb-3 uppercase">Auto-Calculated</p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <SectionInput label="CTR (%)" name="metaCTR" value={metaCTR.toString()} onChange={onChange} readOnly={true} helperText="(Clicks ÷ Impressions) × 100" />
+          <SectionInput label="CPC ($)" name="metaCPC" value={metaCPC.toString()} onChange={onChange} readOnly={true} helperText="Ad Spend ÷ Clicks" />
+          <SectionInput label="Cost Per Conv ($)" name="metaCostPerConversion" value={metaCostPerConv.toString()} onChange={onChange} readOnly={true} helperText="Ad Spend ÷ Conversions" />
+        </div>
+      </div>
+
+      {/* SECTION 4: Google Ads */}
+      <div className="p-4 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
+        <h4 className="font-bold text-red-600 dark:text-red-400 mb-4 text-sm uppercase tracking-wider">🔍 Google Ads (Search & Display)</h4>
+        
+        {/* Google Manual Inputs */}
+        <div className="mb-4 pb-4 border-b border-slate-300 dark:border-slate-600">
+          <p className="text-xs font-semibold text-slate-600 dark:text-slate-400 mb-3 uppercase">Manual Inputs</p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <SectionInput label="Impressions" name="googleImpressions" value={metrics.googleImpressions} onChange={onChange} />
+            <SectionInput label="Clicks" name="googleClicks" value={metrics.googleClicks} onChange={onChange} />
+            <SectionInput label="Conversions" name="googleConversions" value={metrics.googleConversions} onChange={onChange} />
+            <SectionInput label="Total Cost ($)" name="googleTotalCost" value={metrics.googleTotalCost} onChange={onChange} step="any" />
+          </div>
+        </div>
+
+        {/* Google Auto-Calculated */}
+        <p className="text-xs font-semibold text-slate-600 dark:text-slate-400 mb-3 uppercase">Auto-Calculated</p>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <SectionInput label="CTR (%)" name="googleCTR" value={googleCTR.toString()} onChange={onChange} readOnly={true} helperText="(Clicks ÷ Impressions) × 100" />
+          <SectionInput label="CPC ($)" name="googleCPC" value={googleCPC.toString()} onChange={onChange} readOnly={true} helperText="Total Cost ÷ Clicks" />
+          <SectionInput label="CVR (%)" name="googleCVR" value={googleCVR.toString()} onChange={onChange} readOnly={true} helperText="(Conversions ÷ Clicks) × 100" />
+          <SectionInput label="Cost Per Conv ($)" name="googleCostPerConversion" value={googleCostPerConv.toString()} onChange={onChange} readOnly={true} helperText="Total Cost ÷ Conversions" />
+        </div>
+      </div>
+
+      {/* SECTION 5: Social Media */}
+      <div className="p-4 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
+        <h4 className="font-bold text-pink-600 dark:text-pink-400 mb-4 text-sm uppercase tracking-wider">📱 Social Media</h4>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <SectionInput label="Posts" name="socialPosts" value={metrics.socialPosts} onChange={onChange} />
+          <SectionInput label="Views" name="socialViews" value={metrics.socialViews} onChange={onChange} />
+        </div>
+      </div>
+
+      {/* SECTION 6: Patient Metrics */}
+      <div className="p-4 rounded-lg border border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-950/50">
+        <h4 className="font-bold text-emerald-600 dark:text-emerald-400 mb-4 text-sm uppercase tracking-wider">👥 Patient Metrics</h4>
+        
+        {/* Manual Inputs */}
+        <div className="mb-4 pb-4 border-b border-emerald-300 dark:border-emerald-700">
+          <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-300 mb-3 uppercase">Manual Inputs</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <SectionInput label="Patient Count" name="patientCount" value={metrics.patientCount} onChange={onChange} helperText="Total patients for the week" />
+            <SectionInput label="Digital Conversion" name="digitalConversion" value={metrics.digitalConversion} onChange={onChange} />
+          </div>
+        </div>
+
+        {/* Auto-Calculated */}
+        <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-300 mb-3 uppercase">Auto-Calculated</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <SectionInput label="Daily Patient Avg" name="dailyPatientAvg" value={dailyPatientAvg} onChange={onChange} readOnly={true} helperText="Patient Count ÷ 7" />
+          <SectionInput label="Conversion Rate (%)" name="conversionRate" value={conversionRate.toString()} onChange={onChange} readOnly={true} helperText="(Digital Conversion ÷ Patient Count) × 100" />
+        </div>
+        <p className="text-xs text-emerald-700 dark:text-emerald-300 mt-3 p-2 bg-emerald-100 dark:bg-emerald-900/30 rounded">
+          ℹ️ All calculated fields update automatically when you change the manual inputs above.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+export default function AnalyticsForm({ onSaved }: { onSaved?: () => void } = {}) {
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');
@@ -306,12 +557,14 @@ export default function AnalyticsForm() {
         weekLabel: selectedWeek.weekLabel,
       };
 
+      const parsed = parseMetricsForSave(metrics);
+      if (parsed.error) {
+        throw new Error(parsed.error);
+      }
+
       for (const field of METRIC_FIELDS) {
-        const raw = metrics[field].trim();
-        if (raw === '') continue;
-        const numeric = Number(raw);
-        if (!Number.isNaN(numeric)) {
-          payload[field] = numeric;
+        if (parsed.values[field] !== undefined) {
+          payload[field] = parsed.values[field];
         }
       }
 
@@ -338,6 +591,7 @@ export default function AnalyticsForm() {
       const refreshRes = await fetch(`/api/analytics/weekly?clinicId=${selectedClinicId}`);
       const refreshData = await refreshRes.json();
       setExistingData(refreshData.analytics || []);
+      onSaved?.();
 
       socketRef.current?.emit('weekly_analytics_saved', {
         clinicId: selectedClinicId,
@@ -385,12 +639,14 @@ export default function AnalyticsForm() {
         weekLabel: editingRecord.weekLabel,
       };
 
+      const parsed = parseMetricsForSave(editMetrics);
+      if (parsed.error) {
+        throw new Error(parsed.error);
+      }
+
       for (const field of METRIC_FIELDS) {
-        const raw = editMetrics[field].trim();
-        if (raw === '') continue;
-        const numeric = Number(raw);
-        if (!Number.isNaN(numeric)) {
-          payload[field] = numeric;
+        if (parsed.values[field] !== undefined) {
+          payload[field] = parsed.values[field];
         }
       }
 
@@ -410,6 +666,7 @@ export default function AnalyticsForm() {
       const refreshRes = await fetch(`/api/analytics/weekly?clinicId=${selectedClinicId}`);
       const refreshData = await refreshRes.json();
       setExistingData(refreshData.analytics || []);
+      onSaved?.();
 
       socketRef.current?.emit('weekly_analytics_saved', {
         clinicId: selectedClinicId,
@@ -511,12 +768,159 @@ export default function AnalyticsForm() {
         )}
       </AnimatePresence>
 
-      {/* HISTORY SECTION - FIRST */}
+      {/* ENTRY FORM - TOP */}
+      <motion.form
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        onSubmit={handleSubmit}
+        className="space-y-6"
+      >
+        {error && (
+          <div className="flex items-center gap-3 p-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-2xl text-red-700 dark:text-red-300">
+            <AlertCircle className="h-5 w-5 shrink-0" />
+            <span className="font-semibold">{error}</span>
+          </div>
+        )}
+
+        {submitted && (
+          <div className="flex items-center gap-3 p-4 bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 rounded-2xl text-emerald-700 dark:text-emerald-300">
+            <Check className="h-5 w-5 shrink-0" />
+            <span className="font-semibold">Analytics saved and synced to client dashboards.</span>
+          </div>
+        )}
+
+        <div className="rounded-2xl p-6 border border-slate-200 dark:border-slate-700 bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/50 dark:to-teal-950/50">
+          <h3 className="text-lg font-bold mb-2 flex items-center gap-2">
+            <span>📍 Clinic & Week Selection</span>
+          </h3>
+          <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">Select a clinic and week to view or enter analytics data</p>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Clinic Dropdown */}
+            <div>
+              <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
+                <span className="text-lg">🏥</span>
+                <span>Clinic <span className="text-red-500">*</span></span>
+              </label>
+              <div className="relative">
+                <select
+                  value={selectedClinicId}
+                  onChange={(e) => setSelectedClinicId(e.target.value)}
+                  className="w-full px-4 py-3 border-2 border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 dark:text-slate-200 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 hover:border-emerald-400 dark:hover:border-emerald-500 transition-all appearance-none cursor-pointer font-medium"
+                  required
+                >
+                  <option value="">Select a clinic...</option>
+                  {clinics.map((clinic) => (
+                    <option key={clinic.id} value={clinic.id}>
+                      {clinic.name}
+                    </option>
+                  ))}
+                </select>
+                <div className="pointer-events-none absolute right-3 top-3.5 text-slate-500">
+                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                  </svg>
+                </div>
+              </div>
+              {!selectedClinicId && (
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5">Required to proceed</p>
+              )}
+            </div>
+
+            {/* Year Dropdown */}
+            <div>
+              <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
+                <span className="text-lg">📅</span>
+                <span>Year</span>
+              </label>
+              <div className="relative">
+                <select
+                  value={selectedYear}
+                  onChange={(e) => {
+                    setSelectedYear(Number(e.target.value));
+                    setSelectedWeekKey('');
+                  }}
+                  className="w-full px-4 py-3 border-2 border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 dark:text-slate-200 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 hover:border-emerald-400 dark:hover:border-emerald-500 transition-all appearance-none cursor-pointer font-medium"
+                >
+                  {yearOptions.map((year) => (
+                    <option key={year} value={year}>{year}</option>
+                  ))}
+                </select>
+                <div className="pointer-events-none absolute right-3 top-3.5 text-slate-500">
+                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+
+            {/* Week Dropdown */}
+            <div>
+              <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
+                <span className="text-lg">📆</span>
+                <span>Week (Mon–Sun)</span>
+              </label>
+              <div className="relative">
+                <select
+                  value={selectedWeekKey}
+                  onChange={(e) => setSelectedWeekKey(e.target.value)}
+                  className="w-full px-4 py-3 border-2 border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 dark:text-slate-200 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 hover:border-emerald-400 dark:hover:border-emerald-500 transition-all appearance-none cursor-pointer font-medium"
+                >
+                  {weeks.map((week) => (
+                    <option key={week.key} value={week.key}>{week.weekLabel}</option>
+                  ))}
+                </select>
+                <div className="pointer-events-none absolute right-3 top-3.5 text-slate-500">
+                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-4 p-3 bg-emerald-100/50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 rounded-lg">
+            <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-300 flex items-center gap-2">
+              <span>💡</span>
+              On Mondays, this defaults to last week so you can enter last week&apos;s data quickly.
+            </p>
+          </div>
+        </div>
+
+        {isLoadingWeekData && (
+          <div className="flex items-center gap-2 text-sm font-semibold text-emerald-600 dark:text-emerald-400">
+            <Loader2 className="h-4 w-4 animate-spin" /> Loading saved week data...
+          </div>
+        )}
+
+        <div className="rounded-2xl p-6 border border-slate-200 dark:border-slate-700 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/50 dark:to-pink-950/50">
+          <h3 className="text-lg font-bold mb-4">📝 Metrics</h3>
+          <MetricsInputGrid metrics={metrics} onChange={handleMetricChange} />
+        </div>
+
+        <button
+          type="submit"
+          disabled={loading || isLoadingWeekData}
+          className="w-full bg-emerald-500 text-black font-bold py-4 rounded-2xl hover:bg-emerald-400 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+        >
+          {loading ? (
+            <>
+              <Loader2 className="h-5 w-5 animate-spin" /> Saving...
+            </>
+          ) : (
+            <>
+              <Send className="h-5 w-5" /> Save Weekly Analytics
+            </>
+          )}
+        </button>
+      </motion.form>
+
+      {/* HISTORY SECTION - BELOW FORM */}
       {existingData.length > 0 && selectedClinicId && (
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-8 rounded-2xl border border-slate-200 dark:border-slate-700 bg-gradient-to-br from-cyan-50 to-blue-50 dark:from-cyan-950/50 dark:to-blue-950/50 p-6"
+          className="mt-8 rounded-2xl border border-slate-200 dark:border-slate-700 bg-gradient-to-br from-cyan-50 to-blue-50 dark:from-cyan-950/50 dark:to-blue-950/50 p-6"
         >
           <h2 className="text-2xl font-bold mb-4">📅 Week History</h2>
           <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">Click "Edit" to update any week. Changes sync instantly to client dashboards.</p>
@@ -554,108 +958,6 @@ export default function AnalyticsForm() {
           </div>
         </motion.div>
       )}
-
-      {/* ENTRY FORM - SECOND */}
-      <motion.form
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        onSubmit={handleSubmit}
-        className="space-y-6"
-      >
-        {error && (
-          <div className="flex items-center gap-3 p-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-2xl text-red-700 dark:text-red-300">
-            <AlertCircle className="h-5 w-5 shrink-0" />
-            <span className="font-semibold">{error}</span>
-          </div>
-        )}
-
-        {submitted && (
-          <div className="flex items-center gap-3 p-4 bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 rounded-2xl text-emerald-700 dark:text-emerald-300">
-            <Check className="h-5 w-5 shrink-0" />
-            <span className="font-semibold">Analytics saved and synced to client dashboards.</span>
-          </div>
-        )}
-
-        <div className="rounded-2xl p-6 border border-slate-200 dark:border-slate-700 bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/50 dark:to-teal-950/50">
-          <h3 className="text-lg font-bold mb-4">📍 Clinic & Week Selection</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Clinic *</label>
-              <select
-                value={selectedClinicId}
-                onChange={(e) => setSelectedClinicId(e.target.value)}
-                className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 dark:text-slate-200 focus:outline-none focus:border-emerald-500"
-                required
-              >
-                <option value="">Select Clinic</option>
-                {clinics.map((clinic) => (
-                  <option key={clinic.id} value={clinic.id}>{clinic.name}</option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Year</label>
-              <select
-                value={selectedYear}
-                onChange={(e) => {
-                  setSelectedYear(Number(e.target.value));
-                  setSelectedWeekKey('');
-                }}
-                className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 dark:text-slate-200 focus:outline-none focus:border-emerald-500"
-              >
-                {yearOptions.map((year) => (
-                  <option key={year} value={year}>{year}</option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Week (Mon–Sun)</label>
-              <select
-                value={selectedWeekKey}
-                onChange={(e) => setSelectedWeekKey(e.target.value)}
-                className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 dark:text-slate-200 focus:outline-none focus:border-emerald-500"
-              >
-                {weeks.map((week) => (
-                  <option key={week.key} value={week.key}>{week.weekLabel}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <p className="mt-3 text-xs font-semibold text-slate-600 dark:text-slate-400">
-            On Mondays, this selector defaults to last week so you can enter last week&apos;s numbers quickly.
-          </p>
-        </div>
-
-        {isLoadingWeekData && (
-          <div className="flex items-center gap-2 text-sm font-semibold text-emerald-600 dark:text-emerald-400">
-            <Loader2 className="h-4 w-4 animate-spin" /> Loading saved week data...
-          </div>
-        )}
-
-        <div className="rounded-2xl p-6 border border-slate-200 dark:border-slate-700 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/50 dark:to-pink-950/50">
-          <h3 className="text-lg font-bold mb-4">📝 Metrics</h3>
-          <MetricsInputGrid metrics={metrics} onChange={handleMetricChange} />
-        </div>
-
-        <button
-          type="submit"
-          disabled={loading || isLoadingWeekData}
-          className="w-full bg-emerald-500 text-black font-bold py-4 rounded-2xl hover:bg-emerald-400 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
-        >
-          {loading ? (
-            <>
-              <Loader2 className="h-5 w-5 animate-spin" /> Saving...
-            </>
-          ) : (
-            <>
-              <Send className="h-5 w-5" /> Save Weekly Analytics
-            </>
-          )}
-        </button>
-      </motion.form>
     </motion.div>
   );
 }

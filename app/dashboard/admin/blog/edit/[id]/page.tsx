@@ -111,7 +111,7 @@ export default function EditBlogPost() {
         publishedAt: form.publishedAt ? new Date(form.publishedAt).toISOString() : null,
       }),
     });
-    router.push('/dashboard/admin/blog');
+    router.push('/dashboard/admin?view=blog-management');
   };
 
   if (loading) return (
@@ -140,7 +140,7 @@ export default function EditBlogPost() {
             </Link>
             <span className="text-slate-400">/</span>
             <Link
-              href="/dashboard/admin/blog"
+              href="/dashboard/admin?view=blog-management"
               className="inline-flex items-center gap-2 px-4 py-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg hover:border-emerald-500 dark:hover:border-emerald-500 transition-all"
             >
               <ArrowLeft className="h-4 w-4" />
@@ -148,8 +148,9 @@ export default function EditBlogPost() {
             </Link>
           </div>
 
-        <div className="bg-white dark:bg-slate-900 p-6 sm:p-8 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
-          <h1 className="text-2xl font-bold mb-6">Edit Blog Post</h1>
+        <div className="glass rounded-2xl p-6 sm:p-8 border border-slate-200 dark:border-slate-700">
+          <h1 className="text-[20px] font-bold mb-1">Edit Blog Post</h1>
+          <p className="text-slate-500 dark:text-slate-400 mb-6">Update your blog post content and SEO settings</p>
           
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Title & Slug */}
@@ -311,7 +312,7 @@ export default function EditBlogPost() {
               </button>
               <button 
                 type="button" 
-                onClick={() => router.back()} 
+                onClick={() => router.push('/dashboard/admin?view=blog-management')} 
                 className="px-6 py-3 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors"
               >
                 Cancel

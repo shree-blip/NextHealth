@@ -38,7 +38,7 @@ Our team specializes in building HIPAA-compliant automation solutions tailored t
     coverImage: '/1.png',
     seoTitle: 'HIPAA-Compliant Automation: Transforming Healthcare Workflows | NexHealth Healthcare Marketing',
     metaDesc: 'Discover how HIPAA-compliant automation can streamline patient intake, reduce errors, and improve care outcomes for healthcare providers.',
-    canonical: 'https://nexhealthmarketing.com/blog/hipaa-compliant-automation-transforming-healthcare-workflows',
+    canonical: 'https://thenextgenhealth.com/blog/hipaa-compliant-automation-transforming-healthcare-workflows',
     publishedAt: new Date('2026-02-15'),
   },
   {
@@ -75,7 +75,7 @@ One of our clients, a multi-location urgent care network, needed a patient intak
     coverImage: '/2.png',
     seoTitle: 'Custom Software for Healthcare: Why Vibe Coding Delivers Better Results | NexHealth Healthcare Marketing',
     metaDesc: 'Learn why custom software built with vibe coding principles delivers intuitive, HIPAA-compliant solutions for healthcare providers.',
-    canonical: 'https://nexhealthmarketing.com/blog/custom-software-healthcare-vibe-coding',
+    canonical: 'https://thenextgenhealth.com/blog/custom-software-healthcare-vibe-coding',
     publishedAt: new Date('2026-02-20'),
   },
   {
@@ -111,7 +111,7 @@ Our team combines deep healthcare expertise with cutting-edge AI tools to delive
     coverImage: '/3.png',
     seoTitle: 'AI-Powered Patient Acquisition: The Future of Healthcare Marketing | NexHealth Healthcare Marketing',
     metaDesc: 'Discover how AI is revolutionizing patient acquisition for healthcare providers and the strategies that work in 2026.',
-    canonical: 'https://nexhealthmarketing.com/blog/ai-powered-patient-acquisition-future-healthcare-marketing',
+    canonical: 'https://thenextgenhealth.com/blog/ai-powered-patient-acquisition-future-healthcare-marketing',
     publishedAt: new Date('2026-02-28'),
   },
 ];

@@ -4,24 +4,30 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useEffect, useState, useRef } from 'react';
 import Logo from '@/components/Logo';
 
-export default function LoadingScreen() {
+interface LoadingScreenProps {
+  durationMs?: number;
+  onComplete?: () => void;
+}
+
+export default function LoadingScreen({ durationMs = 2000, onComplete }: LoadingScreenProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [progress, setProgress] = useState(0);
   const rafRef = useRef<number>(0);
   const startRef = useRef<number>(0);
+  const onCompleteRef = useRef<(() => void) | undefined>(onComplete);
 
-  const DURATION = 2000; // total loading time in ms
+  useEffect(() => {
+    onCompleteRef.current = onComplete;
+  }, [onComplete]);
 
   useEffect(() => {
     // Already loading, start progress
     document.body.style.overflow = 'hidden';
-    // Remove CSS-based initial overlay
-    document.body.classList.add('loaded');
     startRef.current = performance.now();
 
     const tick = (now: number) => {
       const elapsed = now - startRef.current;
-      const pct = Math.min(Math.round((elapsed / DURATION) * 100), 100);
+      const pct = Math.min(Math.round((elapsed / durationMs) * 100), 100);
       setProgress(pct);
 
       if (pct < 100) {
@@ -30,7 +36,9 @@ export default function LoadingScreen() {
         // small delay after hitting 100% before dismissing
         setTimeout(() => {
           setIsLoading(false);
+          document.body.classList.add('loaded');
           document.body.style.overflow = '';
+          onCompleteRef.current?.();
         }, 300);
       }
     };
@@ -41,7 +49,7 @@ export default function LoadingScreen() {
       cancelAnimationFrame(rafRef.current);
       document.body.style.overflow = '';
     };
-  }, []);
+  }, [durationMs]);
 
   return (
     <AnimatePresence>
@@ -50,7 +58,7 @@ export default function LoadingScreen() {
           initial={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.8, ease: [0.76, 0, 0.24, 1] }}
-          className="fixed inset-0 z-[10000] flex items-center justify-center bg-slate-950"
+          className="fixed inset-0 z-[10000] flex items-center justify-center bg-white"
         >
           <div className="flex flex-col items-center gap-8">
             <motion.div
@@ -58,7 +66,7 @@ export default function LoadingScreen() {
               animate={{ scale: 1, opacity: 1 }}
               transition={{ duration: 0.6, ease: 'easeOut' }}
             >
-              <Logo showText={true} iconSize={120} darkText={false} />
+              <Logo showText={true} iconSize={120} darkText={true} />
             </motion.div>
 
             {/* Progress bar + percentage */}
@@ -73,7 +81,7 @@ export default function LoadingScreen() {
                   transition={{ duration: 0.05, ease: 'linear' }}
                 />
               </div>
-              <span className="text-slate-400 text-sm font-mono tracking-wider">
+              <span className="text-slate-600 text-sm font-mono tracking-wider">
                 {progress}%
               </span>
             </div>

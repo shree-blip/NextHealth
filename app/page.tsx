@@ -15,18 +15,18 @@ import MapSection from '@/components/MapSection';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Healthcare Marketing in Irving, TX | NexHealth Healthcare Marketing',
+  title: 'Healthcare Marketing in Irving, TX | The NextGen Healthcare Marketing',
   description: 'Top-rated healthcare healthcare marketing firm based in Irving, TX. We specialize in local SEO, paid ads, and AI automation for ERs, Urgent Cares, and Wellness clinics across Texas.',
   alternates: {
-    canonical: 'https://nexhealthmarketing.com',
+    canonical: 'https://thenextgenhealth.com',
   }
 };
 
 const schema = {
   "@context": "https://schema.org",
   "@type": "ProfessionalService",
-  "name": "NexHealth Healthcare Marketing",
-  "image": "https://nexhealthmarketing.com/logo.png",
+  "name": "The NextGen Healthcare Marketing",
+  "image": "https://thenextgenhealth.com/logo.png",
   "description": "Integrated Clinical Growth and Automation OS for Healthcare Providers in Texas. We engineer predictable patient acquisition systems.",
   "address": {
     "@type": "PostalAddress",
@@ -37,7 +37,7 @@ const schema = {
     "addressCountry": "US"
   },
   "telephone": "(214) 555-0123",
-  "url": "https://nexhealthmarketing.com",
+  "url": "https://thenextgenhealth.com",
   "areaServed": ["Dallas", "Houston", "Austin", "San Antonio", "Irving", "Texas"],
   "priceRange": "$$$"
 };
@@ -59,7 +59,7 @@ export default function Home() {
       {/* Our Services */}
       <ServicesSection />
       
-      {/* The NexHealth Approach */}
+      {/* The NextGen Approach */}
       <NexHealthApproach />
       
       {/* Real Results */}
@@ -84,7 +84,7 @@ export default function Home() {
             {q:'How quickly will I see results?',a:'Most clients see measurable improvements within 30 days. We guarantee results within 30 days or we optimize your campaigns for free.'},
             {q:'Are your marketing practices HIPAA-compliant?',a:'Absolutely. We follow strict HIPAA-aware marketing practices to ensure patient data privacy and compliance with healthcare advertising regulations.'},
             {q:'Do you require long-term contracts?',a:'No contracts required. We believe in earning your business every month through results, not locking you into agreements.'},
-            {q:'What makes NexHealth different from other agencies?',a:'We exclusively serve healthcare practices. Our team understands the unique challenges of medical marketing, from compliance requirements to patient acquisition strategies.'},
+            {q:'What makes The NextGen different from other agencies?',a:'We exclusively serve healthcare practices. Our team understands the unique challenges of medical marketing, from compliance requirements to patient acquisition strategies.'},
           ]} />
         </div>
       </section>

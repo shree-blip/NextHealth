@@ -10,7 +10,7 @@ import NewsArticleContent from '@/components/NewsArticleContent';
 const prisma = new PrismaClient();
 export const revalidate = 300;
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://nexhealthmarketing.com';
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://thenextgenhealth.com';
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
@@ -52,7 +52,7 @@ export default async function NewsArticlePage({ params }: { params: Promise<{ sl
     dateModified: article.updatedAt.toISOString(),
     publisher: {
       '@type': 'Organization',
-      name: 'NexHealth Healthcare Marketing',
+      name: 'The NextGen Healthcare Marketing',
       url: SITE_URL,
     },
     mainEntityOfPage: {

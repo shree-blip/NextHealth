@@ -5,6 +5,10 @@ import { sessions } from '@/lib/sessions';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-key-for-dev';
 
+export function hasAdminAccess(role?: string | null): boolean {
+  return role === 'admin' || role === 'super_admin';
+}
+
 export async function getAuthenticatedDbUser(req: NextRequest) {
   const sessionId = req.cookies.get('session')?.value;
 
@@ -39,7 +43,7 @@ export async function requireAdmin(req: NextRequest): Promise<{ user: NonNullabl
     };
   }
 
-  if (user.role !== 'admin') {
+  if (!hasAdminAccess(user.role)) {
     return {
       response: NextResponse.json({ error: 'Admin access required' }, { status: 403 }),
     };

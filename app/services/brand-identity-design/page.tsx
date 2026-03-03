@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   description: 'Professional brand identity design for healthcare practices. Creating logos and brands that build instant patient trust and differentiate you from competitors.',
   keywords: 'medical logo design, healthcare branding, clinic brand identity, doctor branding, medical practice logo',
   alternates: {
-    canonical: 'https://nexhealthmarketing.com/services/brand-identity-design',
+    canonical: 'https://thenextgenhealth.com/services/brand-identity-design',
   }
 };
 

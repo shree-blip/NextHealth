@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   description: 'Experts in medical SEO and local search optimization. Rank #1 on Google Maps for your service area and drive organic patient traffic to your healthcare practice.',
   keywords: 'healthcare SEO, local search, medical SEO, Google Business Profile optimization, local SEO for doctors',
   alternates: {
-    canonical: 'https://nexhealthmarketing.com/services/seo-local-search',
+    canonical: 'https://thenextgenhealth.com/services/seo-local-search',
   }
 };
 
@@ -19,7 +19,7 @@ const schema = {
   "description": "Experts in medical SEO and local search optimization. Rank #1 on Google Maps for your service area and drive organic patient traffic.",
   "provider": {
     "@type": "ProfessionalService",
-    "name": "NexHealth Healthcare Marketing",
+    "name": "The NextGen Healthcare Marketing",
     "address": {
       "@type": "PostalAddress",
       "streetAddress": "3001 Skyway Cir N",

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import {
   LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, AreaChart, Area,
@@ -51,6 +51,31 @@ interface ClinicInfo {
 
 const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
+type FilterPreset = 'last_week' | 'current_month' | 'last_month' | 'compare_last_week' | 'compare_last_month';
+
+function getMonday(date: Date): Date {
+  const copy = new Date(date);
+  const day = copy.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  copy.setDate(copy.getDate() + diff);
+  copy.setHours(0, 0, 0, 0);
+  return copy;
+}
+
+function addDays(date: Date, days: number): Date {
+  const copy = new Date(date);
+  copy.setDate(copy.getDate() + days);
+  return copy;
+}
+
+function getISOWeek(date: Date): number {
+  const tempDate = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNum = tempDate.getUTCDay() || 7;
+  tempDate.setUTCDate(tempDate.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(tempDate.getUTCFullYear(), 0, 1));
+  return Math.ceil((((tempDate.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+}
+
 interface AdminAnalyticsViewProps {
   isDark: boolean;
   refreshTrigger?: number;
@@ -62,6 +87,7 @@ export default function AdminAnalyticsView({ isDark, refreshTrigger }: AdminAnal
   const [selectedClinic, setSelectedClinic] = useState<string>('all');
   const [loading, setLoading] = useState(true);
   const [showDropdown, setShowDropdown] = useState(false);
+  const [filterPreset, setFilterPreset] = useState<FilterPreset>('last_week');
 
   useEffect(() => {
     fetchClinics();
@@ -107,6 +133,99 @@ export default function AdminAnalyticsView({ isDark, refreshTrigger }: AdminAnal
     }
   };
 
+  // IMPORTANT: All hooks must be called unconditionally before any early returns
+  const filteredAnalytics = useMemo(() => {
+    const now = new Date();
+    const thisMonday = getMonday(now);
+    const lastWeekStart = addDays(thisMonday, -7);
+    const weekBeforeStart = addDays(thisMonday, -14);
+
+    const currentMonthYear = now.getFullYear();
+    const currentMonth = now.getMonth() + 1;
+
+    const lastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const monthBeforeDate = new Date(now.getFullYear(), now.getMonth() - 2, 1);
+
+    const lastWeek = {
+      year: lastWeekStart.getFullYear(),
+      month: lastWeekStart.getMonth() + 1,
+      weekNumber: getISOWeek(lastWeekStart),
+    };
+
+    const weekBefore = {
+      year: weekBeforeStart.getFullYear(),
+      month: weekBeforeStart.getMonth() + 1,
+      weekNumber: getISOWeek(weekBeforeStart),
+    };
+
+    const sortByDate = (items: WeeklyAnalytics[]) =>
+      [...items].sort((a, b) => (a.year - b.year) || (a.month - b.month) || (a.weekNumber - b.weekNumber));
+
+    switch (filterPreset) {
+      case 'current_month':
+        return sortByDate(analytics.filter((w) => w.year === currentMonthYear && w.month === currentMonth));
+      case 'last_month':
+        return sortByDate(analytics.filter((w) => w.year === lastMonthDate.getFullYear() && w.month === (lastMonthDate.getMonth() + 1)));
+      case 'compare_last_week':
+        return sortByDate(analytics.filter((w) =>
+          (w.year === lastWeek.year && w.month === lastWeek.month && w.weekNumber === lastWeek.weekNumber) ||
+          (w.year === weekBefore.year && w.month === weekBefore.month && w.weekNumber === weekBefore.weekNumber)
+        ));
+      case 'compare_last_month':
+        return sortByDate(analytics.filter((w) =>
+          (w.year === lastMonthDate.getFullYear() && w.month === (lastMonthDate.getMonth() + 1)) ||
+          (w.year === monthBeforeDate.getFullYear() && w.month === (monthBeforeDate.getMonth() + 1))
+        ));
+      case 'last_week':
+      default:
+        return sortByDate(analytics.filter((w) => w.year === lastWeek.year && w.month === lastWeek.month && w.weekNumber === lastWeek.weekNumber));
+    }
+  }, [analytics, filterPreset]);
+
+  // Aggregate data by week for current filter
+  const weeklyAggregated = filteredAnalytics.reduce((acc, week) => {
+    const key = `${week.year}-${week.month}-${week.weekNumber}-${week.weekLabel}`;
+    if (!acc[key]) {
+      acc[key] = {
+        weekLabel: week.weekLabel,
+        year: week.year,
+        month: week.month,
+        weekNumber: week.weekNumber,
+        traffic: 0,
+        ranking: 0,
+        blogs: 0,
+        calls: 0,
+        visits: 0,
+        directions: 0,
+        metaSpend: 0,
+        googleSpend: 0,
+        metaConversions: 0,
+        googleConversions: 0,
+        socialPosts: 0,
+        socialViews: 0,
+        patients: 0,
+        count: 0,
+      };
+    }
+
+    acc[key].traffic += week.totalTraffic;
+    acc[key].ranking += week.avgRanking;
+    acc[key].blogs += week.blogsPublished;
+    acc[key].calls += week.callsRequested;
+    acc[key].visits += week.websiteVisits;
+    acc[key].directions += week.directionClicks;
+    acc[key].metaSpend += week.metaAdSpend;
+    acc[key].googleSpend += week.googleTotalCost;
+    acc[key].metaConversions += week.metaConversions;
+    acc[key].googleConversions += week.googleConversions;
+    acc[key].socialPosts += week.socialPosts;
+    acc[key].socialViews += week.socialViews;
+    acc[key].patients += week.patientCount;
+    acc[key].count += 1;
+    return acc;
+  }, {} as Record<string, any>);
+
+  // Conditional render states
   if (loading && clinics.length === 0) {
     return (
       <div className="flex items-center justify-center py-24">
@@ -127,89 +246,76 @@ export default function AdminAnalyticsView({ isDark, refreshTrigger }: AdminAnal
     );
   }
 
-  // Aggregate data by week for multi-clinic view
-  const weeklyAggregated = analytics.reduce((acc, week) => {
-    const key = week.weekLabel;
-    if (!acc[key]) {
-      acc[key] = {
-        weekLabel: week.weekLabel,
-        year: week.year,
-        month: week.month,
-        weekNumber: week.weekNumber,
-        traffic: 0,
-        ranking: 0,
-        blogs: 0,
-        calls: 0,
-        visits: 0,
-        directions: 0,
-        metaSpend: 0,
-        googleSpend: 0,
-        metaConversions: 0,
-        googleConversions: 0,
-        socialPosts: 0,
-        socialViews: 0,
-        patients: 0,
-        count: 0
-      };
-    }
-    acc[key].traffic += week.totalTraffic;
-    acc[key].ranking += week.avgRanking;
-    acc[key].blogs += week.blogsPublished;
-    acc[key].calls += week.callsRequested;
-    acc[key].visits += week.websiteVisits;
-    acc[key].directions += week.directionClicks;
-    acc[key].metaSpend += week.metaAdSpend;
-    acc[key].googleSpend += week.googleTotalCost;
-    acc[key].metaConversions += week.metaConversions;
-    acc[key].googleConversions += week.googleConversions;
-    acc[key].socialPosts += week.socialPosts;
-    acc[key].socialViews += week.socialViews;
-    acc[key].patients += week.patientCount;
-    acc[key].count += 1;
-    return acc;
-  }, {} as Record<string, any>);
+  if (filteredAnalytics.length === 0) {
+    return (
+      <div className="space-y-4">
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={() => setFilterPreset('last_week')}
+            className={`px-3 py-2 rounded-lg text-sm font-semibold border ${isDark ? 'bg-slate-800 border-slate-700 text-slate-200' : 'bg-white border-slate-200 text-slate-700'}`}
+          >
+            Last Week (Default)
+          </button>
+          <button
+            onClick={() => setFilterPreset('current_month')}
+            className={`px-3 py-2 rounded-lg text-sm font-semibold border ${isDark ? 'bg-slate-800 border-slate-700 text-slate-200' : 'bg-white border-slate-200 text-slate-700'}`}
+          >
+            Current Month
+          </button>
+          <button
+            onClick={() => setFilterPreset('last_month')}
+            className={`px-3 py-2 rounded-lg text-sm font-semibold border ${isDark ? 'bg-slate-800 border-slate-700 text-slate-200' : 'bg-white border-slate-200 text-slate-700'}`}
+          >
+            Last Month
+          </button>
+        </div>
+        <div className={`rounded-2xl p-8 border text-center ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
+          <Database className={`h-12 w-12 mx-auto mb-4 ${isDark ? 'text-slate-500' : 'text-slate-400'}`} />
+          <h3 className={`text-xl font-bold mb-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>No Data For Selected Filter</h3>
+          <p className={isDark ? 'text-slate-400' : 'text-slate-600'}>
+            Try another filter or click Reset Filters to return to the default Last Week view.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
-  const weeklyData = Object.values(weeklyAggregated).map((w: any) => ({
-    ...w,
-    ranking: w.ranking / w.count // Average ranking
-  }));
+  const weeklyData = Object.values(weeklyAggregated)
+    .map((w: any) => ({
+      ...w,
+      ranking: w.count > 0 ? w.ranking / w.count : 0,
+    }))
+    .sort((a: any, b: any) => (a.year - b.year) || (a.month - b.month) || (a.weekNumber - b.weekNumber));
 
-  // Calculate totals
-  const totals = analytics.reduce((acc, week) => ({
+  // Calculate totals from filtered dataset
+  const totals = filteredAnalytics.reduce((acc, week) => ({
     traffic: acc.traffic + week.totalTraffic,
     blogs: acc.blogs + week.blogsPublished,
     calls: acc.calls + week.callsRequested,
     metaSpend: acc.metaSpend + week.metaAdSpend,
     googleSpend: acc.googleSpend + week.googleTotalCost,
-    socialViews: acc.socialViews + week.socialViews,
-    clinics: acc.clinics + (acc.clinicsSet.has(week.clinicId) ? 0 : 1),
-    clinicsSet: acc.clinicsSet.add(week.clinicId)
-  }), { 
-    traffic: 0, 
-    blogs: 0, 
-    calls: 0, 
-    metaSpend: 0, 
-    googleSpend: 0, 
-    socialViews: 0, 
-    clinics: 0,
-    clinicsSet: new Set<string>()
+  }), {
+    traffic: 0,
+    blogs: 0,
+    calls: 0,
+    metaSpend: 0,
+    googleSpend: 0,
   });
 
-  // Prepare chart data
-  const trafficData = weeklyData.map(w => ({
+  const trafficData = weeklyData.map((w) => ({
     week: w.weekLabel,
     traffic: w.traffic,
     ranking: Number(w.ranking.toFixed(1)),
   }));
 
-  const gmbData = weeklyData.map(w => ({
+  const gmbData = weeklyData.map((w) => ({
     week: w.weekLabel,
     calls: w.calls,
     visits: w.visits,
     directions: w.directions,
   }));
 
-  const adsData = weeklyData.map(w => ({
+  const adsData = weeklyData.map((w) => ({
     week: w.weekLabel,
     metaSpend: w.metaSpend,
     googleSpend: w.googleSpend,
@@ -217,19 +323,18 @@ export default function AdminAnalyticsView({ isDark, refreshTrigger }: AdminAnal
     googleConversions: w.googleConversions,
   }));
 
-  const socialData = weeklyData.map(w => ({
+  const socialData = weeklyData.map((w) => ({
     week: w.weekLabel,
     posts: w.socialPosts,
     views: w.socialViews,
     patients: w.patients,
   }));
 
-  // Pie chart data - Traffic Sources
   const trafficSourcesData = [
     { name: 'GMB Visits', value: weeklyData.reduce((sum, w) => sum + w.visits, 0) },
     { name: 'Direct Traffic', value: weeklyData.reduce((sum, w) => sum + w.traffic, 0) },
     { name: 'Directions', value: weeklyData.reduce((sum, w) => sum + w.directions, 0) },
-  ].filter(item => item.value > 0);
+  ].filter((item) => item.value > 0);
 
   const currentClinic = clinics.find(c => c.id === selectedClinic);
 
@@ -282,6 +387,78 @@ export default function AdminAnalyticsView({ isDark, refreshTrigger }: AdminAnal
         )}
       </div>
 
+      {/* Filters */}
+      <div className={`rounded-2xl p-4 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
+        <div className="flex flex-wrap items-center gap-2 mb-3">
+          <button
+            onClick={() => setFilterPreset('last_week')}
+            className={`px-3 py-2 rounded-lg text-sm font-semibold border transition-colors ${
+              filterPreset === 'last_week'
+                ? 'bg-emerald-500 text-black border-emerald-500'
+                : isDark
+                  ? 'bg-slate-900 border-slate-700 text-slate-300 hover:border-emerald-500'
+                  : 'bg-white border-slate-200 text-slate-700 hover:border-emerald-500'
+            }`}
+          >
+            Last Week (Default)
+          </button>
+          <button
+            onClick={() => setFilterPreset('current_month')}
+            className={`px-3 py-2 rounded-lg text-sm font-semibold border transition-colors ${
+              filterPreset === 'current_month'
+                ? 'bg-emerald-500 text-black border-emerald-500'
+                : isDark
+                  ? 'bg-slate-900 border-slate-700 text-slate-300 hover:border-emerald-500'
+                  : 'bg-white border-slate-200 text-slate-700 hover:border-emerald-500'
+            }`}
+          >
+            Current Month
+          </button>
+          <button
+            onClick={() => setFilterPreset('last_month')}
+            className={`px-3 py-2 rounded-lg text-sm font-semibold border transition-colors ${
+              filterPreset === 'last_month'
+                ? 'bg-emerald-500 text-black border-emerald-500'
+                : isDark
+                  ? 'bg-slate-900 border-slate-700 text-slate-300 hover:border-emerald-500'
+                  : 'bg-white border-slate-200 text-slate-700 hover:border-emerald-500'
+            }`}
+          >
+            Last Month
+          </button>
+          <button
+            onClick={() => setFilterPreset('compare_last_week')}
+            className={`px-3 py-2 rounded-lg text-sm font-semibold border transition-colors ${
+              filterPreset === 'compare_last_week'
+                ? 'bg-blue-500 text-white border-blue-500'
+                : isDark
+                  ? 'bg-slate-900 border-slate-700 text-slate-300 hover:border-blue-500'
+                  : 'bg-white border-slate-200 text-slate-700 hover:border-blue-500'
+            }`}
+          >
+            Compare Last Week vs Week Before
+          </button>
+          <button
+            onClick={() => setFilterPreset('compare_last_month')}
+            className={`px-3 py-2 rounded-lg text-sm font-semibold border transition-colors ${
+              filterPreset === 'compare_last_month'
+                ? 'bg-blue-500 text-white border-blue-500'
+                : isDark
+                  ? 'bg-slate-900 border-slate-700 text-slate-300 hover:border-blue-500'
+                  : 'bg-white border-slate-200 text-slate-700 hover:border-blue-500'
+            }`}
+          >
+            Compare Last Month vs Month Before
+          </button>
+        </div>
+        <button
+          onClick={() => setFilterPreset('last_week')}
+          className="px-4 py-2 rounded-lg bg-emerald-500 text-black font-bold hover:bg-emerald-400"
+        >
+          Reset Filters
+        </button>
+      </div>
+
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <motion.div
@@ -290,13 +467,11 @@ export default function AdminAnalyticsView({ isDark, refreshTrigger }: AdminAnal
           className={`rounded-2xl p-6 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}
         >
           <div className="flex items-center justify-between mb-3">
-            <Building2 className="h-8 w-8 text-emerald-500" />
-            <span className={`text-xs font-bold px-2 py-1 rounded-full ${isDark ? 'bg-emerald-900/30 text-emerald-400' : 'bg-emerald-100 text-emerald-600'}`}>
-              Active
-            </span>
+            <FileText className="h-8 w-8 text-purple-500" />
+            <ArrowUpRight className="h-5 w-5 text-emerald-500" />
           </div>
-          <h3 className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{selectedClinic === 'all' ? clinics.length : 1}</h3>
-          <p className={`text-sm font-semibold ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>Clinics Tracked</p>
+          <h3 className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{totals.blogs}</h3>
+          <p className={`text-sm font-semibold ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>Blogs Published</p>
         </motion.div>
 
         <motion.div
@@ -340,7 +515,7 @@ export default function AdminAnalyticsView({ isDark, refreshTrigger }: AdminAnal
             </span>
           </div>
           <h3 className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>${(totals.metaSpend + totals.googleSpend).toFixed(0)}</h3>
-          <p className={`text-sm font-semibold ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>Ad Spend</p>
+          <p className={`text-sm font-semibold ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>Total Investment</p>
         </motion.div>
       </div>
 

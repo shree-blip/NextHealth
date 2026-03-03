@@ -43,12 +43,14 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { useSitePreferences } from '@/components/SitePreferencesProvider';
 import PricingCard from '@/components/PricingCard';
+import BillingView from '@/components/BillingView';
+import ManageBillingModal from '@/components/ManageBillingModal';
 
 /* ─── Plan Definitions ─── */
 const PLANS = [
   {
     id: 'silver',
-    name: 'Wellness & Longevity',
+    name: 'Starter Care',
     price: '$5,000',
     period: '/ Month',
     icon: Shield,
@@ -58,7 +60,7 @@ const PLANS = [
   },
   {
     id: 'gold',
-    name: 'ER & Urgent Care',
+    name: 'Growth Pro',
     price: '$10,000',
     period: '/ Month',
     icon: Rocket,
@@ -68,8 +70,8 @@ const PLANS = [
     tier: 2,
   },
   {
-    id: 'platinum',
-    name: 'Enterprise',
+    id: 'premium',
+    name: 'Scale Elite',
     price: 'Custom',
     period: '',
     icon: Zap,
@@ -118,9 +120,12 @@ export default function ClientDashboardPage() {
 function ClientDashboard() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const CLIENT_VIEWS = ['overview', 'membership', 'analytics', 'profile', 'settings', 'billing'] as const;
+  type ClientView = typeof CLIENT_VIEWS[number];
   const [user, setUser] = useState<any>(null);
   const [myClinics, setMyClinics] = useState<any[]>([]);
-  const [activeView, setActiveView] = useState<'overview' | 'membership' | 'analytics' | 'profile' | 'settings'>('overview');
+  const [activeView, setActiveView] = useState<ClientView>('overview');
+  const [selectedPlanForBilling, setSelectedPlanForBilling] = useState<{ id: string; name: string; price: number } | null>(null);
 
   // Subscription state
   const [subStatus, setSubStatus] = useState<any>(null);
@@ -134,30 +139,16 @@ function ClientDashboard() {
   // Analytics refresh trigger (via socket from admin)
   const [analyticsRefreshKey, setAnalyticsRefreshKey] = useState(0);
 
-  // Read URL params for upgrade feedback and view
-  useEffect(() => {
-    const upgrade = searchParams.get('upgrade');
-    const plan = searchParams.get('plan');
-    const view = searchParams.get('view');
-    
-    // Handle view parameter
-    if (view === 'profile' || view === 'membership' || view === 'analytics' || view === 'settings') {
-      setActiveView(view as 'overview' | 'membership' | 'analytics' | 'profile' | 'settings');
-    }
-    
-    if (upgrade === 'success' && plan) {
-      setToast({ type: 'success', message: `Successfully upgraded to ${plan.charAt(0).toUpperCase() + plan.slice(1)}!` });
-      setActiveView('membership');
-      // Clean URL
-      window.history.replaceState({}, '', '/dashboard/client');
-      // Refresh subscription status
-      fetchSubscriptionStatus();
-    } else if (upgrade === 'cancelled') {
-      setToast({ type: 'error', message: 'Upgrade was cancelled.' });
-      setActiveView('membership');
-      window.history.replaceState({}, '', '/dashboard/client');
-    }
-  }, [searchParams]);
+  // Manage Billing Modal
+  const [manageBillingOpen, setManageBillingOpen] = useState(false);
+  const [currentBillingData, setCurrentBillingData] = useState({
+    email: user?.email || '',
+    address: '',
+    city: '',
+    state: '',
+    zipCode: '',
+    country: 'US',
+  });
 
   const fetchSubscriptionStatus = useCallback(() => {
     setLoadingSub(true);
@@ -167,6 +158,57 @@ function ClientDashboard() {
       .catch(console.error)
       .finally(() => setLoadingSub(false));
   }, []);
+
+  // Read URL params for upgrade feedback and view
+  useEffect(() => {
+    const upgrade = searchParams.get('upgrade');
+    const plan = searchParams.get('plan');
+    const sessionId = searchParams.get('session_id');
+    const view = searchParams.get('view');
+
+    // Handle view parameter
+    if (view && CLIENT_VIEWS.includes(view as ClientView)) {
+      setActiveView(view as ClientView);
+    }
+
+    if (upgrade === 'success' && plan) {
+      const finalizeUpgrade = async () => {
+        try {
+          await fetch('/api/stripe/confirm-checkout', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ plan, sessionId }),
+          });
+        } catch (error) {
+          console.error('Failed to confirm Stripe checkout:', error);
+        }
+
+        setToast({ type: 'success', message: `Successfully upgraded to ${plan.charAt(0).toUpperCase() + plan.slice(1)}!` });
+        setActiveView('membership');
+        window.history.replaceState({}, '', '/dashboard/client');
+        fetchSubscriptionStatus();
+      };
+
+      finalizeUpgrade();
+    } else if (upgrade === 'cancelled') {
+      setToast({ type: 'error', message: 'Upgrade was cancelled.' });
+      setActiveView('membership');
+      window.history.replaceState({}, '', '/dashboard/client');
+    }
+  }, [searchParams, fetchSubscriptionStatus]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const current = new URL(window.location.href);
+    const upgrade = current.searchParams.get('upgrade');
+    const sessionId = current.searchParams.get('session_id');
+
+    if (upgrade || sessionId) return;
+
+    current.searchParams.set('view', activeView);
+    window.history.replaceState({}, '', `${current.pathname}${current.search}`);
+  }, [activeView]);
 
   useEffect(() => {
     // Check auth
@@ -191,6 +233,20 @@ function ClientDashboard() {
     // Real-time updates are not available
   }, [router, fetchSubscriptionStatus]);
 
+  // Fetch clinics assigned to this user
+  useEffect(() => {
+    if (!user) return;
+
+    fetch(`/api/client/clinics?userId=${user.id}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.clinics) {
+          setMyClinics(data.clinics);
+        }
+      })
+      .catch(err => console.error('Failed to fetch clinics:', err));
+  }, [user]);
+
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' });
     router.push('/login');
@@ -199,15 +255,23 @@ function ClientDashboard() {
   const handleUpgrade = async (planId: string) => {
     setUpgradingPlan(planId);
     try {
-      const res = await fetch('/api/stripe/create-checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ plan: planId }),
-      });
-      const data = await res.json();
-      if (data.url) {
-        window.location.href = data.url;
+      // Find the selected plan details
+      const selectedPlan = PLANS.find(p => p.id === planId);
+      if (!selectedPlan) {
+        setToast({ type: 'error', message: 'Invalid plan selected.' });
+        return;
       }
+
+      // Extract price as number
+      const priceNum = parseInt(selectedPlan.price.replace(/[$,]/g, ''));
+      
+      setSelectedPlanForBilling({
+        id: planId,
+        name: selectedPlan.name,
+        price: priceNum || 0,
+      });
+      
+      setActiveView('billing');
     } catch (err) {
       console.error('Upgrade error:', err);
       setToast({ type: 'error', message: 'Failed to start upgrade. Please try again.' });
@@ -235,13 +299,52 @@ function ClientDashboard() {
     }
   };
 
+  const handleSaveBillingDetails = async (billingData: any) => {
+    try {
+      const res = await fetch('/api/billing/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(billingData),
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Failed to save billing details');
+      }
+
+      const data = await res.json();
+      setCurrentBillingData(billingData);
+      return data;
+    } catch (err: any) {
+      console.error('Error saving billing details:', err);
+      throw err;
+    }
+  };
+
   if (!user) return <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-emerald-500" /></div>;
 
   const totalLeads = myClinics.reduce((sum, c) => sum + c.leads, 0);
   const totalAppointments = myClinics.reduce((sum, c) => sum + c.appointments, 0);
 
-  const currentPlanId = subStatus?.planId || null;
+  const currentPlanIdRaw = subStatus?.planId || null;
+  const currentPlanId = currentPlanIdRaw === 'platinum' ? 'premium' : currentPlanIdRaw;
   const currentPlanTier = PLANS.find(p => p.id === currentPlanId)?.tier || 0;
+
+  const dashboardTitle =
+    activeView === 'overview'
+      ? 'Your Clinic Snapshot'
+      : activeView === 'membership'
+        ? 'Membership & Billing'
+        : activeView === 'profile'
+          ? 'My Profile'
+          : activeView === 'settings'
+            ? 'Account Settings'
+            : 'Performance Analytics';
+
+  const dashboardSubtitle =
+    activeView === 'overview'
+      ? `Great to see you, ${user.name}. Here’s what’s happening across your clinics today.`
+      : `Welcome back, ${user.name}`;
 
   return (
     <>
@@ -252,20 +355,33 @@ function ClientDashboard() {
         {toast && <Toast type={toast.type} message={toast.message} onClose={() => setToast(null)} />}
       </AnimatePresence>
 
+      {/* Manage Billing Modal */}
+      <ManageBillingModal
+        isOpen={manageBillingOpen}
+        onClose={() => setManageBillingOpen(false)}
+        billingData={currentBillingData}
+        onSave={handleSaveBillingDetails}
+        setToast={setToast}
+      />
+
       {/* Sidebar */}
       <aside className="w-64 border-r border-slate-100 dark:border-slate-800 flex flex-col p-6 hidden lg:flex dark:bg-slate-900/50">
         <nav className="space-y-2 flex-grow mt-4">
           <NavItem icon={BarChart3} label="Overview" active={activeView === 'overview'} onClick={() => setActiveView('overview')} />
-          <NavItem icon={Users} label="Patient Leads" onClick={() => {}} />
-          <NavItem icon={Calendar} label="Appointments" onClick={() => {}} />
-          <NavItem icon={MessageSquare} label="AI Conversations" onClick={() => {}} />
+          <NavItem icon={Users} label="Patient Leads" badge="Coming Soon" onClick={() => {}} />
+          <NavItem icon={Calendar} label="Appointments" badge="Coming Soon" onClick={() => {}} />
+          <NavItem icon={MessageSquare} label="AI Conversations" badge="Coming Soon" onClick={() => {}} />
           <NavItem icon={TrendingUp} label="Analytics" active={activeView === 'analytics'} onClick={() => setActiveView('analytics')} />
           <NavItem
             icon={CreditCard}
             label="Membership"
             active={activeView === 'membership'}
             onClick={() => setActiveView('membership')}
-            badge={!currentPlanId ? 'Free' : undefined}
+            badge={currentPlanId ? (
+              currentPlanId === 'premium' ? 'Scale Elite' : 
+              currentPlanId === 'gold' ? 'Growth Pro' : 
+              'Starter Care'
+            ) : 'Free'}
           />
           <NavItem icon={User} label="Profile" active={activeView === 'profile'} onClick={() => setActiveView('profile')} />
           <NavItem icon={Settings} label="Settings" active={activeView === 'settings'} onClick={() => setActiveView('settings')} />
@@ -281,18 +397,8 @@ function ClientDashboard() {
       <main className="flex-grow p-8 overflow-y-auto">
         <header className="flex items-center justify-between mb-12">
           <div>
-            <h1 className="text-[20px] font-bold mb-1">
-              {activeView === 'overview'
-                ? 'Clinic Overview'
-                : activeView === 'membership'
-                  ? 'Membership & Billing'
-                  : activeView === 'profile'
-                    ? 'My Profile'
-                    : activeView === 'settings'
-                      ? 'Account Settings'
-                      : 'Performance Analytics'}
-            </h1>
-            <p className="text-slate-500 dark:text-slate-400">Welcome back, {user.name}</p>
+            <h1 className="text-[20px] font-bold mb-1">{dashboardTitle}</h1>
+            <p className="text-slate-500 dark:text-slate-400">{dashboardSubtitle}</p>
           </div>
           <div className="flex items-center gap-4">
             <div className="relative hidden md:block">
@@ -314,7 +420,27 @@ function ClientDashboard() {
         </header>
 
         <AnimatePresence mode="wait">
-          {activeView === 'membership' ? (
+          {activeView === 'billing' && selectedPlanForBilling ? (
+            <motion.div
+              key="billing"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+            >
+              <BillingView
+                planId={selectedPlanForBilling.id}
+                planName={selectedPlanForBilling.name}
+                planPrice={selectedPlanForBilling.price}
+                onBack={() => setActiveView('membership')}
+                onPaymentSuccess={() => {
+                  setSelectedPlanForBilling(null);
+                  setActiveView('membership');
+                  fetchSubscriptionStatus();
+                }}
+                setToast={setToast}
+              />
+            </motion.div>
+          ) : activeView === 'membership' ? (
             <motion.div
               key="membership"
               initial={{ opacity: 0, y: 10 }}
@@ -330,6 +456,7 @@ function ClientDashboard() {
                 portalLoading={portalLoading}
                 onUpgrade={handleUpgrade}
                 onManage={handleManageSubscription}
+                onEditBilling={() => setManageBillingOpen(true)}
               />
             </motion.div>
           ) : activeView === 'analytics' ? (
@@ -393,6 +520,7 @@ function MembershipView({
   portalLoading,
   onUpgrade,
   onManage,
+  onEditBilling,
 }: {
   subStatus: any;
   loadingSub: boolean;
@@ -402,6 +530,7 @@ function MembershipView({
   portalLoading: boolean;
   onUpgrade: (plan: string) => void;
   onManage: () => void;
+  onEditBilling: () => void;
 }) {
   return (
     <div className="space-y-8">
@@ -475,8 +604,6 @@ function MembershipView({
                 cta={
                   isCurrentPlan 
                     ? 'Your Current Plan' 
-                    : plan.id === 'premium' 
-                    ? 'Contact Sales' 
                     : isDowngrade 
                     ? 'Downgrade' 
                     : 'Upgrade'
@@ -491,7 +618,15 @@ function MembershipView({
       {/* Billing Info */}
       {currentPlanId && (
         <div className="rounded-3xl p-8 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
-          <h3 className="text-lg font-bold mb-4">Billing Details</h3>
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-lg font-bold">Billing Details</h3>
+            <button
+              onClick={onEditBilling}
+              className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold rounded-xl text-sm transition-colors"
+            >
+              Edit Billing
+            </button>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-sm">
             <div>
               <span className="text-slate-500 dark:text-slate-400 block mb-1">Subscription ID</span>
@@ -549,18 +684,18 @@ function OverviewView({
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-8 rounded-2xl p-5 bg-gradient-to-r from-emerald-500 to-emerald-600 text-black flex items-center justify-between"
+          className="mb-8 rounded-2xl p-5 border border-slate-200 dark:border-slate-700 bg-gradient-to-r from-white to-emerald-50 dark:from-slate-900 dark:to-emerald-950/40 text-slate-900 dark:text-slate-100 flex items-center justify-between"
         >
           <div className="flex items-center gap-3">
-            <Zap className="h-6 w-6" />
+            <Zap className="h-6 w-6 text-emerald-500" />
             <div>
               <span className="font-bold">Unlock premium features</span>
-              <span className="text-black/70 text-sm ml-2">— Choose a plan to get started with full marketing support</span>
+              <span className="text-slate-600 dark:text-slate-300 text-sm ml-2">— Choose a plan to get started with full marketing support</span>
             </div>
           </div>
           <button
             onClick={onUpgradeClick}
-            className="px-5 py-2 bg-black text-white rounded-xl font-bold text-sm hover:bg-slate-800 transition-colors shrink-0"
+            className="rounded-full bg-emerald-500 px-6 py-2 font-semibold text-black hover:bg-emerald-400 transition-all hover:scale-105 shrink-0"
           >
             View Plans
           </button>
@@ -728,6 +863,16 @@ function OverviewView({
 
 /* ─── Helper Components ─── */
 function NavItem({ icon: Icon, label, active = false, onClick, badge }: { icon: any; label: string; active?: boolean; onClick?: () => void; badge?: string }) {
+  // Determine badge color based on plan name or status
+  const getBadgeClasses = (badgeText?: string) => {
+    if (!badgeText) return 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300';
+    if (badgeText === 'Coming Soon') return 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400';
+    if (badgeText === 'Scale Elite') return 'bg-amber-100 dark:bg-amber-500/20 text-amber-800 dark:text-amber-400';
+    if (badgeText === 'Growth Pro') return 'bg-blue-100 dark:bg-blue-500/20 text-blue-800 dark:text-blue-400';
+    if (badgeText === 'Starter Care') return 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-600';
+    return 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300';
+  };
+
   return (
     <button
       onClick={onClick}
@@ -738,7 +883,7 @@ function NavItem({ icon: Icon, label, active = false, onClick, badge }: { icon: 
       <Icon className="h-5 w-5" />
       <span className="text-sm flex-grow">{label}</span>
       {badge && (
-        <span className="text-[10px] font-bold bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded-full">{badge}</span>
+        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap ${getBadgeClasses(badge)}`}>{badge}</span>
       )}
     </button>
   );

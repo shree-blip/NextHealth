@@ -10,31 +10,31 @@ import { Check, BarChart, Clock, Users, ShieldCheck } from 'lucide-react';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Healthcare Marketing Pricing & Retainers | NexHealth Healthcare Marketing',
+  title: 'Healthcare Marketing Pricing & Retainers | The NextGen Healthcare Marketing',
   description: 'Transparent pricing for healthcare marketing and clinical automation. View our retainer models for Wellness Clinics, Urgent Cares, and ERs in Texas.',
   alternates: {
-    canonical: 'https://nexhealthmarketing.com/pricing',
+    canonical: 'https://thenextgenhealth.com/pricing',
   }
 };
 
 const schema = {
   "@context": "https://schema.org",
   "@type": "WebPage",
-  "name": "Pricing - NexHealth Healthcare Marketing",
+  "name": "Pricing - The NextGen Healthcare Marketing",
   "description": "Transparent pricing and retainer models for healthcare marketing and automation services.",
   "mainEntity": {
     "@type": "ItemList",
     "itemListElement": [
       {
         "@type": "Offer",
-        "name": "Wellness & Longevity",
+        "name": "Starter Care",
         "price": "5000",
         "priceCurrency": "USD",
         "description": "Perfect for elective procedures and high-research patient journeys."
       },
       {
         "@type": "Offer",
-        "name": "ER & Urgent Care",
+        "name": "Growth Pro",
         "price": "10000",
         "priceCurrency": "USD",
         "description": "High-acuity, rapid-response systems for immediate-need facilities."
@@ -45,7 +45,7 @@ const schema = {
 
 const plans = [
   {
-    name: "Wellness & Longevity",
+    name: "Starter Care",
     price: "$5,000",
     period: "/ Month",
     description: "Perfect for elective procedures and high-research patient journeys.",
@@ -60,7 +60,7 @@ const plans = [
     variant: 'professional' as const
   },
   {
-    name: "ER & Urgent Care",
+    name: "Growth Pro",
     price: "$10,000",
     period: "/ Month",
     description: "High-acuity, rapid-response systems for immediate-need facilities.",
@@ -77,7 +77,7 @@ const plans = [
     popular: true
   },
   {
-    name: "Enterprise",
+    name: "Scale Elite",
     price: "Custom",
     period: "",
     description: "Comprehensive growth engine for large healthcare networks.",

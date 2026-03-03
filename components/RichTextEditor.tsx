@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useCallback, useState } from 'react';
+import { useRef, useCallback, useState, useEffect } from 'react';
 import {
   Bold,
   Italic,
@@ -44,6 +44,8 @@ export default function RichTextEditor({
 }: RichTextEditorProps) {
   const editorRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const savedRangeRef = useRef<Range | null>(null);
+  const isInternalChange = useRef(false);
   const [showImageModal, setShowImageModal] = useState(false);
   const [showLinkModal, setShowLinkModal] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -54,9 +56,21 @@ export default function RichTextEditor({
   const [linkText, setLinkText] = useState('');
   const [linkTarget, setLinkTarget] = useState<'_self' | '_blank'>('_blank');
 
+  // Sync editor content when value changes externally (e.g. loaded from DB)
+  useEffect(() => {
+    if (isInternalChange.current) {
+      isInternalChange.current = false;
+      return;
+    }
+    if (editorRef.current && editorRef.current.innerHTML !== value) {
+      editorRef.current.innerHTML = value;
+    }
+  }, [value]);
+
   const execCommand = useCallback((command: string, value?: string) => {
     document.execCommand(command, false, value);
     if (editorRef.current) {
+      isInternalChange.current = true;
       onChange(editorRef.current.innerHTML);
     }
     editorRef.current?.focus();
@@ -78,6 +92,12 @@ export default function RichTextEditor({
     // Get selected text if any
     const selection = window.getSelection();
     const selectedText = selection?.toString();
+    
+    // Save the current selection range BEFORE modal opens and steals focus
+    if (selection && selection.rangeCount > 0) {
+      savedRangeRef.current = selection.getRangeAt(0).cloneRange();
+    }
+    
     setLinkText(selectedText || '');
     setLinkUrl('');
     setShowLinkModal(true);
@@ -86,24 +106,40 @@ export default function RichTextEditor({
   const insertLink = () => {
     if (!linkUrl) return;
     
+    // CRITICAL: Restore focus to the editor first - modal stole it
+    if (editorRef.current) {
+      editorRef.current.focus();
+    }
+    
     const selection = window.getSelection();
     if (!selection) return;
 
-    // If there's selected text, create link with that text
-    if (linkText || selection.toString()) {
-      const displayText = linkText || selection.toString();
-      const linkHtml = `<a href="${linkUrl}" target="${linkTarget}" rel="${linkTarget === '_blank' ? 'noopener noreferrer' : ''}" class="text-emerald-600 dark:text-emerald-400 underline hover:text-emerald-700 dark:hover:text-emerald-300">${displayText}</a>`;
-      
-      if (selection.toString()) {
-        // Replace selected text with link
-        execCommand('insertHTML', linkHtml);
-      } else {
-        // Insert link at cursor position
-        execCommand('insertHTML', linkHtml + '&nbsp;');
+    // Restore the saved selection range from before the modal opened
+    if (savedRangeRef.current) {
+      try {
+        selection.removeAllRanges();
+        selection.addRange(savedRangeRef.current);
+      } catch (e) {
+        // If restoring fails, place cursor at end of editor
+        if (editorRef.current) {
+          const range = document.createRange();
+          range.selectNodeContents(editorRef.current);
+          range.collapse(false);
+          selection.removeAllRanges();
+          selection.addRange(range);
+        }
       }
+    }
+
+    const hasSelectedText = selection.toString().length > 0;
+    const displayText = linkText || selection.toString() || linkUrl;
+    const linkHtml = `<a href="${linkUrl}" target="${linkTarget}" rel="${linkTarget === '_blank' ? 'noopener noreferrer' : ''}" style="color: #2563eb; text-decoration: underline; cursor: pointer;">${displayText}</a>`;
+
+    if (hasSelectedText) {
+      // Replace selected text with link
+      execCommand('insertHTML', linkHtml);
     } else {
-      // No text selected, insert URL as text
-      const linkHtml = `<a href="${linkUrl}" target="${linkTarget}" rel="${linkTarget === '_blank' ? 'noopener noreferrer' : ''}" class="text-emerald-600 dark:text-emerald-400 underline hover:text-emerald-700 dark:hover:text-emerald-300">${linkUrl}</a>`;
+      // Insert link at cursor position
       execCommand('insertHTML', linkHtml + '&nbsp;');
     }
 
@@ -111,6 +147,7 @@ export default function RichTextEditor({
     setLinkUrl('');
     setLinkText('');
     setLinkTarget('_blank');
+    savedRangeRef.current = null;
   };
 
   const handleImageClick = () => {
@@ -187,7 +224,30 @@ export default function RichTextEditor({
 
   const handleInput = () => {
     if (editorRef.current) {
+      isInternalChange.current = true;
       onChange(editorRef.current.innerHTML);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    // Undo: Ctrl+Z / Cmd+Z
+    if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+      e.preventDefault();
+      document.execCommand('undo', false);
+      if (editorRef.current) {
+        isInternalChange.current = true;
+        onChange(editorRef.current.innerHTML);
+      }
+    }
+    // Redo: Ctrl+Shift+Z / Cmd+Shift+Z or Ctrl+Y / Cmd+Y
+    if (((e.ctrlKey || e.metaKey) && e.key === 'z' && e.shiftKey) ||
+        ((e.ctrlKey || e.metaKey) && e.key === 'y')) {
+      e.preventDefault();
+      document.execCommand('redo', false);
+      if (editorRef.current) {
+        isInternalChange.current = true;
+        onChange(editorRef.current.innerHTML);
+      }
     }
   };
 
@@ -202,6 +262,7 @@ export default function RichTextEditor({
   }) => (
     <button
       type="button"
+      onMouseDown={(e) => e.preventDefault()}
       onClick={onClick}
       title={title}
       className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
@@ -334,9 +395,9 @@ export default function RichTextEditor({
         contentEditable
         suppressContentEditableWarning
         onInput={handleInput}
+        onKeyDown={handleKeyDown}
         className="p-4 focus:outline-none prose dark:prose-invert max-w-none rich-text-editor-content"
         style={{ minHeight, color: 'inherit' }}
-        dangerouslySetInnerHTML={{ __html: value }}
         data-placeholder={placeholder}
       />
 
@@ -634,10 +695,35 @@ export default function RichTextEditor({
           height: auto;
           border-radius: 0.5em;
         }
+        [contenteditable] a {
+          color: #2563eb;
+          text-decoration: underline;
+          cursor: pointer;
+          transition: color 0.2s ease;
+        }
+        [contenteditable] a:hover {
+          color: #1d4ed8;
+        }
+        /* Dark mode link styling */
+        .dark [contenteditable] a,
+        .theme-dark [contenteditable] a {
+          color: #60a5fa;
+        }
+        .dark [contenteditable] a:hover,
+        .theme-dark [contenteditable] a:hover {
+          color: #93c5fd;
+        }
       `}</style>
       <style jsx global>{`
         .rich-text-editor-content {
           color: #0f172a;
+        }
+        .rich-text-editor-content a {
+          color: #2563eb;
+          text-decoration: underline;
+        }
+        .rich-text-editor-content a:hover {
+          color: #1d4ed8;
         }
         .dark .rich-text-editor-content,
         .theme-dark .rich-text-editor-content {
@@ -649,7 +735,12 @@ export default function RichTextEditor({
         }
         .dark .rich-text-editor-content a,
         .theme-dark .rich-text-editor-content a {
-          color: #6ee7b7 !important;
+          color: #60a5fa !important;
+          text-decoration: underline;
+        }
+        .dark .rich-text-editor-content a:hover,
+        .theme-dark .rich-text-editor-content a:hover {
+          color: #93c5fd !important;
         }
         .dark .rich-text-editor-content pre,
         .theme-dark .rich-text-editor-content pre {

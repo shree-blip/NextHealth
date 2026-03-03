@@ -115,7 +115,7 @@ export default function Footer() {
 
               <li className={`flex items-center gap-3 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
                 <Mail className="h-5 w-5 text-emerald-500 shrink-0" />
-                <span>hello@nexhealthmarketing.com</span>
+                <span>hello@thenextgenhealth.com</span>
               </li>
             </ul>
           </div>
@@ -123,7 +123,7 @@ export default function Footer() {
 
         <div className={`border-t pt-8 flex flex-col md:flex-row items-center justify-between gap-4 ${isDark ? 'border-slate-800' : 'border-slate-200'}`}>
           <p className={isDark ? 'text-slate-500' : 'text-slate-500'}>
-            © {new Date().getFullYear()} NexHealth Healthcare Marketing. {t('All rights reserved.')}
+            © {new Date().getFullYear()} The NextGen Healthcare Marketing. {t('All rights reserved.')}
           </p>
           <div className={`flex gap-8 text-sm ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>
             <Link href="/privacy" className={`transition-colors ${isDark ? 'hover:text-white' : 'hover:text-emerald-600'}`}>{t('Privacy Policy')}</Link>

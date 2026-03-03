@@ -14,7 +14,7 @@ import BlogPostMeta from '@/components/BlogPostMeta';
 const prisma = new PrismaClient();
 export const revalidate = 300; // 5 minutes
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://nexhealthmarketing.com';
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://thenextgenhealth.com';
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
@@ -75,7 +75,7 @@ export default async function BlogPost({ params }: { params: Promise<{ slug: str
     } : undefined,
     publisher: {
       '@type': 'Organization',
-      name: 'NexHealth Healthcare Marketing',
+      name: 'The NextGen Healthcare Marketing',
       url: SITE_URL,
     },
     mainEntityOfPage: {
@@ -131,7 +131,7 @@ export default async function BlogPost({ params }: { params: Promise<{ slug: str
               prose-p:text-base sm:prose-p:text-lg prose-p:text-slate-700 dark:prose-p:text-slate-300 prose-p:leading-relaxed
               prose-li:text-base sm:prose-li:text-lg prose-li:text-slate-700 dark:prose-li:text-slate-300
               prose-strong:text-slate-900 dark:prose-strong:text-white
-              prose-a:text-emerald-600 dark:prose-a:text-emerald-400 prose-a:no-underline hover:prose-a:underline
+              prose-a:text-blue-600 dark:prose-a:text-blue-400 prose-a:underline hover:prose-a:text-blue-800 dark:hover:prose-a:text-blue-300
               prose-code:text-slate-900 dark:prose-code:text-slate-100
               prose-pre:bg-slate-900 dark:prose-pre:bg-slate-950
               prose-blockquote:text-slate-700 dark:prose-blockquote:text-slate-300 prose-blockquote:border-slate-300 dark:prose-blockquote:border-slate-600

@@ -56,13 +56,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Login failed. Please try again.' }, { status: 500 });
     }
 
+    const uiRole = user.role === 'super_admin' ? 'admin' : user.role;
+
     // Create session
     const sessionId = crypto.randomUUID();
     sessions.set(sessionId, {
       id: user.id,
       email: user.email,
       name: user.name,
-      role: user.role,
+      role: uiRole,
       avatar: user.avatar || undefined,
     });
 
@@ -72,7 +74,7 @@ export async function POST(req: NextRequest) {
         id: user.id,
         email: user.email,
         name: user.name,
-        role: user.role,
+        role: uiRole,
         avatar: user.avatar,
       },
     }, { status: 200 });

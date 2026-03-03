@@ -4,8 +4,8 @@ import Footer from '@/components/Footer';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Terms of Service | NexHealth Healthcare Marketing',
-  description: 'Terms of Service for NexHealth Healthcare Marketing.',
+  title: 'Terms of Service | The NextGen Healthcare Marketing',
+  description: 'Terms of Service for The NextGen Healthcare Marketing.',
 };
 
 export default function TermsOfService() {
@@ -27,7 +27,7 @@ export default function TermsOfService() {
             
             <h2 className="text-2xl font-bold mt-10 mb-4 text-slate-900">1. Acceptance of Terms</h2>
             <p className="text-slate-600 mb-6">
-              By accessing and using the NexHealth Healthcare Marketing website (nexhealthmarketing.com) and our services, you accept and agree to be bound by the terms and provision of this agreement. In addition, when using these particular services, you shall be subject to any posted guidelines or rules applicable to such services.
+              By accessing and using The NextGen Healthcare Marketing website (thenextgenhealth.com) and our services, you accept and agree to be bound by the terms and provision of this agreement. In addition, when using these particular services, you shall be subject to any posted guidelines or rules applicable to such services.
             </p>
 
             <h2 className="text-2xl font-bold mt-10 mb-4 text-slate-900">2. Description of Service</h2>

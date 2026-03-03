@@ -11,7 +11,7 @@ import Footer from '@/components/Footer';
 
 export default function SignupPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-slate-900 flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-emerald-500" /></div>}>
+    <Suspense fallback={<div className="min-h-screen bg-slate-50 flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-emerald-500" /></div>}>
       <SignupContent />
     </Suspense>
   );
@@ -67,9 +67,9 @@ function SignupContent() {
   return (
     <>
       <Navbar />
-      <main className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4 relative overflow-hidden pt-32">
-        <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-emerald-500/15 blur-[140px] rounded-full animate-pulse" />
-        <div className="absolute bottom-0 right-1/4 w-[400px] h-[400px] bg-blue-500/10 blur-[120px] rounded-full" />
+      <main className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50 flex items-center justify-center p-4 relative overflow-hidden pt-32">
+        <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-emerald-500/10 blur-[140px] rounded-full animate-pulse" />
+        <div className="absolute bottom-0 right-1/4 w-[400px] h-[400px] bg-blue-500/5 blur-[120px] rounded-full" />
 
         <div className="w-full max-w-md relative z-10">
           <motion.div
@@ -77,21 +77,21 @@ function SignupContent() {
             animate={{ opacity: 1, y: 0 }}
             className="text-center mb-12"
           >
-            <h1 className="text-3xl font-black text-white mb-3">Create Your Account</h1>
-            <p className="text-slate-400 text-lg">Join us as a client and get started</p>
+            <h1 className="text-3xl font-black text-slate-900 mb-3">Create Your Account</h1>
+            <p className="text-slate-600 text-lg">Join us as a client and get started</p>
           </motion.div>
 
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.1 }}
-            className="bg-white/10 backdrop-blur-xl rounded-3xl p-8 border border-white/20"
+            className="bg-white backdrop-blur-xl rounded-3xl p-8 border border-slate-200 shadow-xl"
           >
             {error && (
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="mb-4 p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm"
+                className="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm"
               >
                 {error}
               </motion.div>
@@ -99,45 +99,45 @@ function SignupContent() {
 
             <form onSubmit={handleSignup} className="space-y-5">
               <div>
-                <label className="block text-sm font-bold text-slate-300 mb-2">Full Name</label>
+                <label className="block text-sm font-bold text-slate-700 mb-2">Full Name</label>
                 <div className="relative">
-                  <User className="absolute left-4 top-4 h-5 w-5 text-slate-500" />
+                  <User className="absolute left-4 top-4 h-5 w-5 text-slate-400" />
                   <input
                     type="text"
                     placeholder="John Smith"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="w-full pl-12 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+                    className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
                     disabled={isLoading}
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-bold text-slate-300 mb-2">Email Address</label>
+                <label className="block text-sm font-bold text-slate-700 mb-2">Email Address</label>
                 <div className="relative">
-                  <Mail className="absolute left-4 top-4 h-5 w-5 text-slate-500" />
+                  <Mail className="absolute left-4 top-4 h-5 w-5 text-slate-400" />
                   <input
                     type="email"
                     placeholder="you@example.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full pl-12 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+                    className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
                     disabled={isLoading}
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-bold text-slate-300 mb-2">Password</label>
+                <label className="block text-sm font-bold text-slate-700 mb-2">Password</label>
                 <div className="relative">
-                  <Lock className="absolute left-4 top-4 h-5 w-5 text-slate-500" />
+                  <Lock className="absolute left-4 top-4 h-5 w-5 text-slate-400" />
                   <input
                     type="password"
                     placeholder="Create a password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full pl-12 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+                    className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
                     disabled={isLoading}
                   />
                 </div>
@@ -146,7 +146,7 @@ function SignupContent() {
               <button
                 type="submit"
                 disabled={isLoading || !name || !email || !password}
-                className="w-full bg-emerald-500 text-black font-bold py-4 rounded-full hover:bg-emerald-400 transition-all flex items-center justify-center gap-3 disabled:opacity-50 hover:scale-105"
+                className="w-full bg-emerald-500 text-white font-bold py-4 rounded-full hover:bg-emerald-600 transition-all flex items-center justify-center gap-3 disabled:opacity-50 hover:scale-105"
               >
                 {isLoading ? (
                   <Loader2 className="h-5 w-5 animate-spin" />
@@ -159,8 +159,8 @@ function SignupContent() {
               </button>
             </form>
 
-            <p className="mt-6 text-center text-sm text-slate-500">
-              Already have an account? <Link href="/login" className="text-emerald-400 font-bold">Log in</Link>
+            <p className="mt-6 text-center text-sm text-slate-600">
+              Already have an account? <Link href="/login" className="text-emerald-500 hover:text-emerald-600 font-bold">Log in</Link>
             </p>
           </motion.div>
         </div>

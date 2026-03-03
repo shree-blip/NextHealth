@@ -3,8 +3,10 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Image as ImageIcon } from 'lucide-react';
+import { ArrowLeft, Image as ImageIcon, LayoutDashboard, Upload } from 'lucide-react';
 import RichTextEditor from '@/components/RichTextEditor';
+import Navbar from '@/components/Navbar';
+import Footer from '@/components/Footer';
 
 export default function NewBlogPost() {
   const router = useRouter();
@@ -59,23 +61,36 @@ export default function NewBlogPost() {
         publishedAt: form.publishedAt ? new Date(form.publishedAt).toISOString() : null,
       }),
     });
-    router.push('/dashboard/admin/blog');
+    router.push('/dashboard/admin?view=blog-management');
   };
 
   return (
-    <div className="dashboard-scope min-h-screen bg-slate-50 dark:bg-slate-950 dark:text-slate-100 p-8">
-      <div className="max-w-4xl mx-auto">
-        {/* Back Navigation */}
-        <Link
-          href="/dashboard/admin/blog"
-          className="inline-flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white mb-6"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back to Blog Management
-        </Link>
+    <>
+      <Navbar />
+      <div className="dashboard-scope min-h-screen bg-slate-50 dark:bg-slate-950 dark:text-slate-100 py-8">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Breadcrumb Navigation */}
+          <div className="flex items-center gap-3 mb-6">
+            <Link
+              href="/dashboard/admin"
+              className="inline-flex items-center gap-2 px-4 py-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg hover:border-emerald-500 dark:hover:border-emerald-500 transition-all"
+            >
+              <LayoutDashboard className="h-4 w-4" />
+              Dashboard
+            </Link>
+            <span className="text-slate-400">/</span>
+            <Link
+              href="/dashboard/admin?view=blog-management"
+              className="inline-flex items-center gap-2 px-4 py-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg hover:border-emerald-500 dark:hover:border-emerald-500 transition-all"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Blog Management
+            </Link>
+          </div>
 
-        <div className="bg-white dark:bg-slate-900 p-8 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
-          <h1 className="text-2xl font-bold mb-6">New Blog Post</h1>
+        <div className="glass rounded-2xl p-6 sm:p-8 border border-slate-200 dark:border-slate-700">
+          <h1 className="text-[20px] font-bold mb-1">New Blog Post</h1>
+          <p className="text-slate-500 dark:text-slate-400 mb-6">Create a new blog post with SEO-optimized content</p>
           
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Title & Slug */}
@@ -118,9 +133,10 @@ export default function NewBlogPost() {
                 <button
                   type="button"
                   onClick={() => setShowImageUpload(!showImageUpload)}
-                  className="px-4 py-2 bg-slate-100 dark:bg-slate-700 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
+                  className="px-4 py-2 bg-emerald-500 text-black font-bold rounded-lg hover:bg-emerald-400 transition-colors flex items-center gap-2"
                 >
-                  <ImageIcon className="h-5 w-5" />
+                  <Upload className="h-5 w-5" />
+                  Upload
                 </button>
               </div>
               {showImageUpload && (
@@ -230,7 +246,7 @@ export default function NewBlogPost() {
               </button>
               <button 
                 type="button" 
-                onClick={() => router.back()} 
+                onClick={() => router.push('/dashboard/admin?view=blog-management')} 
                 className="px-6 py-3 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors"
               >
                 Cancel
@@ -238,7 +254,9 @@ export default function NewBlogPost() {
             </div>
           </form>
         </div>
+        </div>
       </div>
-    </div>
+      <Footer />
+    </>
   );
 }

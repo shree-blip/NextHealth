@@ -8,10 +8,10 @@ import WhoWeServe from '@/components/landing/WhoWeServe';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Case Studies | Healthcare Marketing | NexHealth Healthcare Marketing',
+  title: 'Case Studies | Healthcare Marketing | The NextGen Healthcare Marketing',
   description: 'See real case studies of healthcare practices we have helped grow. Results from clinics, urgent cares, and ERs across Texas.',
   alternates: {
-    canonical: 'https://nexhealthmarketing.com/case-studies',
+    canonical: 'https://thenextgenhealth.com/case-studies',
   }
 };
 

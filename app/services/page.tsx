@@ -8,10 +8,10 @@ import { Search, Megaphone, ShieldCheck, Globe, MessageSquare, Activity, MapPin,
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Medical SEO & Healthcare Marketing Services | NexHealth Healthcare Marketing',
+  title: 'Medical SEO & Healthcare Marketing Services | The NextGen Healthcare Marketing',
   description: 'Comprehensive healthcare marketing services including Local SEO, Google Ads, Reputation Management, and HIPAA-compliant web design for Texas clinics.',
   alternates: {
-    canonical: 'https://nexhealthmarketing.com/services',
+    canonical: 'https://thenextgenhealth.com/services',
   }
 };
 
@@ -21,7 +21,7 @@ const schema = {
   "serviceType": "Healthcare Marketing and SEO",
   "provider": {
     "@type": "ProfessionalService",
-    "name": "NexHealth Healthcare Marketing",
+    "name": "The NextGen Healthcare Marketing",
     "address": {
       "@type": "PostalAddress",
       "streetAddress": "3001 Skyway Cir N",
@@ -56,6 +56,49 @@ const faqs = [
     q: "Do you offer Answer Engine Optimization (AEO)?",
     a: "Yes. With the rise of AI search tools like ChatGPT and Google's AI Overviews, traditional SEO is evolving. We structure your website's content using advanced Schema markup (JSON-LD) and natural language processing techniques so that AI engines recognize your clinic as the definitive answer to local medical queries."
   }
+];
+
+const teamMembers = [
+  {
+    name: 'Shree Gauli',
+    role: 'Sr Marketing Officer',
+    image: '/shree-gauli.png',
+  },
+  {
+    name: 'Bikash Neupane',
+    role: 'Marketing / IT Project Manager',
+    image: '/bikash-neupane.png',
+  },
+  {
+    name: 'Sonu Sagar Dongol',
+    role: 'Paid Ads Specialist / Media Buyer',
+    image: '/sagar-dongol.png',
+  },
+  {
+    name: 'Bijesh Khadgi',
+    role: 'Social Media Manager',
+    image: '/bijesh-khadgi.png',
+  },
+  {
+    name: 'Sumit Sharma',
+    role: 'SEO Manager',
+    image: '/sumit-sharma.png',
+  },
+  {
+    name: 'Rahul Roy',
+    role: 'Content Writer',
+    image: '/rahul-roy.png',
+  },
+  {
+    name: 'Bidhitsha Khadka',
+    role: 'Graphics Designer',
+    image: '/bidhitsha-khadka.png',
+  },
+  {
+    name: 'Sagar Timalsina',
+    role: 'Software Developer',
+    image: '/sagar-timalsina.png',
+  },
 ];
 
 export default function ServicesPage() {
@@ -288,26 +331,38 @@ export default function ServicesPage() {
         </div>
       </section>
 
-      {/* Leadership Section */}
+      {/* Team Leadership Section */}
       <section className="py-20 bg-white">
         <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl font-bold text-slate-900 mb-6">Leadership</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-center">
-            <div className="text-center">
-              <img src="/shree-gauli.png" alt="Shree Gauli" className="mx-auto h-32 w-32 rounded-full object-cover" />
-              <div className="mt-4 font-bold">Shree Gauli</div>
-              <div className="text-sm text-slate-600">Chief Marketing Officer</div>
-            </div>
-            <div className="text-center">
-              <img src="/sumit-sharma.png" alt="Sumit Sharma" className="mx-auto h-32 w-32 rounded-full object-cover" />
-              <div className="mt-4 font-bold">Sumit Sharma</div>
-              <div className="text-sm text-slate-600">Head of Engineering</div>
-            </div>
-            <div className="text-center">
-              <img src="/bidhitsha-khadka.png" alt="Biditsha Khadka" className="mx-auto h-32 w-32 rounded-full object-cover" />
-              <div className="mt-4 font-bold">Biditsha Khadka</div>
-              <div className="text-sm text-slate-600">Design Lead</div>
-            </div>
+          <FadeIn className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-slate-900 mb-3">Team Leadership</h2>
+            <p className="text-slate-600 max-w-2xl mx-auto">
+              The specialists executing strategy, SEO, paid media, creative, and software delivery for healthcare growth.
+            </p>
+          </FadeIn>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {teamMembers.map((member, index) => (
+              <FadeIn
+                key={member.name}
+                delay={0.05 * index}
+                className="group relative rounded-3xl border border-slate-200 bg-white p-5 text-center shadow-sm transition-all duration-300 hover:-translate-y-1.5 hover:shadow-xl hover:border-emerald-300"
+              >
+                <div className="relative mx-auto h-28 w-28 overflow-hidden rounded-full ring-4 ring-emerald-100 transition-all duration-300 group-hover:ring-emerald-300 group-hover:scale-105">
+                  <img
+                    src={member.image}
+                    alt={member.name}
+                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                  />
+                  <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-emerald-500/15 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+                </div>
+
+                <div className="mt-4 font-bold text-slate-900">{member.name}</div>
+                <div className="mt-1 text-xs font-bold uppercase tracking-widest text-emerald-600">
+                  {member.role}
+                </div>
+              </FadeIn>
+            ))}
           </div>
         </div>
       </section>

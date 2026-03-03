@@ -57,7 +57,7 @@ export default function HIPAACompliance() {
             <h2 className="text-2xl font-bold mt-10 mb-4 text-slate-900">Contact Our Privacy Officer</h2>
             <p className="text-slate-600 mb-6">
               If you have any questions about our HIPAA compliance program or need to report a security concern, please contact our Privacy Officer at:<br />
-              privacy@nexhealthmarketing.com<br />
+              privacy@thenextgenhealth.com<br />
               3001 Skyway Cir N, Irving, TX 75038
             </p>
           </div>

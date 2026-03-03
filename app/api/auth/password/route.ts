@@ -5,34 +5,50 @@ import jwt from 'jsonwebtoken';
 const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-key-for-dev';
 
 async function getAuthenticatedUser(req: NextRequest) {
-  const sessionId = req.cookies.get('session')?.value;
+  try {
+    const sessionId = req.cookies.get('session')?.value;
 
-  if (sessionId && sessions.has(sessionId)) {
-    const sessionUser = sessions.get(sessionId);
-    if (!sessionUser) return null;
+    if (sessionId && sessions.has(sessionId)) {
+      const sessionUser = sessions.get(sessionId);
+      if (!sessionUser) return null;
 
-    const dbUser = await prisma.user.findUnique({ where: { id: sessionUser.id } });
-    if (!dbUser) return null;
+      try {
+        const dbUser = await prisma.user.findUnique({ where: { id: sessionUser.id } });
+        if (!dbUser) return null;
 
-    return { dbUser, sessionId };
-  }
-
-  const token = req.cookies.get('auth_token')?.value;
-  if (token) {
-    try {
-      const decoded = jwt.verify(token, JWT_SECRET) as { id?: string };
-      if (!decoded?.id) return null;
-
-      const dbUser = await prisma.user.findUnique({ where: { id: decoded.id } });
-      if (!dbUser) return null;
-
-      return { dbUser, sessionId: null };
-    } catch {
-      return null;
+        return { dbUser, sessionId };
+      } catch (sessionDbError) {
+        console.error('Session DB error:', sessionDbError);
+        return null;
+      }
     }
-  }
 
-  return null;
+    const token = req.cookies.get('auth_token')?.value;
+    if (token) {
+      try {
+        const decoded = jwt.verify(token, JWT_SECRET) as { id?: string };
+        if (!decoded?.id) return null;
+
+        try {
+          const dbUser = await prisma.user.findUnique({ where: { id: decoded.id } });
+          if (!dbUser) return null;
+
+          return { dbUser, sessionId: null };
+        } catch (jwtDbError) {
+          console.error('JWT DB error:', jwtDbError);
+          return null;
+        }
+      } catch (jwtError) {
+        console.error('JWT verification error:', jwtError);
+        return null;
+      }
+    }
+
+    return null;
+  } catch (error) {
+    console.error('Auth verification error:', error);
+    return null;
+  }
 }
 
 export async function GET(req: NextRequest) {
@@ -61,7 +77,14 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
-    const body = await req.json();
+    let body;
+    try {
+      body = await req.json();
+    } catch (parseError) {
+      console.error('JSON parse error:', parseError);
+      return NextResponse.json({ error: 'Invalid JSON request body' }, { status: 400 });
+    }
+
     const { currentPassword, newPassword, confirmPassword } = body;
 
     if (!currentPassword || !newPassword || !confirmPassword) {
@@ -80,10 +103,15 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: 'New password and confirmation do not match' }, { status: 400 });
     }
 
-    await prisma.user.update({
-      where: { id: auth.dbUser.id },
-      data: { password: newPassword },
-    });
+    try {
+      await prisma.user.update({
+        where: { id: auth.dbUser.id },
+        data: { password: newPassword },
+      });
+    } catch (dbError) {
+      console.error('Database update error:', dbError);
+      return NextResponse.json({ error: 'Failed to update password in database' }, { status: 500 });
+    }
 
     if (auth.sessionId && sessions.has(auth.sessionId)) {
       const currentSession = sessions.get(auth.sessionId);

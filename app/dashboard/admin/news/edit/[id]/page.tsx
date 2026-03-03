@@ -3,8 +3,10 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Image as ImageIcon } from 'lucide-react';
+import { ArrowLeft, Image as ImageIcon, LayoutDashboard, Upload } from 'lucide-react';
 import RichTextEditor from '@/components/RichTextEditor';
+import Navbar from '@/components/Navbar';
+import Footer from '@/components/Footer';
 
 export default function EditNewsArticle() {
   const router = useRouter();
@@ -23,13 +25,6 @@ export default function EditNewsArticle() {
   });
   const [loading, setLoading] = useState(true);
   const [showImageUpload, setShowImageUpload] = useState(false);
-
-  // Auto-generate ALT text from article title
-  const generateAltText = (title: string, suffix: string = '') => {
-    if (!title) return suffix;
-    const cleanTitle = title.trim().substring(0, 80);
-    return suffix ? `${cleanTitle} - ${suffix}` : cleanTitle;
-  };
 
   useEffect(() => {
     if (id) {
@@ -55,11 +50,7 @@ export default function EditNewsArticle() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    const updates: any = { [name]: value };
-    
-    // Note: coverImageAlt is not supported by NewsArticle model
-    
-    setForm({ ...form, ...updates });
+    setForm({ ...form, [name]: value });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -72,29 +63,46 @@ export default function EditNewsArticle() {
         publishedAt: form.publishedAt ? new Date(form.publishedAt).toISOString() : null,
       }),
     });
-    router.push('/dashboard/admin/news');
+    router.push('/dashboard/admin?view=news-management');
   };
 
   if (loading) return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center">
-      <div className="text-slate-600 dark:text-slate-400">Loading...</div>
-    </div>
+    <>
+      <Navbar />
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center">
+        <div className="text-slate-600 dark:text-slate-400">Loading...</div>
+      </div>
+      <Footer />
+    </>
   );
 
   return (
-    <div className="dashboard-scope min-h-screen bg-slate-50 dark:bg-slate-950 dark:text-slate-100 p-8">
-      <div className="max-w-4xl mx-auto">
-        {/* Back Navigation */}
-        <Link
-          href="/dashboard/admin/news"
-          className="inline-flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white mb-6"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back to News Management
-        </Link>
+    <>
+      <Navbar />
+      <div className="dashboard-scope min-h-screen bg-slate-50 dark:bg-slate-950 dark:text-slate-100 py-8">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Breadcrumb Navigation */}
+          <div className="flex items-center gap-3 mb-6">
+            <Link
+              href="/dashboard/admin"
+              className="inline-flex items-center gap-2 px-4 py-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg hover:border-emerald-500 dark:hover:border-emerald-500 transition-all"
+            >
+              <LayoutDashboard className="h-4 w-4" />
+              Dashboard
+            </Link>
+            <span className="text-slate-400">/</span>
+            <Link
+              href="/dashboard/admin?view=news-management"
+              className="inline-flex items-center gap-2 px-4 py-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg hover:border-emerald-500 dark:hover:border-emerald-500 transition-all"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              News Management
+            </Link>
+          </div>
 
-        <div className="bg-white dark:bg-slate-900 p-8 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
-          <h1 className="text-2xl font-bold mb-6">Edit News Article</h1>
+        <div className="glass rounded-2xl p-6 sm:p-8 border border-slate-200 dark:border-slate-700">
+          <h1 className="text-[20px] font-bold mb-1">Edit News Article</h1>
+          <p className="text-slate-500 dark:text-slate-400 mb-6">Update your news article content and metadata</p>
           
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Title & Slug */}
@@ -137,9 +145,10 @@ export default function EditNewsArticle() {
                 <button
                   type="button"
                   onClick={() => setShowImageUpload(!showImageUpload)}
-                  className="px-4 py-2 bg-slate-100 dark:bg-slate-700 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
+                  className="px-4 py-2 bg-emerald-500 text-black font-bold rounded-lg hover:bg-emerald-400 transition-colors flex items-center gap-2"
                 >
-                  <ImageIcon className="h-5 w-5" />
+                  <Upload className="h-5 w-5" />
+                  Upload
                 </button>
               </div>
               {showImageUpload && (
@@ -238,7 +247,7 @@ export default function EditNewsArticle() {
               </button>
               <button 
                 type="button" 
-                onClick={() => router.back()} 
+                onClick={() => router.push('/dashboard/admin?view=news-management')} 
                 className="px-6 py-3 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors"
               >
                 Cancel
@@ -246,7 +255,9 @@ export default function EditNewsArticle() {
             </div>
           </form>
         </div>
+        </div>
       </div>
-    </div>
+      <Footer />
+    </>
   );
 }

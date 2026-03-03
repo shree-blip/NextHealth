@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import {
   LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, AreaChart, Area,
@@ -8,6 +8,7 @@ import {
 } from 'recharts';
 import { TrendingUp, FileText, Globe, Phone, DollarSign, Users, Loader2, Building2, ChevronDown, ArrowUpRight } from 'lucide-react';
 import { useSitePreferences } from '@/components/SitePreferencesProvider';
+import io, { Socket } from 'socket.io-client';
 
 interface WeeklyAnalytics {
   id: string;
@@ -70,6 +71,37 @@ export default function ClientAnalyticsView({ refreshTrigger }: { refreshTrigger
   const [selectedMonth, setSelectedMonth] = useState<string>('all');
   const [selectedWeek, setSelectedWeek] = useState<string>('all');
   const [dateFilter, setDateFilter] = useState<string>('');
+  const socketRef = useRef<Socket | null>(null);
+  const clinicIdRef = useRef<string>('');
+
+  // Initialize Socket.io connection
+  useEffect(() => {
+    try {
+      socketRef.current = io({ 
+        path: '/socket.io',
+        transports: ['websocket', 'polling'],
+        reconnection: true,
+        reconnectionDelay: 1000,
+        reconnectionDelayMax: 5000,
+        reconnectionAttempts: 5,
+      });
+
+      // Listen for analytics updates broadcast from server
+      socketRef.current.on('weekly_analytics_updated', (data: any) => {
+        console.log('[Client Analytics] Received analytics update event:', data);
+        // Refetch data for the active clinic if it matches the update
+        if (clinicIdRef.current && (!data.clinicId || data.clinicId === clinicIdRef.current)) {
+          fetchAnalytics(clinicIdRef.current);
+        }
+      });
+
+      return () => {
+        socketRef.current?.disconnect();
+      };
+    } catch (err) {
+      console.error('[Client Analytics] Socket.io error:', err);
+    }
+  }, []);
 
   useEffect(() => {
     fetchClinics();
@@ -77,6 +109,7 @@ export default function ClientAnalyticsView({ refreshTrigger }: { refreshTrigger
 
   useEffect(() => {
     if (selectedClinic) {
+      clinicIdRef.current = selectedClinic;
       fetchAnalytics(selectedClinic);
     }
   }, [selectedClinic, refreshTrigger]);
@@ -93,7 +126,10 @@ export default function ClientAnalyticsView({ refreshTrigger }: { refreshTrigger
         if (assignRes.ok) {
           const data = await assignRes.json();
           setClinics(data.clinics || []);
-          if (data.clinics && data.clinics.length > 0) {
+          // If multiple clinics, default to "All Locations", otherwise select the single clinic
+          if (data.clinics && data.clinics.length > 1) {
+            setSelectedClinic('all');
+          } else if (data.clinics && data.clinics.length === 1) {
             setSelectedClinic(data.clinics[0].id);
           } else {
             setLoading(false);
@@ -115,17 +151,48 @@ export default function ClientAnalyticsView({ refreshTrigger }: { refreshTrigger
   const fetchAnalytics = async (clinicId: string) => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/analytics/weekly?clinicId=${clinicId}`);
-      if (res.ok) {
-        const data = await res.json();
-        setAnalytics(data.analytics || []);
+      let allAnalytics: WeeklyAnalytics[] = [];
+
+      // If fetching all locations, fetch analytics for all assigned clinics
+      if (clinicId === 'all') {
+        for (const clinic of clinics) {
+          const res = await fetch(`/api/analytics/weekly?clinicId=${clinic.id}`);
+          if (res.ok) {
+            const data = await res.json();
+            allAnalytics = [...allAnalytics, ...(data.analytics || [])];
+          }
+        }
+      } else {
+        const res = await fetch(`/api/analytics/weekly?clinicId=${clinicId}`);
+        if (res.ok) {
+          const data = await res.json();
+          allAnalytics = data.analytics || [];
+        } else {
+          console.error('Failed to fetch analytics:', res.status);
+        }
+      }
+
+      setAnalytics(allAnalytics);
+
+      // Auto-fill filter with last week's data
+      if (allAnalytics.length > 0) {
+        // Find the latest week
+        const sortedByDate = [...allAnalytics].sort((a, b) => {
+          if (a.year !== b.year) return b.year - a.year;
+          if (a.month !== b.month) return b.month - a.month;
+          return b.weekNumber - a.weekNumber;
+        });
+        
+        const latestWeek = sortedByDate[0];
+        setSelectedYear(String(latestWeek.year));
+        setSelectedMonth(String(latestWeek.month));
+        setSelectedWeek(String(latestWeek.weekNumber));
+        setDateFilter(latestWeek.weekLabel);
+      } else {
         setSelectedYear('all');
         setSelectedMonth('all');
         setSelectedWeek('all');
         setDateFilter('');
-      } else {
-        console.error('Failed to fetch analytics:', res.status);
-        setAnalytics([]);
       }
     } catch (err) {
       console.error('Failed to fetch analytics:', err);
@@ -276,6 +343,21 @@ export default function ClientAnalyticsView({ refreshTrigger }: { refreshTrigger
     socialViews: acc.socialViews + week.socialViews,
   }), { traffic: 0, blogs: 0, calls: 0, metaSpend: 0, googleSpend: 0, socialViews: 0 });
 
+  // Determine spend label based on filter level
+  const getSpendLabel = () => {
+    if (selectedWeek !== 'all') {
+      return 'Weekly Spend';
+    } else if (selectedMonth !== 'all') {
+      return 'Monthly Spend';
+    } else if (selectedYear !== 'all') {
+      return 'Yearly Spend';
+    } else {
+      return 'Total Spend';
+    }
+  };
+
+  const spendLabel = getSpendLabel();
+
   // Prepare chart data
   const trafficData = filteredAnalytics.map(w => ({
     week: w.weekLabel,
@@ -318,6 +400,7 @@ export default function ClientAnalyticsView({ refreshTrigger }: { refreshTrigger
   ].filter(item => item.value > 0);
 
   const currentClinic = clinics.find(c => c.id === selectedClinic);
+  const isAllLocations = selectedClinic === 'all';
 
   return (
     <div className="space-y-6">
@@ -333,13 +416,24 @@ export default function ClientAnalyticsView({ refreshTrigger }: { refreshTrigger
             }`}
           >
             <Building2 className="h-5 w-5 text-emerald-500" />
-            <span>{currentClinic?.name || 'Select Clinic'}</span>
+            <span>{isAllLocations ? 'All Locations' : currentClinic?.name || 'Select Clinic'}</span>
             <ChevronDown className={`h-4 w-4 transition-transform ${showDropdown ? 'rotate-180' : ''}`} />
           </button>
           {showDropdown && (
             <div className={`absolute top-full mt-2 w-full rounded-xl border shadow-xl z-10 ${
               isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'
             }`}>
+              <button
+                onClick={() => {
+                  setSelectedClinic('all');
+                  setShowDropdown(false);
+                }}
+                className={`w-full px-6 py-3 text-left hover:bg-emerald-50 dark:hover:bg-emerald-900/20 first:rounded-t-xl ${
+                  isAllLocations ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 font-bold' : ''
+                }`}
+              >
+                All Locations
+              </button>
               {clinics.map(clinic => (
                 <button
                   key={clinic.id}
@@ -347,7 +441,7 @@ export default function ClientAnalyticsView({ refreshTrigger }: { refreshTrigger
                     setSelectedClinic(clinic.id);
                     setShowDropdown(false);
                   }}
-                  className={`w-full px-6 py-3 text-left hover:bg-emerald-50 dark:hover:bg-emerald-900/20 first:rounded-t-xl last:rounded-b-xl ${
+                  className={`w-full px-6 py-3 text-left hover:bg-emerald-50 dark:hover:bg-emerald-900/20 last:rounded-b-xl ${
                     selectedClinic === clinic.id ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 font-bold' : ''
                   }`}
                 >
@@ -468,7 +562,7 @@ export default function ClientAnalyticsView({ refreshTrigger }: { refreshTrigger
             </span>
           </div>
           <h3 className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>${(totals.metaSpend + totals.googleSpend).toFixed(0)}</h3>
-          <p className={`text-sm font-semibold ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>Total Investment</p>
+          <p className={`text-sm font-semibold ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{spendLabel}</p>
         </motion.div>
 
         <motion.div

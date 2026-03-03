@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   description: 'Strategic healthcare marketing planning and custom marketing roadmaps aligned with your clinic growth goals. Data-driven strategy for sustainable patient acquisition.',
   keywords: 'healthcare marketing strategy, medical marketing plan, clinic growth strategy, healthcare marketing roadmap',
   alternates: {
-    canonical: 'https://nexhealthmarketing.com/services/strategy-planning',
+    canonical: 'https://thenextgenhealth.com/services/strategy-planning',
   }
 };
 

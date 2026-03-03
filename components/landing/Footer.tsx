@@ -36,7 +36,7 @@ export default function LandingFooter() {
         </div>
       </div>
       <div className={`mt-8 text-center text-sm ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
-        © {new Date().getFullYear()} NexHealth Healthcare Marketing. All rights reserved.
+        © {new Date().getFullYear()} The NextGen Healthcare Marketing. All rights reserved.
       </div>
     </footer>
   );

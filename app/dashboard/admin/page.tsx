@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, Suspense } from 'react';
+import { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   LayoutDashboard, 
@@ -75,7 +75,7 @@ function Modal({ isOpen, onClose, title, children }: { isOpen: boolean; onClose:
 }
 
 // Staff Management Section Component
-function StaffManagementSection({ users }: { users: any[] }) {
+function StaffManagementSection({ users, onRoleUpdated }: { users: any[]; onRoleUpdated: (updatedUser: any) => void }) {
   const [updatingUserId, setUpdatingUserId] = useState<string | null>(null);
   const [updateMessage, setUpdateMessage] = useState<string>('');
 
@@ -95,11 +95,11 @@ function StaffManagementSection({ users }: { users: any[] }) {
       }
 
       setUpdateMessage(`✅ ${data.message}`);
-      
-      // Reload page after successful update
+      onRoleUpdated(data);
+
       setTimeout(() => {
-        window.location.reload();
-      }, 1500);
+        setUpdateMessage('');
+      }, 2500);
     } catch (error) {
       setUpdateMessage(`❌ Error updating role: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
@@ -200,6 +200,28 @@ function StaffManagementSection({ users }: { users: any[] }) {
 function AdminDashboardContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const ADMIN_SECTIONS = [
+    'Global Stats',
+    'Staff Management',
+    'Registered Clients',
+    'Client Sites',
+    'AI Models',
+    'Lead Database',
+    'Security Logs',
+    'System Config',
+    'Analytics',
+    'Blog Management',
+    'News Management',
+    'My Profile',
+    'Settings',
+  ] as const;
+
+  const toViewValue = (label: string) => label.toLowerCase().replace(/\s+/g, '-');
+  const toSectionLabel = (view: string | null) => {
+    if (!view) return null;
+    return ADMIN_SECTIONS.find((label) => toViewValue(label) === view) || null;
+  };
+
   const [user, setUser] = useState<any>(null);
   const [clinics, setClinics] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
@@ -223,6 +245,7 @@ function AdminDashboardContent() {
   const [editingClinic, setEditingClinic] = useState<any>(null);
   const [showQuickAssignModal, setShowQuickAssignModal] = useState(false);
   const [quickAssignClinicId, setQuickAssignClinicId] = useState('');
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
 
   // Form states
   const [newClientName, setNewClientName] = useState('');
@@ -235,6 +258,30 @@ function AdminDashboardContent() {
   const [newClinicAssignedUser, setNewClinicAssignedUser] = useState('');
   // Analytics refresh trigger – incremented after form saves
   const [analyticsRefreshKey, setAnalyticsRefreshKey] = useState(0);
+
+  const isAdminLike = useCallback((role?: string) => role === 'admin' || role === 'super_admin', []);
+
+  const fetchAdminData = useCallback(async () => {
+    try {
+      const [usersRes, clinicsRes] = await Promise.all([
+        fetch('/api/admin/users', { cache: 'no-store' }),
+        fetch('/api/admin/clinics', { cache: 'no-store' }),
+      ]);
+
+      if (usersRes.ok) {
+        const usersData = await usersRes.json();
+        setUsers(usersData.users || []);
+        setAssignments(usersData.assignments || []);
+      }
+
+      if (clinicsRes.ok) {
+        const clinicsData = await clinicsRes.json();
+        setClinics(clinicsData.clinics || []);
+      }
+    } catch (error) {
+      console.error('Failed to fetch admin data:', error);
+    }
+  }, []);
 
   const [gmbState, setGmbState] = useState({
     loading: false,
@@ -278,10 +325,11 @@ function AdminDashboardContent() {
         router.push('/login');
       } else {
         res.json().then(data => {
-          if (data.role !== 'admin') {
+          if (!isAdminLike(data.role)) {
             router.push('/dashboard/client');
           } else {
             setUser(data);
+            fetchAdminData();
           }
         });
       }
@@ -294,18 +342,38 @@ function AdminDashboardContent() {
 
     // Note: Socket.io is disabled for Vercel serverless deployment
     // Real-time updates are not available. Manual refresh or API polling recommended.
-  }, [router]);
+  }, [router, isAdminLike, fetchAdminData]);
 
-  // Handle view parameter from URL
+  useEffect(() => {
+    if (!user) return;
+    const intervalId = window.setInterval(() => {
+      fetchAdminData();
+    }, 5000);
+
+    return () => window.clearInterval(intervalId);
+  }, [user, fetchAdminData]);
+
+  // Handle view parameter from URL - Consolidated to prevent race conditions
   useEffect(() => {
     const view = searchParams.get('view');
-    if (view === 'profile') {
-      navigateToSection('My Profile');
+    const targetSection = toSectionLabel(view);
+
+    // Only sync FROM URL if we have a valid view parameter and it differs from current section
+    if (targetSection && targetSection !== section) {
+      setSection(targetSection);
+      setSectionHistory([targetSection]);
+      setHistoryIndex(0);
     }
-    if (view === 'settings') {
-      navigateToSection('Settings');
-    }
-  }, [searchParams]);
+  }, []); // Empty dependency - only run on mount to read initial URL param
+
+  // Sync TO URL whenever section changes
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const url = new URL(window.location.href);
+    url.searchParams.set('view', toViewValue(section));
+    window.history.replaceState({}, '', `${url.pathname}${url.search}`);
+  }, [section]);
 
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' });
@@ -336,14 +404,34 @@ function AdminDashboardContent() {
     console.log('Update stats:', clinicId, leads, appointments);
   };
 
-  const handleAddClient = () => {
+  const handleAddClient = async () => {
     if (newClientName && newClientEmail && newClientPassword) {
-      console.log('Add client:', { newClientName, newClientEmail, newClientRole });
-      setNewClientName('');
-      setNewClientEmail('');
-      setNewClientPassword('');
-      setNewClientRole('client');
-      setShowAddClientModal(false);
+      try {
+        const res = await fetch('/api/admin/users', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: newClientName,
+            email: newClientEmail,
+            password: newClientPassword,
+            role: newClientRole,
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          alert(data.error || 'Failed to create user');
+          return;
+        }
+        setNewClientName('');
+        setNewClientEmail('');
+        setNewClientPassword('');
+        setNewClientRole('client');
+        setShowAddClientModal(false);
+        fetchAdminData();
+      } catch (err) {
+        console.error('Error creating user:', err);
+        alert('Failed to create user. Please try again.');
+      }
     }
   };
 
@@ -372,9 +460,22 @@ function AdminDashboardContent() {
     }
   };
 
-  const handleDeleteClient = (clientId: string) => {
-    if (confirm('Are you sure you want to delete this client?')) {
-      console.log('Delete client:', clientId);
+  const handleDeleteClient = async (clientId: string) => {
+    if (confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
+      try {
+        const res = await fetch(`/api/admin/users?id=${clientId}`, {
+          method: 'DELETE',
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          alert(data.error || 'Failed to delete user');
+          return;
+        }
+        fetchAdminData();
+      } catch (err) {
+        console.error('Error deleting user:', err);
+        alert('Failed to delete user. Please try again.');
+      }
     }
   };
 
@@ -592,8 +693,15 @@ function AdminDashboardContent() {
     <>
     <Navbar />
     <div className={`dashboard-scope min-h-screen flex pt-20 ${dark ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-900'}`}>
+      {/* Mobile Menu Overlay */}
+      {showMobileMenu && (
+        <div className="fixed inset-0 z-40 lg:hidden" onClick={() => setShowMobileMenu(false)}>
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
+        </div>
+      )}
+
       {/* Sidebar */}
-      <aside className={`w-64 border-r flex flex-col p-6 hidden lg:flex ${dark ? 'border-slate-800 bg-slate-900/50' : 'border-slate-100'}`}>
+      <aside className={`fixed lg:relative inset-y-0 left-0 w-64 border-r flex flex-col p-6 z-50 lg:z-auto transition-transform ${showMobileMenu ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 lg:pt-0 pt-20 ${dark ? 'border-slate-800 bg-slate-900/50' : 'border-slate-100 bg-white'}`}>
         {/* Back/Forward Navigation */}
         <div className="flex items-center gap-2 mb-4">
           <button
@@ -614,24 +722,19 @@ function AdminDashboardContent() {
         </div>
 
         <nav className="space-y-2 flex-grow">
-          <NavItem icon={LayoutDashboard} label="Global Stats" active={section==='Global Stats'} onClick={() => navigateToSection('Global Stats')} dark={dark} />
-          <NavItem icon={BarChart3} label="Analytics" active={section==='Analytics'} onClick={() => navigateToSection('Analytics')} dark={dark} />
-          <NavItem icon={Users} label="Staff Management" active={section==='Staff Management'} onClick={() => navigateToSection('Staff Management')} dark={dark} />
-          <NavItem icon={Globe} label="Client Sites" active={section==='Client Sites'} onClick={() => navigateToSection('Client Sites')} dark={dark} />
-          <NavItem icon={Cpu} label="AI Models" active={section==='AI Models'} onClick={() => navigateToSection('AI Models')} dark={dark} />
-          <NavItem icon={Database} label="Lead Database" active={section==='Lead Database'} onClick={() => navigateToSection('Lead Database')} dark={dark} />
-          <NavItem icon={ShieldAlert} label="Security Logs" active={section==='Security Logs'} onClick={() => navigateToSection('Security Logs')} dark={dark} />
-          <NavItem icon={Settings} label="System Config" active={section==='System Config'} onClick={() => navigateToSection('System Config')} dark={dark} />
-          <NavItem icon={User} label="My Profile" active={section==='My Profile'} onClick={() => navigateToSection('My Profile')} dark={dark} />
-          <NavItem icon={Lock} label="Settings" active={section==='Settings'} onClick={() => navigateToSection('Settings')} dark={dark} />
-          <Link href="/dashboard/admin/blog" className={`w-full text-left flex items-center gap-3 p-3 rounded-xl transition-all ${dark ? 'text-slate-400 hover:text-white hover:bg-slate-800' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100'}`}>
-            <FileText className="h-5 w-5" />
-            <span className="text-sm">Blog Management</span>
-          </Link>
-          <Link href="/dashboard/admin/news" className={`w-full text-left flex items-center gap-3 p-3 rounded-xl transition-all ${dark ? 'text-slate-400 hover:text-white hover:bg-slate-800' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100'}`}>
-            <Newspaper className="h-5 w-5" />
-            <span className="text-sm">News Management</span>
-          </Link>
+          <NavItem icon={LayoutDashboard} label="Global Stats" active={section==='Global Stats'} onClick={() => { navigateToSection('Global Stats'); setShowMobileMenu(false); }} dark={dark} />
+          <NavItem icon={BarChart3} label="Analytics" active={section==='Analytics'} onClick={() => { navigateToSection('Analytics'); setShowMobileMenu(false); }} dark={dark} />
+          <NavItem icon={Users} label="Staff Management" active={section==='Staff Management'} onClick={() => { navigateToSection('Staff Management'); setShowMobileMenu(false); }} dark={dark} />
+          <NavItem icon={Building2} label="Registered Clients" active={section==='Registered Clients'} onClick={() => { navigateToSection('Registered Clients'); setShowMobileMenu(false); }} dark={dark} />
+          <NavItem icon={Globe} label="Client Sites" active={section==='Client Sites'} onClick={() => { navigateToSection('Client Sites'); setShowMobileMenu(false); }} dark={dark} />
+          <NavItem icon={Cpu} label="AI Models" active={section==='AI Models'} onClick={() => { navigateToSection('AI Models'); setShowMobileMenu(false); }} dark={dark} />
+          <NavItem icon={Database} label="Lead Database" active={section==='Lead Database'} onClick={() => { navigateToSection('Lead Database'); setShowMobileMenu(false); }} dark={dark} />
+          <NavItem icon={ShieldAlert} label="Security Logs" active={section==='Security Logs'} onClick={() => { navigateToSection('Security Logs'); setShowMobileMenu(false); }} dark={dark} />
+          <NavItem icon={Settings} label="System Config" active={section==='System Config'} onClick={() => { navigateToSection('System Config'); setShowMobileMenu(false); }} dark={dark} />
+          <NavItem icon={User} label="My Profile" active={section==='My Profile'} onClick={() => { navigateToSection('My Profile'); setShowMobileMenu(false); }} dark={dark} />
+          <NavItem icon={Lock} label="Settings" active={section==='Settings'} onClick={() => { navigateToSection('Settings'); setShowMobileMenu(false); }} dark={dark} />
+          <NavItem icon={FileText} label="Blog Management" active={section==='Blog Management'} onClick={() => { navigateToSection('Blog Management'); setShowMobileMenu(false); }} dark={dark} />
+          <NavItem icon={Newspaper} label="News Management" active={section==='News Management'} onClick={() => { navigateToSection('News Management'); setShowMobileMenu(false); }} dark={dark} />
           <Link href="/dashboard/admin/chat-reports" className={`w-full text-left flex items-center gap-3 p-3 rounded-xl transition-all ${dark ? 'text-slate-400 hover:text-white hover:bg-slate-800' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100'}`}>
             <MessageSquare className="h-5 w-5" />
             <span className="text-sm">Chat Reports</span>
@@ -653,7 +756,18 @@ function AdminDashboardContent() {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-grow p-8 overflow-y-auto">
+      <main className="flex-grow p-8 overflow-y-auto flex flex-col">
+        {/* Mobile Menu Button */}
+        <button
+          onClick={() => setShowMobileMenu(!showMobileMenu)}
+          className="lg:hidden mb-6 p-2 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-800 self-start"
+        >
+          <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
+
+        <div className="flex-grow">
         <ContentForSection
           section={section}
           user={user}
@@ -683,7 +797,11 @@ function AdminDashboardContent() {
           isDark={dark}
           analyticsRefreshKey={analyticsRefreshKey}
           setAnalyticsRefreshKey={setAnalyticsRefreshKey}
+          onRoleUpdated={(updatedUser: any) => {
+            setUsers(prev => prev.map(u => (u.id === updatedUser.id ? { ...u, role: updatedUser.role } : u)));
+          }}
         />
+        </div>
       </main>
     </div>
 
@@ -1397,6 +1515,7 @@ function ContentForSection(props: {
   isDark: boolean;
   analyticsRefreshKey: number;
   setAnalyticsRefreshKey: React.Dispatch<React.SetStateAction<number>>;
+  onRoleUpdated: (updatedUser: any) => void;
 }) {
   const {
     section,
@@ -1421,6 +1540,7 @@ function ContentForSection(props: {
     isDark,
     analyticsRefreshKey,
     setAnalyticsRefreshKey,
+    onRoleUpdated,
   } = props;
 
   switch(section) {
@@ -1594,7 +1714,7 @@ function ContentForSection(props: {
 
     case 'Staff Management':
       return (
-        <StaffManagementSection users={users} />
+        <StaffManagementSection users={users} onRoleUpdated={onRoleUpdated} />
       );
 
     case 'Registered Clients':
@@ -1886,13 +2006,6 @@ function ContentForSection(props: {
     case 'Analytics':
       return (
         <div className="space-y-8">
-          <div>
-            <h2 className="text-2xl font-black mb-2">📊 Analytics Dashboard</h2>
-            <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
-              Enter weekly data at the top — charts below update in real time after each save.
-            </p>
-          </div>
-
           {/* Data Entry Form – at the TOP */}
           <AnalyticsForm
             onSaved={() => {
@@ -1902,11 +2015,25 @@ function ContentForSection(props: {
           />
 
           {/* Analytics Charts – refreshed after every save */}
-          <div className={`pt-8 border-t ${isDark ? 'border-slate-700' : 'border-slate-200'}`}>
-            <AdminAnalyticsView isDark={isDark} refreshTrigger={analyticsRefreshKey} />
+          <div className="space-y-4">
+            <div>
+              <h2 className="text-2xl font-black mb-2">📊 Charts & Insights</h2>
+              <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+                Charts below update in real time after each save. Edit your data above to see instant results.
+              </p>
+            </div>
+            <div className={`pt-6 border-t ${isDark ? 'border-slate-700' : 'border-slate-200'}`}>
+              <AdminAnalyticsView isDark={isDark} refreshTrigger={analyticsRefreshKey} />
+            </div>
           </div>
         </div>
       );
+
+    case 'Blog Management':
+      return <BlogManagementSection />;
+
+    case 'News Management':
+      return <NewsManagementSection />;
 
     case 'My Profile':
       return <AdminProfileView user={user} />;
@@ -1917,4 +2044,204 @@ function ContentForSection(props: {
     default:
       return <div>Unknown section</div>;
   }
+}
+
+/* ─── Blog Management Section ─── */
+function BlogManagementSection() {
+  const router = useRouter();
+  const [posts, setPosts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch('/api/posts')
+      .then(res => res.json())
+      .then(data => { setPosts(data); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, []);
+
+  const handleDelete = async (id: number) => {
+    if (!confirm('Are you sure you want to delete this post?')) return;
+    await fetch(`/api/admin/posts/${id}`, { method: 'DELETE' });
+    setPosts(posts.filter(p => p.id !== id));
+  };
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h2 className="text-2xl font-bold">Blog Management</h2>
+          <p className="text-slate-600 dark:text-slate-400">Create and manage blog posts for your website.</p>
+        </div>
+        <Link
+          href="/dashboard/admin/blog/new"
+          className="flex items-center gap-2 bg-emerald-500 text-black px-5 py-3 rounded-xl font-bold hover:bg-emerald-400 transition-all"
+        >
+          <Plus className="h-5 w-5" /> New Post
+        </Link>
+      </div>
+
+      {loading ? (
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500"></div>
+        </div>
+      ) : posts.length === 0 ? (
+        <div className="glass rounded-2xl border border-slate-200 dark:border-slate-700 p-12 text-center">
+          <FileText className="h-12 w-12 text-slate-400 mx-auto mb-4" />
+          <p className="text-slate-500 dark:text-slate-400 mb-4">No posts yet. Create your first blog post!</p>
+          <Link href="/dashboard/admin/blog/new" className="text-emerald-500 font-bold hover:underline">Create Post →</Link>
+        </div>
+      ) : (
+        <div className="overflow-x-auto glass rounded-2xl border border-slate-200 dark:border-slate-700">
+          <table className="w-full text-left">
+            <thead>
+              <tr className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-widest border-b border-slate-100 dark:border-slate-700">
+                <th className="px-4 py-4">Post</th>
+                <th className="px-4 py-4">Slug</th>
+                <th className="px-4 py-4">Published</th>
+                <th className="px-4 py-4">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
+              {posts.map(post => (
+                <tr key={post.id} className="hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                  <td className="px-4 py-4">
+                    <div className="flex items-center gap-4">
+                      {post.coverImage && <img src={post.coverImage} alt="" className="w-14 h-14 object-cover rounded-lg" />}
+                      <div>
+                        <p className="font-bold">{post.title}</p>
+                        {post.excerpt && <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 line-clamp-1">{post.excerpt}</p>}
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-4 py-4 text-sm text-slate-600 dark:text-slate-400">/{post.slug}</td>
+                  <td className="px-4 py-4">
+                    {post.publishedAt ? (
+                      <span className="text-xs bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 px-3 py-1 rounded-full">
+                        {new Date(post.publishedAt).toLocaleDateString()}
+                      </span>
+                    ) : (
+                      <span className="text-xs bg-slate-100 dark:bg-slate-800 text-slate-500 px-3 py-1 rounded-full">Draft</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-4">
+                    <div className="flex items-center gap-2">
+                      <Link href={`/dashboard/admin/blog/edit/${post.id}`} className="p-2 text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg">
+                        <Edit className="h-4 w-4" />
+                      </Link>
+                      <button onClick={() => handleDelete(post.id)} className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg">
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─── News Management Section ─── */
+function NewsManagementSection() {
+  const router = useRouter();
+  const [articles, setArticles] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch('/api/news')
+      .then(res => res.json())
+      .then(data => { setArticles(data); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, []);
+
+  const handleDelete = async (id: number) => {
+    if (!confirm('Are you sure you want to delete this news article?')) return;
+    await fetch(`/api/admin/news/${id}`, { method: 'DELETE' });
+    setArticles(articles.filter(a => a.id !== id));
+  };
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h2 className="text-2xl font-bold">News Management</h2>
+          <p className="text-slate-600 dark:text-slate-400">Create and manage healthcare news articles.</p>
+        </div>
+        <Link
+          href="/dashboard/admin/news/new"
+          className="flex items-center gap-2 bg-emerald-500 text-black px-5 py-3 rounded-xl font-bold hover:bg-emerald-400 transition-all"
+        >
+          <Plus className="h-5 w-5" /> New Article
+        </Link>
+      </div>
+
+      {loading ? (
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500"></div>
+        </div>
+      ) : articles.length === 0 ? (
+        <div className="glass rounded-2xl border border-slate-200 dark:border-slate-700 p-12 text-center">
+          <Newspaper className="h-12 w-12 text-slate-400 mx-auto mb-4" />
+          <p className="text-slate-500 dark:text-slate-400 mb-4">No news articles yet. Create your first one!</p>
+          <Link href="/dashboard/admin/news/new" className="text-emerald-500 font-bold hover:underline">Create Article →</Link>
+        </div>
+      ) : (
+        <div className="overflow-x-auto glass rounded-2xl border border-slate-200 dark:border-slate-700">
+          <table className="w-full text-left">
+            <thead>
+              <tr className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-widest border-b border-slate-100 dark:border-slate-700">
+                <th className="px-4 py-4">Article</th>
+                <th className="px-4 py-4">Source</th>
+                <th className="px-4 py-4">Published</th>
+                <th className="px-4 py-4">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
+              {articles.map(article => (
+                <tr key={article.id} className="hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                  <td className="px-4 py-4">
+                    <div className="flex items-center gap-4">
+                      {article.coverImage && <img src={article.coverImage} alt="" className="w-14 h-14 object-cover rounded-lg" />}
+                      <div>
+                        <p className="font-bold">{article.title}</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">/{article.slug}</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-4 py-4">
+                    {article.source ? (
+                      <span className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 px-3 py-1 rounded-full">{article.source}</span>
+                    ) : (
+                      <span className="text-xs text-slate-400">—</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-4">
+                    {article.publishedAt ? (
+                      <span className="text-xs bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 px-3 py-1 rounded-full">
+                        {new Date(article.publishedAt).toLocaleDateString()}
+                      </span>
+                    ) : (
+                      <span className="text-xs bg-slate-100 dark:bg-slate-800 text-slate-500 px-3 py-1 rounded-full">Draft</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-4">
+                    <div className="flex items-center gap-2">
+                      <Link href={`/dashboard/admin/news/edit/${article.id}`} className="p-2 text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg">
+                        <Edit className="h-4 w-4" />
+                      </Link>
+                      <button onClick={() => handleDelete(article.id)} className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg">
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
 }

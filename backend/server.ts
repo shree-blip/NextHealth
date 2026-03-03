@@ -1,27 +1,31 @@
 import express from 'express';
-import AdminJS from 'adminjs';
-import AdminJSExpress from '@adminjs/express';
+import cookieParser from 'cookie-parser';
 import { PrismaClient } from '@prisma/client';
-import AdminJSPrisma from '@adminjs/prisma';
-
-AdminJS.registerAdapter({ Database: AdminJSPrisma.Database, Resource: AdminJSPrisma.Resource });
+import { Server } from 'socket.io';
 
 const prisma = new PrismaClient();
 
-const adminJs = new AdminJS({
-  databases: [prisma],
-  rootPath: '/admin',
-  branding: {
-    companyName: 'NexHealth Marketing Admin',
-  },
-});
-
-const router = AdminJSExpress.buildRouter(adminJs);
-
 const app = express();
-app.use(adminJs.options.rootPath, router);
 
-const port = process.env.ADMIN_PORT || 3001;
-app.listen(port, () => {
-  console.log(`AdminJS is under http://localhost:${port}${adminJs.options.rootPath}`);
+// Middleware
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
+
+// API endpoints can be added here
+app.get('/api/test', (req, res) => {
+  res.json({ message: 'Backend server is running!' });
+});
+
+const port = process.env.BACKEND_PORT || 3001;
+const server = app.listen(port, () => {
+  console.log(`Backend server is running at http://localhost:${port}`);
+  console.log(`Health check: http://localhost:${port}/health`);
+});
+
+export { app, server };

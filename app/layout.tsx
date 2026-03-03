@@ -18,7 +18,7 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'NexHealth Healthcare Marketing | Healthcare Growth & Automation',
+  title: 'The NextGen Healthcare Marketing | Healthcare Growth & Automation',
   description: 'The Operating System for Clinical Growth. Specialized in ER, Urgent Care, and Wellness clinic marketing automation.',
   icons: {
     icon: '/favicon.svg',

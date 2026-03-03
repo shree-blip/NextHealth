@@ -15,8 +15,20 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    const body = await req.json();
+    let body;
+    try {
+      body = await req.json();
+    } catch (parseError) {
+      console.error('JSON parse error:', parseError);
+      return NextResponse.json({ error: 'Invalid JSON request body' }, { status: 400 });
+    }
+
     const { name, avatar } = body;
+
+    // Validate inputs
+    if (!name && !avatar && avatar !== undefined) {
+      return NextResponse.json({ error: 'No fields to update' }, { status: 400 });
+    }
 
     // Update user in database
     try {
@@ -24,7 +36,7 @@ export async function PATCH(req: NextRequest) {
         where: { id: currentUser.id },
         data: {
           ...(name && { name }),
-          ...(avatar && { avatar }),
+          ...(avatar !== undefined && { avatar }),
         },
       });
 
@@ -45,11 +57,12 @@ export async function PATCH(req: NextRequest) {
         avatar: updatedUser.avatar,
       }, { status: 200 });
     } catch (dbError) {
+      console.error('Database update error:', dbError);
       // Fallback: update session only
       const updated = {
         ...currentUser,
         ...(name && { name }),
-        ...(avatar && { avatar }),
+        ...(avatar !== undefined && { avatar }),
       };
       sessions.set(sessionId, updated);
       return NextResponse.json(updated, { status: 200 });

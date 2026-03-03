@@ -13,7 +13,7 @@ export const metadata: Metadata = {
   title: 'Texas Healthcare Marketing Locations | NexHealth Healthcare Marketing',
   description: 'We provide hyper-local SEO and patient acquisition strategies for medical clinics across Texas, including Dallas, Houston, Austin, and high-growth suburbs.',
   alternates: {
-    canonical: 'https://nexhealthmarketing.com/locations',
+    canonical: 'https://thenextgenhealth.com/locations',
   }
 };
 

@@ -108,8 +108,8 @@ export default function Logo({ className = '', showText = true, iconSize = 100, 
       <Link
         href="/"
         className={`nexhealth-logo-wrapper ${compact ? 'compact' : ''} ${className}`}
-        aria-label="Go to NexHealth Homepage"
-        title="NexHealth Homepage"
+        aria-label="Go to The NextGen Homepage"
+        title="The NextGen Homepage"
       >
         <svg
           className="nexhealth-logo-icon nexhealth-float-anim"
@@ -239,8 +239,8 @@ export default function Logo({ className = '', showText = true, iconSize = 100, 
         {showText && (
           <div className="nexhealth-logo-text-wrapper">
             <div className="nexhealth-brand-name" style={{ margin: 0 }}>
-              <span className={darkText ? 'nex-dark' : 'nex-light'}>Nex</span>
-              <span className="health">Health</span>
+              <span className={darkText ? 'nex-dark' : 'nex-light'} style={{ fontSize: '0.6em', marginRight: '0.2em' }}>The</span>
+              <span className="health">NextGen</span>
             </div>
             <div className="nexhealth-brand-tagline">Healthcare Marketing</div>
           </div>

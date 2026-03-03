@@ -8,11 +8,13 @@ import { useRouter } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { useAuth } from '@/components/AuthProvider';
+import LoadingScreen from '@/components/LoadingScreen';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isRedirecting, setIsRedirecting] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const router = useRouter();
@@ -27,7 +29,10 @@ export default function LoginPage() {
       }
       if (event.data?.type === 'OAUTH_AUTH_SUCCESS') {
         const user = event.data.user;
-        router.push(`/dashboard/${user.role}`);
+        const dashboardPath = user?.role === 'super_admin' ? '/dashboard/admin' : `/dashboard/${user.role}`;
+        setIsRedirecting(true);
+        // Navigate immediately
+        router.push(dashboardPath);
       }
     };
     window.addEventListener('message', handleMessage);
@@ -53,23 +58,33 @@ export default function LoginPage() {
       });
 
       if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || 'Login failed');
+        let errorMessage = 'Login failed';
+        try {
+          const data = await response.json();
+          errorMessage = data.error || errorMessage;
+        } catch (parseError) {
+          errorMessage = `Login failed (${response.status}: ${response.statusText})`;
+        }
+        throw new Error(errorMessage);
       }
 
       const data = await response.json();
       setSuccess('Login successful! Redirecting...');
+      const dashboardPath = data?.user?.role === 'super_admin' ? '/dashboard/admin' : `/dashboard/${data.user.role}`;
       
       // Refresh auth context so Navbar updates immediately
       await refreshUser();
-
-      setTimeout(() => {
-        router.push(`/dashboard/${data.user.role}`);
-      }, 500);
+      
+      // Show loading screen and trigger redirect immediately
+      setIsRedirecting(true);
+      
+      // Navigate immediately - LoadingScreen will stay visible until component unmounts
+      router.push(dashboardPath);
     } catch (error) {
-      setError(error instanceof Error ? error.message : 'Login failed');
+      const message = error instanceof Error ? error.message : 'Login failed. Please try again.';
+      setError(message);
+      setIsRedirecting(false);
       console.error('Login error:', error);
-    } finally {
       setIsLoading(false);
     }
   };
@@ -80,7 +95,8 @@ export default function LoginPage() {
       setError('');
       const response = await fetch('/api/auth/url');
       if (!response.ok) {
-        throw new Error('Failed to get auth URL');
+        const errorData = await response.json().catch(() => ({ error: 'Failed to get auth URL' }));
+        throw new Error(errorData.error || 'Failed to get auth URL');
       }
       const { url } = await response.json();
 
@@ -95,14 +111,19 @@ export default function LoginPage() {
         setIsLoading(false);
       }
     } catch (error) {
-      setError(error instanceof Error ? error.message : 'OAuth error');
+      const message = error instanceof Error ? error.message : 'OAuth error';
+      setError(message);
       console.error('OAuth error:', error);
       setIsLoading(false);
+      setIsRedirecting(false);
     }
   };
 
   return (
     <>
+      {isRedirecting && (
+        <LoadingScreen durationMs={10000} />
+      )}
       <Navbar />
       <main className="min-h-screen bg-slate-50 flex items-center justify-center p-4 relative overflow-hidden pt-32">
         {/* Background Glow */}
