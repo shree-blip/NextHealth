@@ -7,6 +7,10 @@ import Image from 'next/image';
 import SocialShare from '@/components/SocialShare';
 import NewsArticleContent from '@/components/NewsArticleContent';
 
+// Ensure dynamic paths not in generateStaticParams still render (don't 404)
+export const dynamicParams = true;
+export const dynamic = 'force-dynamic';
+
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://thenextgenhealth.com';
 
 export async function generateMetadata(): Promise<Metadata> {

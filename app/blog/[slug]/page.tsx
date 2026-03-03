@@ -11,7 +11,9 @@ import RelatedPosts from '@/components/RelatedPosts';
 import CommentsPlaceholder from '@/components/CommentsPlaceholder';
 import BlogPostMeta from '@/components/BlogPostMeta';
 
-// Removed revalidate to force SSR and avoid SSG/ISR build-time DB calls
+// Ensure dynamic paths not in generateStaticParams still render (don't 404)
+export const dynamicParams = true;
+export const dynamic = 'force-dynamic';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://thenextgenhealth.com';
 
