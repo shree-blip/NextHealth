@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import prisma from '@/lib/prisma';
-import { sessions } from '@/lib/sessions';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-key-for-dev';
 
@@ -10,16 +9,6 @@ export function hasAdminAccess(role?: string | null): boolean {
 }
 
 export async function getAuthenticatedDbUser(req: NextRequest) {
-  const sessionId = req.cookies.get('session')?.value;
-
-  if (sessionId && sessions.has(sessionId)) {
-    const sessionUser = sessions.get(sessionId);
-    if (!sessionUser) return null;
-
-    const dbUser = await prisma.user.findUnique({ where: { id: sessionUser.id } });
-    return dbUser;
-  }
-
   const token = req.cookies.get('auth_token')?.value;
   if (!token) return null;
 

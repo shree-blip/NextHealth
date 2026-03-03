@@ -1,16 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { sessions } from '@/lib/sessions';
+import jwt from 'jsonwebtoken';
+
+const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-key-for-dev';
 
 export async function PATCH(req: NextRequest) {
   try {
-    const sessionId = req.cookies.get('session')?.value;
-    
-    if (!sessionId || !sessions.has(sessionId)) {
+    // JWT-based auth (works in serverless)
+    const token = req.cookies.get('auth_token')?.value;
+    if (!token) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
-    const currentUser = sessions.get(sessionId);
+    let decoded: any;
+    try {
+      decoded = jwt.verify(token, JWT_SECRET);
+    } catch {
+      return NextResponse.json({ error: 'Invalid or expired token' }, { status: 401 });
+    }
+
+    const currentUser = await prisma.user.findUnique({ where: { id: decoded.id } });
     if (!currentUser) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
@@ -40,15 +49,6 @@ export async function PATCH(req: NextRequest) {
         },
       });
 
-      // Update session
-      sessions.set(sessionId, {
-        id: updatedUser.id,
-        email: updatedUser.email,
-        name: updatedUser.name,
-        role: updatedUser.role,
-        avatar: updatedUser.avatar || undefined,
-      });
-
       return NextResponse.json({
         id: updatedUser.id,
         email: updatedUser.email,
@@ -58,14 +58,7 @@ export async function PATCH(req: NextRequest) {
       }, { status: 200 });
     } catch (dbError) {
       console.error('Database update error:', dbError);
-      // Fallback: update session only
-      const updated = {
-        ...currentUser,
-        ...(name && { name }),
-        ...(avatar !== undefined && { avatar }),
-      };
-      sessions.set(sessionId, updated);
-      return NextResponse.json(updated, { status: 200 });
+      return NextResponse.json({ error: 'Failed to update profile' }, { status: 500 });
     }
   } catch (error) {
     console.error('Profile update error:', error);

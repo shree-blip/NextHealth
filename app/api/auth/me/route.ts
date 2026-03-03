@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { sessions } from '@/lib/sessions';
 import prisma from '@/lib/prisma';
 import jwt from 'jsonwebtoken';
 const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-key-for-dev';
@@ -12,30 +11,7 @@ export async function GET(req: NextRequest) {
   };
 
   try {
-    // First try session-based auth (in-memory)
-    const sessionId = req.cookies.get('session')?.value;
-    if (sessionId && sessions.has(sessionId)) {
-      const sessionUser = sessions.get(sessionId);
-      if (sessionUser?.id) {
-        try {
-          const dbUser = await prisma.user.findUnique({ where: { id: sessionUser.id } });
-          if (dbUser) {
-            return NextResponse.json({
-              id: dbUser.id,
-              email: dbUser.email,
-              name: dbUser.name,
-              role: dbUser.role === 'super_admin' ? 'admin' : dbUser.role,
-              avatar: dbUser.avatar || null,
-            }, { status: 200, headers: noCacheHeaders });
-          }
-        } catch (sessionDbError) {
-          console.error('Session DB lookup error:', sessionDbError);
-          // Fall through to JWT auth or 401
-        }
-      }
-    }
-
-    // Fallback to JWT-based auth (from Express server)
+    // JWT-based auth (works in serverless environments like Vercel)
     const token = req.cookies.get('auth_token')?.value;
     if (token) {
       try {
