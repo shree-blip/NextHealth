@@ -1,0 +1,7 @@
+id,email,password,name,role,avatar,createdAt,updatedAt,plan,planId,stripeCustomerId,stripeSubscriptionId,subscriptionStatus
+cmm8msso90000fnsm3ry01ak9,shree@focusyourfinance.com,Hello@123,Shree,admin,/uploads/avatars/avatar-1772443344983.png,1772422845993,1772513438300,Premium,premium,,demo_sub_1772513437034,active
+cmm8mssoc0001fnsm1dwy0j8f,jaya.r.dahal@focusyourfinance.com,Hello@1234,"Jaya R. Dahal",client,https://ca.slack-edge.com/TD22QE5K7-UD15CMB08-56026d79f668-512,1772422845997,1772513376614,"ER & Urgent Care",gold,,demo_sub_1772513376613,active
+cmm96h23o000bm3b3ie6fx3s9,hello@focusyourfinance.com,Hello@123,"Bikash Neupane",admin,/uploads/avatars/avatar-1772512470937.png,1772455890660,1772512471274,,,,,
+cmm96iy07000cm3b3o2oryfdu,manager@napervillehwclinic.com,Hello@123,"Sajid Hussain",client,,1772455978663,1772455978663,,,,,
+cmm96k6vd000fm3b3hi67rek2,julie@focusyourfinance.com,Hello@123,"Julie Moreno",client,https://ca.slack-edge.com/TD22QE5K7-U08CS2NUWCF-bc11f3dfa209-192,1772456036809,1772515516529,"Wellness & Longevity",silver,,demo_sub_1772515514945,active
+cmmalon4m0000xiyjrqv2l89e,bijesh@focusyourfinance.com,Hello@123,"Bijesh Khadgi",admin,/uploads/avatars/avatar-1772543077080.png,1772541904919,1772543077285,,,,,

@@ -1,0 +1,7 @@
+"id","email","password","name","role","avatar","createdAt","updatedAt","plan","planId","stripeCustomerId","stripeSubscriptionId","subscriptionStatus"
+"cmm8msso90000fnsm3ry01ak9","shree@focusyourfinance.com","Hello@123","Shree","admin","/uploads/avatars/avatar-1772443344983.png","2026-03-02T03:40:45.993Z","2026-03-03T04:50:38.300Z","Premium","premium","","demo_sub_1772513437034","active"
+"cmm8mssoc0001fnsm1dwy0j8f","jaya.r.dahal@focusyourfinance.com","Hello@1234","Jaya R. Dahal","client","https://ca.slack-edge.com/TD22QE5K7-UD15CMB08-56026d79f668-512","2026-03-02T03:40:45.997Z","2026-03-03T04:49:36.614Z","ER & Urgent Care","gold","","demo_sub_1772513376613","active"
+"cmm96h23o000bm3b3ie6fx3s9","hello@focusyourfinance.com","Hello@123","Bikash Neupane","admin","/uploads/avatars/avatar-1772512470937.png","2026-03-02T12:51:30.660Z","2026-03-03T04:34:31.274Z","","","","",""
+"cmm96iy07000cm3b3o2oryfdu","manager@napervillehwclinic.com","Hello@123","Sajid Hussain","client","","2026-03-02T12:52:58.663Z","2026-03-02T12:52:58.663Z","","","","",""
+"cmm96k6vd000fm3b3hi67rek2","julie@focusyourfinance.com","Hello@123","Julie Moreno","client","https://ca.slack-edge.com/TD22QE5K7-U08CS2NUWCF-bc11f3dfa209-192","2026-03-02T12:53:56.809Z","2026-03-03T05:25:16.529Z","Wellness & Longevity","silver","","demo_sub_1772515514945","active"
+"cmmalon4m0000xiyjrqv2l89e","bijesh@focusyourfinance.com","Hello@123","Bijesh Khadgi","admin","/uploads/avatars/avatar-1772543077080.png","2026-03-03T12:45:04.919Z","2026-03-03T13:04:37.285Z","","","","",""

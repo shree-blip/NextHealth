@@ -1,0 +1,4 @@
+"id","email","password","name","role","avatar","createdAt","updatedAt","plan","planId","stripeCustomerId","stripeSubscriptionId","subscriptionStatus"
+"cmm96h23o000bm3b3ie6fx3s9","hello@focusyourfinance.com","Hello@123","Bikash Neupane","admin","/uploads/avatars/avatar-1772512470937.png","2026-03-02T12:51:30.660Z","2026-03-03T04:34:31.274Z","","","","",""
+"cmm96iy07000cm3b3o2oryfdu","manager@napervillehwclinic.com","Hello@123","Sajid Hussain","client","","2026-03-02T12:52:58.663Z","2026-03-02T12:52:58.663Z","","","","",""
+"cmmalon4m0000xiyjrqv2l89e","bijesh@focusyourfinance.com","Hello@123","Bijesh Khadgi","admin","/uploads/avatars/avatar-1772543077080.png","2026-03-03T12:45:04.919Z","2026-03-03T13:04:37.285Z","","","","",""

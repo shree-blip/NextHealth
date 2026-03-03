@@ -7,33 +7,32 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Blog models
 model Post {
-  id             Int       @id @default(autoincrement())
-  title          String
-  slug           String    @unique
-  excerpt        String?
-  content        String    // could be Markdown or richtext stored as plain text
-  coverImage     String?
-  coverImageAlt  String?
-  seoTitle       String?
-  metaDesc       String?
-  canonical      String?
-  publishedAt    DateTime?
-  updatedAt      DateTime  @updatedAt
-  author         Author?   @relation(fields: [authorId], references: [id])
-  authorId       Int?
-  categories     Category[] @relation("PostCategories")
-  tags           Tag[]      @relation("PostTags")
-  comments       Comment[]  @relation("PostComments")
+  id            Int        @id @default(autoincrement())
+  title         String
+  slug          String     @unique
+  excerpt       String?
+  content       String
+  coverImage    String?
+  coverImageAlt String?
+  seoTitle      String?
+  metaDesc      String?
+  canonical     String?
+  publishedAt   DateTime?
+  updatedAt     DateTime   @updatedAt
+  authorId      Int?
+  comments      Comment[]  @relation("PostComments")
+  author        Author?    @relation(fields: [authorId], references: [id])
+  categories    Category[] @relation("PostCategories")
+  tags          Tag[]      @relation("PostTags")
 }
 
 model Author {
-  id        Int     @id @default(autoincrement())
-  name      String
-  email     String  @unique
-  avatar    String?
-  posts     Post[]
+  id     Int     @id @default(autoincrement())
+  name   String
+  email  String  @unique
+  avatar String?
+  posts  Post[]
 }
 
 model Category {
@@ -50,16 +49,14 @@ model Tag {
 
 model Comment {
   id          Int      @id @default(autoincrement())
-  post        Post     @relation(fields: [postId], references: [id], name: "PostComments")
   postId      Int
   author      String
   content     String
   publishedAt DateTime @default(now())
   approved    Boolean  @default(false)
+  post        Post     @relation("PostComments", fields: [postId], references: [id])
 }
-// Analytics Models - Google Search Console & Google My Business
 
-// Healthcare News model
 model NewsArticle {
   id          Int       @id @default(autoincrement())
   title       String
@@ -67,7 +64,7 @@ model NewsArticle {
   excerpt     String?
   content     String
   coverImage  String?
-  source      String?    // e.g. "FDA", "CDC", "Reuters Health"
+  source      String?
   seoTitle    String?
   metaDesc    String?
   publishedAt DateTime?
@@ -75,28 +72,23 @@ model NewsArticle {
 }
 
 model AnalyticsData {
-  id                    Int       @id @default(autoincrement())
-  userId                String    // from auth system
-  clinicId              String?   // optional clinic association
-  date                  DateTime  @default(now())
-  
-  // Google Search Console metrics
-  gscClicks             Int       @default(0)
-  gscImpressions        Int       @default(0)
-  gscCtr                Float     @default(0)
-  gscAvgPosition        Float     @default(0)
-  
-  // Google My Business metrics
-  gmbPhoneCalls         Int       @default(0)
-  gmbWebsiteClicks      Int       @default(0)
-  gmbDirectionRequests  Int       @default(0)
-  gmbActions            Int       @default(0)
-  gmbProfileViews       Int       @default(0)
-  gmbReviewCount        Int       @default(0)
-  
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
-  
+  id                   Int      @id @default(autoincrement())
+  userId               String
+  clinicId             String?
+  date                 DateTime @default(now())
+  gscClicks            Int      @default(0)
+  gscImpressions       Int      @default(0)
+  gscCtr               Float    @default(0)
+  gscAvgPosition       Float    @default(0)
+  gmbPhoneCalls        Int      @default(0)
+  gmbWebsiteClicks     Int      @default(0)
+  gmbDirectionRequests Int      @default(0)
+  gmbActions           Int      @default(0)
+  gmbProfileViews      Int      @default(0)
+  gmbReviewCount       Int      @default(0)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
   @@index([userId])
   @@index([clinicId])
   @@index([date])
@@ -118,225 +110,184 @@ model ChatSession {
 }
 
 model ChatMessage {
-  id         Int         @id @default(autoincrement())
-  session    ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  sessionId  String
-  role       String
-  content    String
-  createdAt  DateTime    @default(now())
+  id        Int         @id @default(autoincrement())
+  sessionId String
+  role      String
+  content   String
+  createdAt DateTime    @default(now())
+  session   ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
   @@index([sessionId])
   @@index([createdAt])
 }
 
-// Newsletter Subscribers (from footer)
 model NewsletterSubscriber {
-  id          Int      @id @default(autoincrement())
-  email       String   @unique
+  id           Int      @id @default(autoincrement())
+  email        String   @unique
   subscribedAt DateTime @default(now())
-  active      Boolean  @default(true)
-  source      String?  // e.g., "footer", "blog-sidebar"
-  
+  active       Boolean  @default(true)
+  source       String?
+
   @@index([subscribedAt])
 }
 
-// Contact Leads (from various forms)
 model ContactLead {
   id           Int      @id @default(autoincrement())
   name         String
   email        String
   phone        String?
-  businessType String?  // e.g., "ER", "MedSpa", "Urgent Care"
+  businessType String?
   budget       String?
   message      String?
-  source       String?  // e.g., "hero-form", "contact-page", "pricing-cta"
-  status       String   @default("new")  // "new", "contacted", "qualified", "closed"
+  source       String?
+  status       String   @default("new")
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
-  
+
   @@index([createdAt])
   @@index([status])
 }
 
-// User Accounts (for authentication and profile management)
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  password  String   // In production, this would be hashed
-  name      String
-  role      String   // "client" or "admin"
-  avatar    String?  // URL to profile image
-  plan      String?  // Subscription plan name
-  planId    String?  // Subscription plan ID
+  id                   String         @id @default(cuid())
+  email                String         @unique
+  password             String
+  name                 String
+  role                 String
+  avatar               String?
+  plan                 String?
+  planId               String?
   stripeCustomerId     String?
   stripeSubscriptionId String?
   subscriptionStatus   String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  
-  clinicAssignments ClientClinic[]
-  
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
+  clinicAssignments    ClientClinic[]
+
   @@index([email])
   @@index([role])
 }
 
-// Clinic/Site model for client sites
 model Clinic {
-  id          String   @id @default(cuid())
-  name        String
-  type        String   // "ER", "Urgent Care", "Wellness", "MedSpa", etc.
-  location    String
-  leads       Int      @default(0)
-  appointments Int     @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
+  id                String            @id @default(cuid())
+  name              String
+  type              String
+  location          String
+  leads             Int               @default(0)
+  appointments      Int               @default(0)
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
   clientAssignments ClientClinic[]
-  weeklyAnalytics   WeeklyAnalytics[]
   gmbConnection     GMBConnection?
-  
+  weeklyAnalytics   WeeklyAnalytics[]
+
   @@index([type])
 }
 
-// Many-to-many relationship between Clients and Clinics
 model ClientClinic {
-  id        String   @id @default(cuid())
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId    String
-  clinic    Clinic   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
-  clinicId  String
+  id         String   @id @default(cuid())
+  userId     String
+  clinicId   String
   assignedAt DateTime @default(now())
-  
+  clinic     Clinic   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@unique([userId, clinicId])
   @@index([userId])
   @@index([clinicId])
 }
 
 model WeeklyAnalytics {
-  id                       String   @id @default(cuid())
-  clinicId                 String
-  clinic                   Clinic   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
-  weekLabel                String
-  year                     Int
-  month                    Int
-  weekNumber               Int
-
-  blogsPublished           Int      @default(0)
-  avgRanking               Float    @default(0)
-  totalTraffic             Int      @default(0)
-
-  callsRequested           Int      @default(0)
-  websiteVisits            Int      @default(0)
-  directionClicks          Int      @default(0)
-
-  metaImpressions          Int      @default(0)
-  metaClicks               Int      @default(0)
-  metaCTR                  Float    @default(0)
-  metaConversions          Int      @default(0)
-  metaAdSpend              Float    @default(0)
-  metaCPC                  Float    @default(0)
-  metaCostPerConversion    Float    @default(0)
-
-  googleImpressions        Int      @default(0)
-  googleClicks             Int      @default(0)
-  googleCTR                Float    @default(0)
-  googleCPC                Float    @default(0)
-  googleConversions        Int      @default(0)
-  googleCVR                Float    @default(0)
-  googleCostPerConversion  Float    @default(0)
-  googleTotalCost          Float    @default(0)
-
-  socialPosts              Int      @default(0)
-  socialViews              Int      @default(0)
-  patientCount             Int      @default(0)
-  digitalConversion        Int      @default(0)
-  conversionRate           Float    @default(0)
-  dailyPatientAvg          Float    @default(0)
-
-  createdAt                DateTime @default(now())
-  updatedAt                DateTime @updatedAt
+  id                      String   @id @default(cuid())
+  clinicId                String
+  weekLabel               String
+  year                    Int
+  month                   Int
+  weekNumber              Int
+  blogsPublished          Int      @default(0)
+  avgRanking              Float    @default(0)
+  totalTraffic            Int      @default(0)
+  callsRequested          Int      @default(0)
+  websiteVisits           Int      @default(0)
+  directionClicks         Int      @default(0)
+  metaImpressions         Int      @default(0)
+  metaClicks              Int      @default(0)
+  metaCTR                 Float    @default(0)
+  metaConversions         Int      @default(0)
+  metaAdSpend             Float    @default(0)
+  googleImpressions       Int      @default(0)
+  googleClicks            Int      @default(0)
+  googleCTR               Float    @default(0)
+  googleCPC               Float    @default(0)
+  googleConversions       Int      @default(0)
+  googleCVR               Float    @default(0)
+  googleCostPerConversion Float    @default(0)
+  googleTotalCost         Float    @default(0)
+  socialPosts             Int      @default(0)
+  socialViews             Int      @default(0)
+  patientCount            Int      @default(0)
+  digitalConversion       Int      @default(0)
+  conversionRate          Float    @default(0)
+  dailyPatientAvg         Float    @default(0)
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+  clinic                  Clinic   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
 
   @@unique([clinicId, year, month, weekNumber])
   @@index([clinicId])
   @@index([year, month, weekNumber])
 }
 
-// Google Business Profile (GMB) Connection
 model GMBConnection {
-  id                    String   @id @default(cuid())
-  clinic                Clinic   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
-  clinicId              String   @unique
-  
-  // OAuth tokens
-  accessToken           String   // Encrypted in production
-  refreshToken          String?  // Optional, may not always be returned
-  tokenExpiry           DateTime?
-  
-  // Business account information
-  businessAccountId     String?  // From Google: "accounts/{accountId}"
-  businessLocationId    String?  // From Google: "locations/{locationId}"
-  businessName          String?  // e.g., "My Medical Practice"
-  locationName          String?  // Selected location name
-  locationAddress       String?  // Full address of the location
-  
-  // Connection metadata
-  googleEmail           String?  // Email used to authenticate
-  connectionStatus      String   @default("connected") // "connected", "disconnected", "refresh_failed"
-  
-  // Sync information
-  lastSyncedAt          DateTime?
-  nextSyncAt            DateTime?
-  syncStatus            String   @default("idle") // "idle", "syncing", "error"
-  lastSyncError         String?
-  
-  // Data storage
-  gmbData               GMBData[]
-  
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
-  
+  id                 String    @id @default(cuid())
+  clinicId           String    @unique
+  accessToken        String
+  refreshToken       String?
+  tokenExpiry        DateTime?
+  businessAccountId  String?
+  businessLocationId String?
+  businessName       String?
+  locationName       String?
+  locationAddress    String?
+  googleEmail        String?
+  connectionStatus   String    @default("connected")
+  lastSyncedAt       DateTime?
+  nextSyncAt         DateTime?
+  syncStatus         String    @default("idle")
+  lastSyncError      String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  clinic             Clinic    @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  gmbData            GMBData[]
+
   @@index([clinicId])
   @@index([businessAccountId])
   @@index([lastSyncedAt])
 }
 
-// Daily GMB metrics data
 model GMBData {
-  id                    String   @id @default(cuid())
-  gmbConnection        GMBConnection @relation(fields: [gmbConnectionId], references: [id], onDelete: Cascade)
-  gmbConnectionId      String
-  
-  // Date of metrics
-  date                  DateTime // Synced date from GMB
-  
-  // GMB Insights Metrics
-  views                 Int      @default(0)    // Profile views
-  discovery             Int      @default(0)    // Discovery (Google Maps, Search)
-  directionRequests     Int      @default(0)    // Direction requests
-  phoneImpressions      Int      @default(0)    // Phone call trigger impressions
-  phoneCalls            Int      @default(0)    // Actual phone calls
-  websiteClicks         Int      @default(0)    // Website link clicks
-  messageCount          Int      @default(0)    // Messages received
-  
-  // Reviews & Ratings
-  totalReviews          Int      @default(0)    // Total review count
-  averageRating         Float    @default(0)    // Average rating (out of 5)
-  newReviews            Int      @default(0)    // New reviews added this period
-  
-  // Q&A
-  questions             Int      @default(0)    // Active questions
-  answers               Int      @default(0)    // Answers provided
-  
-  // Posts (if applicable)
-  totalPosts            Int      @default(0)    // Total number of posts
-  activePosts           Int      @default(0)    // Posts active in feed
-  
-  // Business hours
-  isOpenNow             Boolean  @default(false)
-  
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
-  
+  id                String        @id @default(cuid())
+  gmbConnectionId   String
+  date              DateTime
+  views             Int           @default(0)
+  discovery         Int           @default(0)
+  directionRequests Int           @default(0)
+  phoneImpressions  Int           @default(0)
+  phoneCalls        Int           @default(0)
+  websiteClicks     Int           @default(0)
+  messageCount      Int           @default(0)
+  totalReviews      Int           @default(0)
+  averageRating     Float         @default(0)
+  newReviews        Int           @default(0)
+  questions         Int           @default(0)
+  answers           Int           @default(0)
+  totalPosts        Int           @default(0)
+  activePosts       Int           @default(0)
+  isOpenNow         Boolean       @default(false)
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  gmbConnection     GMBConnection @relation(fields: [gmbConnectionId], references: [id], onDelete: Cascade)
+
   @@unique([gmbConnectionId, date])
   @@index([gmbConnectionId])
   @@index([date])
