@@ -3,7 +3,10 @@ import Stripe from 'stripe';
 // import { updateUserSubscriptionAfterPayment } from '@/lib/subscription-utils'; // Uncomment when ready
 import prisma from '@/lib/prisma';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '');
+// Lazy-initialize Stripe to avoid build-time crash when env var is missing
+function getStripe() {
+  return new Stripe(process.env.STRIPE_SECRET_KEY || '', { apiVersion: '2024-06-20' as any });
+}
 
 // Fallback for testing with placeholder keys
 const USE_DEMO_MODE = !process.env.STRIPE_SECRET_KEY || process.env.STRIPE_SECRET_KEY.includes('test');
@@ -139,6 +142,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Real Stripe payment processing
+    const stripe = getStripe();
     let charge: Stripe.Charge | null = null;
 
     try {

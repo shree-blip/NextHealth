@@ -1,31 +1,23 @@
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { Metadata } from 'next';
-import { PrismaClient } from '@prisma/client';
+import prisma from '@/lib/prisma';
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import SocialShare from '@/components/SocialShare';
 import NewsArticleContent from '@/components/NewsArticleContent';
 
-const prisma = new PrismaClient();
-export const revalidate = 300;
-
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://thenextgenhealth.com';
 
-export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
-  const { slug } = await params;
-  const article = await prisma.newsArticle.findUnique({ where: { slug } });
-  if (!article) return { title: 'Not found' };
+export async function generateMetadata(): Promise<Metadata> {
   return {
-    title: article.seoTitle || article.title,
-    description: article.metaDesc || article.excerpt || '',
-    alternates: { canonical: `${SITE_URL}/news/${article.slug}` },
+    title: 'News | The NextGen Healthcare Marketing',
+    description: 'Read our latest news article.',
   };
 }
 
 export async function generateStaticParams() {
-  const articles = await prisma.newsArticle.findMany({ select: { slug: true } });
-  return articles.map((a: { slug: string }) => ({ slug: a.slug }));
+  return [];
 }
 
 export default async function NewsArticlePage({ params }: { params: Promise<{ slug: string }> }) {

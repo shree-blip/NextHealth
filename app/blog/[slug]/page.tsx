@@ -31,8 +31,8 @@ export async function generateStaticParams() {
 export default async function BlogPost({ params }: { params: Promise<{ slug: string }> }) {
   // Fetch data at runtime (SSR)
   const { slug } = await params;
-  let post = null;
-  let relatedPosts = [];
+  let post: any = null;
+  let relatedPosts: { slug: string; title: string }[] = [];
   try {
     post = await prisma.post.findUnique({
       where: { slug },
