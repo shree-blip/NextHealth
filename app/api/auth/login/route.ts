@@ -30,11 +30,14 @@ export async function POST(req: NextRequest) {
     // Try to find or create user in database
     let user;
     try {
+      console.log(`[LOGIN] Attempting login for: ${email}`);
       user = await prisma.user.findUnique({ where: { email } });
 
       if (!user) {
+        console.log(`[LOGIN] User not found: ${email}`);
         // No account exists — only auto-create if signing up (role explicitly provided)
         if (providedRole) {
+          console.log(`[LOGIN] Creating new user: ${email} with role: ${role}`);
           user = await prisma.user.create({
             data: {
               email,
@@ -43,18 +46,26 @@ export async function POST(req: NextRequest) {
               role,
             },
           });
+          console.log(`[LOGIN] User created successfully: ${user.id}`);
         } else {
+          console.log(`[LOGIN] No providedRole, returning no account error`);
           return NextResponse.json({ error: 'No account found with this email. Please contact your administrator.' }, { status: 401 });
         }
       } else {
+        console.log(`[LOGIN] User found: ${user.id}, verifying password`);
         // User exists — verify password
         if (user.password !== password) {
+          console.log(`[LOGIN] Invalid password for: ${email}`);
           return NextResponse.json({ error: 'Invalid password' }, { status: 401 });
         }
+        console.log(`[LOGIN] Password verified successfully`);
       }
     } catch (dbError) {
-      console.error('Database error during login:', dbError);
-      return NextResponse.json({ error: 'Login failed. Please try again.' }, { status: 500 });
+      console.error('[LOGIN] Database error during login:', dbError);
+      return NextResponse.json({ 
+        error: 'Database connection failed. Please try again later.',
+        details: process.env.NODE_ENV === 'development' ? String(dbError) : undefined
+      }, { status: 500 });
     }
 
     const uiRole = user.role === 'super_admin' ? 'admin' : user.role;
