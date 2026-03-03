@@ -5,7 +5,7 @@ import prisma from '@/lib/prisma';
 
 export default async function BlogIndex() {
   // Fetch posts at runtime (SSR)
-  let posts = [];
+  let posts: any[] = [];
   try {
     posts = await prisma.post.findMany({
       where: { publishedAt: { not: null } },
