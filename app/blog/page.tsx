@@ -1,10 +1,4 @@
-import Navbar from '@/components/Navbar';
-import Footer from '@/components/Footer';
-import BlogGrid from '@/components/BlogGrid';
-import prisma from '@/lib/prisma';
-
-// Removed revalidate to force SSR and avoid SSG/ISR build-time DB calls
-
+export default async function BlogIndex() {
   // Fetch posts at runtime (SSR)
   let posts = [];
   try {
