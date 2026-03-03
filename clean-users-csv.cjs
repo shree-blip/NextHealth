@@ -1,6 +1,3 @@
-// clean-users-csv.cjs
-// Usage: node clean-users-csv.cjs users_final_ready.csv users_final_importable.csv
-
 const fs = require('fs');
 const csv = require('csv-parser');
 const { parse } = require('json2csv');
@@ -22,6 +19,8 @@ fs.createReadStream(inputFile)
     if (
       row.createdAt &&
       row.updatedAt &&
+      row.createdAt.trim() !== "" &&
+      row.updatedAt.trim() !== "" &&
       isoDateRegex.test(row.createdAt) &&
       isoDateRegex.test(row.updatedAt)
     ) {
@@ -31,5 +30,5 @@ fs.createReadStream(inputFile)
   .on('end', () => {
     const output = parse(rows);
     fs.writeFileSync(outputFile, output);
-    console.log(`Cleaned ${inputFile} to ${outputFile}`);
+    console.log(`Strictly cleaned ${inputFile} to ${outputFile}`);
   });

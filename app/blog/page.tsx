@@ -1,3 +1,8 @@
+import Navbar from '@/components/Navbar';
+import Footer from '@/components/Footer';
+import BlogGrid from '@/components/BlogGrid';
+import prisma from '@/lib/prisma';
+
 export default async function BlogIndex() {
   // Fetch posts at runtime (SSR)
   let posts = [];

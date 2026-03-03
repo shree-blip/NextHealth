@@ -11,53 +11,56 @@ import RelatedPosts from '@/components/RelatedPosts';
 import CommentsPlaceholder from '@/components/CommentsPlaceholder';
 import BlogPostMeta from '@/components/BlogPostMeta';
 
-export const revalidate = 300; // 5 minutes
+// Removed revalidate to force SSR and avoid SSG/ISR build-time DB calls
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://thenextgenhealth.com';
 
-export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
-  const { slug } = await params;
-  const post = await prisma.post.findUnique({ where: { slug } });
-  if (!post) {
-    return { title: 'Not found' };
-  }
+// Avoid DB calls at build time. Use minimal static metadata or fallback.
+export async function generateMetadata(): Promise<Metadata> {
   return {
-    title: post.seoTitle || post.title,
-    description: post.metaDesc || post.excerpt || '',
-    alternates: { canonical: `${SITE_URL}/blog/${post.slug}` },
+    title: 'Blog Post | The NextGen Healthcare Marketing',
+    description: 'Read our latest blog post.',
   };
 }
 
+// Avoid DB calls at build time. Return empty array to disable static generation.
 export async function generateStaticParams() {
-  const posts = await prisma.post.findMany({ select: { slug: true } });
-  return posts.map((p: { slug: string }) => ({ slug: p.slug }));
+  return [];
 }
 
-export default async function BlogPost({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = await params;
-  const post = await prisma.post.findUnique({
-    where: { slug },
-    include: { author: true, categories: true, tags: true }
-  });
+export default async function BlogPost({ params }: { params: { slug: string } }) {
+  // Fetch data at runtime (SSR)
+  const { slug } = params;
+  let post = null;
+  let relatedPosts = [];
+  try {
+    post = await prisma.post.findUnique({
+      where: { slug },
+      include: { author: true, categories: true, tags: true }
+    });
+    if (post) {
+      relatedPosts = await prisma.post.findMany({
+        where: {
+          AND: [
+            { id: { not: post.id } },
+            {
+              OR: [
+                { categories: { some: { id: { in: post.categories.map((c: { id: number }) => c.id) } } } },
+                { tags: { some: { id: { in: post.tags.map((t: { id: number }) => t.id) } } } }
+              ]
+            }
+          ]
+        },
+        select: { slug: true, title: true }
+      });
+    }
+  } catch (e) {
+    // If DB is unreachable, show not found
+    notFound();
+  }
   if (!post) {
     notFound();
   }
-
-  // fetch related posts based on shared categories or tags
-  const relatedPosts = await prisma.post.findMany({
-    where: {
-      AND: [
-        { id: { not: post.id } },
-        {
-          OR: [
-            { categories: { some: { id: { in: post.categories.map((c: { id: number }) => c.id) } } } },
-            { tags: { some: { id: { in: post.tags.map((t: { id: number }) => t.id) } } } }
-          ]
-        }
-      ]
-    },
-    select: { slug: true, title: true }
-  });
 
   // JSON-LD BlogPosting Schema
   const blogSchema = {
