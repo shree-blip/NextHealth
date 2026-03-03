@@ -1,7 +1,7 @@
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { Metadata } from 'next';
-import { PrismaClient } from '@prisma/client';
+import prisma from '@/lib/prisma';
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import CategoriesTags from '@/components/CategoriesTags';
@@ -11,7 +11,6 @@ import RelatedPosts from '@/components/RelatedPosts';
 import CommentsPlaceholder from '@/components/CommentsPlaceholder';
 import BlogPostMeta from '@/components/BlogPostMeta';
 
-const prisma = new PrismaClient();
 export const revalidate = 300; // 5 minutes
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://thenextgenhealth.com';
