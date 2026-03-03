@@ -1,19 +1,21 @@
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import BlogGrid from '@/components/BlogGrid';
-import { PrismaClient } from '@prisma/client';
+import prisma from '@/lib/prisma';
 
-const prisma = new PrismaClient();
+// Removed revalidate to force SSR and avoid SSG/ISR build-time DB calls
 
-export const revalidate = 300;
-
-export default async function BlogIndex() {
-  const posts = await prisma.post.findMany({
-    where: { publishedAt: { not: null } },
-    orderBy: { publishedAt: 'desc' }
-  });
-
-  // Serialize dates for the client component
+  // Fetch posts at runtime (SSR)
+  let posts = [];
+  try {
+    posts = await prisma.post.findMany({
+      where: { publishedAt: { not: null } },
+      orderBy: { publishedAt: 'desc' }
+    });
+  } catch (e) {
+    // If DB is unreachable, show empty list
+    posts = [];
+  }
   const serializedPosts = posts.map(post => ({
     id: post.id,
     title: post.title,
@@ -24,7 +26,6 @@ export default async function BlogIndex() {
     metaDesc: post.metaDesc,
     publishedAt: post.publishedAt ? post.publishedAt.toISOString() : null,
   }));
-
   return (
     <main className="min-h-screen">
       <Navbar />
