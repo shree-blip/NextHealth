@@ -42,6 +42,10 @@ export default function LoginPage() {
         const token = event.data.token;
         const dashboardPath = user?.role === 'super_admin' ? '/dashboard/admin' : `/dashboard/${user.role}`;
 
+        // Show loading screen immediately — no blank screen
+        setIsRedirecting(true);
+        setIsLoading(false);
+
         try {
           // Set the auth cookie from the main window context.
           // The popup's Set-Cookie may be blocked by browsers that restrict
@@ -53,19 +57,12 @@ export default function LoginPage() {
               body: JSON.stringify({ token }),
             });
           }
-
-          // Refresh auth context so Navbar updates immediately
-          await refreshUser();
         } catch (err) {
           console.error('Failed to set auth token:', err);
         }
 
-        setIsRedirecting(true);
-        setIsLoading(false);
-        // Navigate with replace for cleaner history
-        setTimeout(() => {
-          router.replace(dashboardPath);
-        }, 100);
+        // Navigate immediately — loading.tsx keeps animation alive during page load
+        router.replace(dashboardPath);
       }
     };
     window.addEventListener('message', handleMessage);
@@ -82,8 +79,11 @@ export default function LoginPage() {
       return;
     }
 
+    // Show loading screen immediately — before the API call starts
+    setIsRedirecting(true);
+    setIsLoading(true);
+
     try {
-      setIsLoading(true);
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -102,26 +102,17 @@ export default function LoginPage() {
       }
 
       const data = await response.json();
-      setSuccess('Login successful! Redirecting...');
       const dashboardPath = data?.user?.role === 'super_admin' ? '/dashboard/admin' : `/dashboard/${data.user.role}`;
-      
-      // Refresh auth context so Navbar updates immediately
-      await refreshUser();
-      
-      // Show loading screen immediately before redirect
-      setIsRedirecting(true);
-      setIsLoading(false);
-      
-      // Small delay to ensure loading screen is visible, then navigate
-      setTimeout(() => {
-        router.replace(dashboardPath);
-      }, 100);
+
+      // Navigate immediately — loading.tsx keeps animation alive during page load
+      router.replace(dashboardPath);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Login failed. Please try again.';
       setError(message);
+      // Dismiss loading screen on error
       setIsRedirecting(false);
-      console.error('Login error:', error);
       setIsLoading(false);
+      console.error('Login error:', error);
     }
   };
 
