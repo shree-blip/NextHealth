@@ -66,10 +66,6 @@ export function AdminPreferencesProvider({ children }: { children: ReactNode }) 
     localStorage.setItem(ADMIN_PREFS_KEY, JSON.stringify(updated));
   };
 
-  if (!mounted) {
-    return <>{children}</>;
-  }
-
   return (
     <AdminContext.Provider
       value={{
