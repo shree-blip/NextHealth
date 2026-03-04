@@ -58,7 +58,7 @@ export default function AdminChatReportsPage() {
             <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Chat Conversation Reports</h1>
             <p className="text-slate-500 dark:text-slate-400 mt-1">Track visitor conversations, timestamps, and AI-generated summaries</p>
           </div>
-          <Link href="/dashboard/admin" className="px-4 py-2 bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded hover:bg-slate-300 dark:hover:bg-slate-700">
+          <Link href="/dashboard/admin" className="px-4 py-2 bg-slate-200 dark:bg-slate-600 text-slate-900 dark:text-white rounded hover:bg-slate-300 dark:hover:bg-slate-500 transition-all">
             ← Back to Admin
           </Link>
         </div>
@@ -92,7 +92,7 @@ export default function AdminChatReportsPage() {
                         <p className="text-sm text-slate-600 dark:text-slate-400 mt-2">{session.summary || 'No summary generated yet.'}</p>
                       </div>
                       <div className="flex flex-col items-end gap-2">
-                        <span className="text-xs px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">{session.language || 'en'}</span>
+                        <span className="text-xs px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-white">{session.language || 'en'}</span>
                         <span className="text-xs px-2.5 py-1 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300">{session.totalMessages} messages</span>
                       </div>
                     </div>

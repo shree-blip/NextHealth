@@ -133,7 +133,7 @@ export default function EditBlogPost() {
           <div className="flex items-center gap-3 mb-6">
             <Link
               href="/dashboard/admin"
-              className="inline-flex items-center gap-2 px-4 py-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg hover:border-emerald-500 dark:hover:border-emerald-500 transition-all"
+              className="inline-flex items-center gap-2 px-4 py-2 text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg hover:border-emerald-500 dark:hover:border-emerald-500 transition-all"
             >
               <LayoutDashboard className="h-4 w-4" />
               Dashboard
@@ -141,7 +141,7 @@ export default function EditBlogPost() {
             <span className="text-slate-400">/</span>
             <Link
               href="/dashboard/admin?view=blog-management"
-              className="inline-flex items-center gap-2 px-4 py-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg hover:border-emerald-500 dark:hover:border-emerald-500 transition-all"
+              className="inline-flex items-center gap-2 px-4 py-2 text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg hover:border-emerald-500 dark:hover:border-emerald-500 transition-all"
             >
               <ArrowLeft className="h-4 w-4" />
               Blog Management
@@ -156,7 +156,7 @@ export default function EditBlogPost() {
             {/* Title & Slug */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block font-medium mb-1">Title *</label>
+                <label className="block font-medium mb-1 text-slate-900 dark:text-white">Title *</label>
                 <input 
                   name="title" 
                   value={form.title} 
@@ -167,7 +167,7 @@ export default function EditBlogPost() {
                 />
               </div>
               <div>
-                <label className="block font-medium mb-1">Slug *</label>
+                <label className="block font-medium mb-1 text-slate-900 dark:text-white">Slug *</label>
                 <input 
                   name="slug" 
                   value={form.slug} 
@@ -181,7 +181,7 @@ export default function EditBlogPost() {
 
             {/* Cover Image */}
             <div>
-              <label className="block font-medium mb-1">Cover Image & ALT Text</label>
+              <label className="block font-medium mb-1 text-slate-900 dark:text-white">Cover Image & ALT Text</label>
               <div className="space-y-3">
                 <div className="flex gap-3">
                   <input 
@@ -223,7 +223,7 @@ export default function EditBlogPost() {
               {form.coverImage && (
                 <div className="mt-3 relative">
                   <img src={form.coverImage} alt={form.coverImageAlt} className="max-h-48 rounded-lg object-cover" />
-                  <div className="mt-2 p-2 bg-slate-100 dark:bg-slate-800 rounded text-xs text-slate-600 dark:text-slate-400">
+                  <div className="mt-2 p-2 bg-slate-100 dark:bg-slate-700 rounded text-xs text-slate-700 dark:text-slate-300">
                     <strong>ALT:</strong> {form.coverImageAlt}
                   </div>
                 </div>
@@ -233,7 +233,7 @@ export default function EditBlogPost() {
             {/* SEO Fields */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block font-medium mb-1">SEO Title</label>
+                <label className="block font-medium mb-1 text-slate-900 dark:text-white">SEO Title</label>
                 <input 
                   name="seoTitle" 
                   value={form.seoTitle} 
@@ -243,7 +243,7 @@ export default function EditBlogPost() {
                 />
               </div>
               <div>
-                <label className="block font-medium mb-1">Canonical URL</label>
+                <label className="block font-medium mb-1 text-slate-900 dark:text-white">Canonical URL</label>
                 <input 
                   name="canonical" 
                   value={form.canonical} 
@@ -255,7 +255,7 @@ export default function EditBlogPost() {
             </div>
 
             <div>
-              <label className="block font-medium mb-1">Meta Description</label>
+                <label className="block font-medium mb-1 text-slate-900 dark:text-white">Meta Description</label>
               <input 
                 name="metaDesc" 
                 value={form.metaDesc} 
@@ -267,7 +267,7 @@ export default function EditBlogPost() {
 
             {/* Excerpt */}
             <div>
-              <label className="block font-medium mb-1">Excerpt</label>
+              <label className="block font-medium mb-1 text-slate-900 dark:text-white">Excerpt</label>
               <textarea 
                 name="excerpt" 
                 value={form.excerpt} 
@@ -280,7 +280,7 @@ export default function EditBlogPost() {
 
             {/* Content - Rich Text Editor */}
             <div>
-              <label className="block font-medium mb-1">Content *</label>
+              <label className="block font-medium mb-1 text-slate-900 dark:text-white">Content *</label>
               <RichTextEditor
                 value={form.content}
                 onChange={(content) => setForm({ ...form, content })}
@@ -292,7 +292,7 @@ export default function EditBlogPost() {
 
             {/* Publish Date */}
             <div className="max-w-xs">
-              <label className="block font-medium mb-1">Publish Date</label>
+              <label className="block font-medium mb-1 text-slate-900 dark:text-white">Publish Date</label>
               <input 
                 type="date" 
                 name="publishedAt" 
@@ -313,7 +313,7 @@ export default function EditBlogPost() {
               <button 
                 type="button" 
                 onClick={() => router.push('/dashboard/admin?view=blog-management')} 
-                className="px-6 py-3 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors"
+                className="px-6 py-3 bg-slate-200 dark:bg-slate-600 text-slate-900 dark:text-white rounded-xl hover:bg-slate-300 dark:hover:bg-slate-500 transition-colors"
               >
                 Cancel
               </button>

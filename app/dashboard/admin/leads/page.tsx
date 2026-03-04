@@ -60,8 +60,8 @@ export default function ContactLeadsPage() {
       case 'new': return 'bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300';
       case 'contacted': return 'bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-300';
       case 'qualified': return 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300';
-      case 'closed': return 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400';
-      default: return 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400';
+      case 'closed': return 'bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-white';
+      default: return 'bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-white';
     }
   };
 
@@ -79,7 +79,7 @@ export default function ContactLeadsPage() {
         <div className="mb-8">
           <Link
             href="/dashboard/admin"
-            className="inline-flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white mb-4"
+            className="inline-flex items-center gap-2 text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white mb-4"
           >
             <ArrowLeft className="h-4 w-4" />
             Back to Dashboard
@@ -219,7 +219,7 @@ export default function ContactLeadsPage() {
                             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                               lead.status === status
                                 ? 'bg-emerald-500 text-white'
-                                : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'
+                                : 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'
                             }`}
                           >
                             {status.charAt(0).toUpperCase() + status.slice(1)}

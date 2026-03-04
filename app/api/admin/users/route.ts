@@ -84,6 +84,86 @@ export async function POST(req: NextRequest) {
   }
 }
 
+export async function PATCH(req: NextRequest) {
+  const auth = await requireAdmin(req);
+  if ('response' in auth) return auth.response;
+
+  try {
+    const body = await req.json();
+    const { id, name, email, role, password } = body;
+
+    if (!id) {
+      return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
+    }
+
+    const existing = await prisma.user.findUnique({ where: { id } });
+    if (!existing) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    const updateData: Record<string, any> = {};
+
+    if (typeof name === 'string') {
+      const trimmedName = name.trim();
+      if (!trimmedName) {
+        return NextResponse.json({ error: 'Name cannot be empty' }, { status: 400 });
+      }
+      updateData.name = trimmedName;
+    }
+
+    if (typeof email === 'string') {
+      const normalizedEmail = email.trim().toLowerCase();
+      if (!normalizedEmail) {
+        return NextResponse.json({ error: 'Email cannot be empty' }, { status: 400 });
+      }
+
+      if (normalizedEmail !== existing.email) {
+        const emailTaken = await prisma.user.findUnique({ where: { email: normalizedEmail } });
+        if (emailTaken) {
+          return NextResponse.json({ error: 'A user with this email already exists' }, { status: 409 });
+        }
+      }
+
+      updateData.email = normalizedEmail;
+    }
+
+    if (typeof role === 'string') {
+      const validRoles = ['client', 'admin'];
+      if (!validRoles.includes(role)) {
+        return NextResponse.json({ error: 'Invalid role. Use client or admin' }, { status: 400 });
+      }
+      updateData.role = role;
+    }
+
+    if (typeof password === 'string' && password.trim()) {
+      updateData.password = password;
+    }
+
+    if (Object.keys(updateData).length === 0) {
+      return NextResponse.json({ error: 'No valid fields provided for update' }, { status: 400 });
+    }
+
+    const updatedUser = await prisma.user.update({
+      where: { id },
+      data: updateData,
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        role: true,
+        avatar: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    return NextResponse.json(updatedUser);
+  } catch (error) {
+    console.error('Error updating user:', error);
+    return NextResponse.json({ error: 'Failed to update user' }, { status: 500 });
+  }
+}
+
 export async function DELETE(req: NextRequest) {
   const auth = await requireAdmin(req);
   if ('response' in auth) return auth.response;

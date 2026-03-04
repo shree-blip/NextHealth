@@ -40,7 +40,7 @@ export default function NewsletterSubscribersPage() {
         <div className="mb-8">
           <Link
             href="/dashboard/admin"
-            className="inline-flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white mb-4"
+            className="inline-flex items-center gap-2 text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white mb-4"
           >
             <ArrowLeft className="h-4 w-4" />
             Back to Dashboard
@@ -130,7 +130,7 @@ export default function NewsletterSubscribersPage() {
                           Active
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+                        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-white">
                           <XCircle className="h-3 w-3" />
                           Inactive
                         </span>

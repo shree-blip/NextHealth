@@ -865,12 +865,12 @@ function OverviewView({
 function NavItem({ icon: Icon, label, active = false, onClick, badge }: { icon: any; label: string; active?: boolean; onClick?: () => void; badge?: string }) {
   // Determine badge color based on plan name or status
   const getBadgeClasses = (badgeText?: string) => {
-    if (!badgeText) return 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300';
-    if (badgeText === 'Coming Soon') return 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400';
+    if (!badgeText) return 'bg-slate-200 dark:bg-slate-600 text-slate-900 dark:text-white';
+    if (badgeText === 'Coming Soon') return 'bg-slate-200 dark:bg-slate-600 text-slate-900 dark:text-white';
     if (badgeText === 'Scale Elite') return 'bg-amber-100 dark:bg-amber-500/20 text-amber-800 dark:text-amber-400';
     if (badgeText === 'Growth Pro') return 'bg-blue-100 dark:bg-blue-500/20 text-blue-800 dark:text-blue-400';
     if (badgeText === 'Starter Care') return 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-600';
-    return 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300';
+    return 'bg-slate-200 dark:bg-slate-600 text-slate-900 dark:text-white';
   };
 
   return (

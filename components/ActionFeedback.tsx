@@ -57,13 +57,19 @@ export default function ActionFeedback({
       <AnimatePresence>
         {showSuccess && (
           <motion.div
-            className="fixed right-5 top-5 z-[75] w-[min(92vw,380px)]"
-            initial={{ opacity: 0, y: -18, scale: 0.97 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -10, scale: 0.97 }}
+            className="fixed inset-0 z-[75] flex items-center justify-center p-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
             transition={{ duration: 0.22 }}
           >
-            <div className="overflow-hidden rounded-2xl border border-emerald-200 bg-white shadow-[0_18px_45px_rgba(16,185,129,0.22)] dark:border-emerald-900/40 dark:bg-slate-900">
+            <motion.div
+              className="w-[min(92vw,380px)] overflow-hidden rounded-2xl border border-emerald-200 bg-white shadow-[0_18px_45px_rgba(16,185,129,0.22)] dark:border-emerald-900/40 dark:bg-slate-900"
+              initial={{ opacity: 0, y: 10, scale: 0.97 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 10, scale: 0.97 }}
+              transition={{ duration: 0.2 }}
+            >
               <div className="h-1.5 bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500" />
               <div className="p-4">
                 <div className="flex items-start gap-3">
@@ -83,7 +89,7 @@ export default function ActionFeedback({
                   </div>
                 </div>
               </div>
-            </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>

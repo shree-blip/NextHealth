@@ -59,7 +59,7 @@ export default function NewNewsArticle() {
           <div className="flex items-center gap-3 mb-6">
             <Link
               href="/dashboard/admin"
-              className="inline-flex items-center gap-2 px-4 py-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg hover:border-emerald-500 dark:hover:border-emerald-500 transition-all"
+              className="inline-flex items-center gap-2 px-4 py-2 text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg hover:border-emerald-500 dark:hover:border-emerald-500 transition-all"
             >
               <LayoutDashboard className="h-4 w-4" />
               Dashboard
@@ -67,7 +67,7 @@ export default function NewNewsArticle() {
             <span className="text-slate-400">/</span>
             <Link
               href="/dashboard/admin?view=news-management"
-              className="inline-flex items-center gap-2 px-4 py-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg hover:border-emerald-500 dark:hover:border-emerald-500 transition-all"
+              className="inline-flex items-center gap-2 px-4 py-2 text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg hover:border-emerald-500 dark:hover:border-emerald-500 transition-all"
             >
               <ArrowLeft className="h-4 w-4" />
               News Management
@@ -222,7 +222,7 @@ export default function NewNewsArticle() {
                 <button 
                   type="button" 
                   onClick={() => router.push('/dashboard/admin?view=news-management')} 
-                  className="px-6 py-3 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors"
+                  className="px-6 py-3 bg-slate-200 dark:bg-slate-600 text-slate-900 dark:text-white rounded-xl hover:bg-slate-300 dark:hover:bg-slate-500 transition-colors"
                 >
                   Cancel
                 </button>

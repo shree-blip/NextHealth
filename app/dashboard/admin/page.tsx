@@ -78,51 +78,234 @@ function Modal({ isOpen, onClose, title, children }: { isOpen: boolean; onClose:
   );
 }
 
-// Staff Management Section Component
-function StaffManagementSection({ users, onRoleUpdated }: { users: any[]; onRoleUpdated: (updatedUser: any) => void }) {
-  const [updatingUserId, setUpdatingUserId] = useState<string | null>(null);
-  const [updateMessage, setUpdateMessage] = useState<string>('');
+// User Management Section Component
+function StaffManagementSection({
+  users,
+  setUsers,
+  setAssignments,
+  currentUserId,
+  startActionFeedback,
+  finishActionSuccess,
+  finishActionError,
+}: {
+  users: any[];
+  setUsers: React.Dispatch<React.SetStateAction<any[]>>;
+  setAssignments: React.Dispatch<React.SetStateAction<any[]>>;
+  currentUserId?: string;
+  startActionFeedback: (loadingText: string) => void;
+  finishActionSuccess: (successMessage: string) => void;
+  finishActionError: () => void;
+}) {
+  const [createForm, setCreateForm] = useState({
+    name: '',
+    email: '',
+    password: '',
+    role: 'client',
+  });
+  const [statusMessage, setStatusMessage] = useState<{ type: 'warning' | 'error'; text: string } | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editForm, setEditForm] = useState({
+    id: '',
+    name: '',
+    email: '',
+    role: 'client',
+    password: '',
+  });
+  const [deleteModal, setDeleteModal] = useState({
+    isOpen: false,
+    userId: '',
+    userName: '',
+    isLoading: false,
+  });
 
-  const handleRoleUpdate = async (userId: string, newRole: 'admin' | 'client') => {
+  const handleCreateUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setStatusMessage(null);
+
+    if (!createForm.name || !createForm.email || !createForm.password) {
+      setStatusMessage({ type: 'warning', text: 'Please complete all required fields to create a user.' });
+      return;
+    }
+
     try {
-      setUpdatingUserId(userId);
-      const response = await fetch('/api/auth/update-role', {
-        method: 'PATCH',
+      startActionFeedback('Creating user...');
+      const response = await fetch('/api/admin/users', {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, role: newRole }),
+        body: JSON.stringify(createForm),
       });
 
       const data = await response.json();
-
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to update role');
+        throw new Error(data.error || 'Failed to create user');
       }
 
-      setUpdateMessage(`✅ ${data.message}`);
-      onRoleUpdated(data);
+      setUsers((prev) => [data, ...prev]);
+      setCreateForm({ name: '', email: '', password: '', role: 'client' });
+      finishActionSuccess('User created successfully.');
+    } catch (error: any) {
+      finishActionError();
+      setStatusMessage({ type: 'error', text: error?.message || 'Failed to create user.' });
+    }
+  };
 
-      setTimeout(() => {
-        setUpdateMessage('');
-      }, 2500);
-    } catch (error) {
-      setUpdateMessage(`❌ Error updating role: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    } finally {
-      setUpdatingUserId(null);
+  const openEditModal = (selectedUser: any) => {
+    setStatusMessage(null);
+    setEditForm({
+      id: selectedUser.id,
+      name: selectedUser.name || '',
+      email: selectedUser.email || '',
+      role: selectedUser.role || 'client',
+      password: '',
+    });
+    setShowEditModal(true);
+  };
+
+  const handleSaveEdit = async () => {
+    setStatusMessage(null);
+
+    if (!editForm.id || !editForm.name || !editForm.email) {
+      setStatusMessage({ type: 'warning', text: 'Name and email are required to update a user.' });
+      return;
+    }
+
+    try {
+      startActionFeedback('Saving user changes...');
+      const payload: Record<string, string> = {
+        id: editForm.id,
+        name: editForm.name,
+        email: editForm.email,
+        role: editForm.role,
+      };
+
+      if (editForm.password.trim()) {
+        payload.password = editForm.password;
+      }
+
+      const response = await fetch('/api/admin/users', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to update user');
+      }
+
+      setUsers((prev) => prev.map((u) => (u.id === data.id ? { ...u, ...data } : u)));
+      setShowEditModal(false);
+      finishActionSuccess('User updated successfully.');
+    } catch (error: any) {
+      finishActionError();
+      setStatusMessage({ type: 'error', text: error?.message || 'Failed to update user.' });
+    }
+  };
+
+  const requestDeleteUser = (selectedUser: any) => {
+    if (selectedUser.id === currentUserId) {
+      setStatusMessage({ type: 'warning', text: 'You cannot delete your own account.' });
+      return;
+    }
+
+    setDeleteModal({
+      isOpen: true,
+      userId: selectedUser.id,
+      userName: selectedUser.name || selectedUser.email,
+      isLoading: false,
+    });
+  };
+
+  const handleConfirmDelete = async () => {
+    setDeleteModal((prev) => ({ ...prev, isLoading: true }));
+
+    try {
+      startActionFeedback('Deleting user...');
+      const response = await fetch(`/api/admin/users?id=${encodeURIComponent(deleteModal.userId)}`, {
+        method: 'DELETE',
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to delete user');
+      }
+
+      setUsers((prev) => prev.filter((u) => u.id !== deleteModal.userId));
+      setAssignments((prev) => prev.filter((a) => a.userId !== deleteModal.userId));
+      setDeleteModal({ isOpen: false, userId: '', userName: '', isLoading: false });
+      finishActionSuccess('User deleted successfully.');
+    } catch (error: any) {
+      finishActionError();
+      setDeleteModal((prev) => ({ ...prev, isLoading: false }));
+      setStatusMessage({ type: 'error', text: error?.message || 'Failed to delete user.' });
     }
   };
 
   return (
-    <div>
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold mb-2">Staff Management</h2>
-        <p className="text-slate-600 dark:text-slate-400">Manage user roles and permissions. Assign Admin or Client role to any user.</p>
+    <div className="space-y-8">
+      <div>
+        <h2 className="text-2xl font-bold mb-2">User Management</h2>
+        <p className="text-slate-600 dark:text-slate-400">Create, edit, and delete users. Updates are saved to the database and reflected instantly.</p>
       </div>
 
-      {updateMessage && (
-        <div className={`mb-6 p-4 rounded-xl border ${updateMessage.includes('✅') ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400' : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-700 dark:text-red-400'}`}>
-          {updateMessage}
+      {statusMessage && (
+        <div
+          className={`rounded-xl border px-4 py-3 text-sm ${
+            statusMessage.type === 'warning'
+              ? 'bg-amber-50 border-amber-200 text-amber-800 dark:bg-amber-900/20 dark:border-amber-800 dark:text-amber-300'
+              : 'bg-red-50 border-red-200 text-red-800 dark:bg-red-900/20 dark:border-red-800 dark:text-red-300'
+          }`}
+        >
+          {statusMessage.text}
         </div>
       )}
+
+      <div className="glass rounded-2xl p-6 border border-slate-200 dark:border-slate-700">
+        <h3 className="text-lg font-bold mb-4">Create New User</h3>
+        <form onSubmit={handleCreateUser} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <input
+            type="text"
+            value={createForm.name}
+            onChange={(e) => setCreateForm((prev) => ({ ...prev, name: e.target.value }))}
+            className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2"
+            placeholder="Full Name"
+            required
+          />
+          <input
+            type="email"
+            value={createForm.email}
+            onChange={(e) => setCreateForm((prev) => ({ ...prev, email: e.target.value }))}
+            className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2"
+            placeholder="Email Address"
+            required
+          />
+          <input
+            type="password"
+            value={createForm.password}
+            onChange={(e) => setCreateForm((prev) => ({ ...prev, password: e.target.value }))}
+            className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2"
+            placeholder="Password"
+            required
+          />
+          <select
+            value={createForm.role}
+            onChange={(e) => setCreateForm((prev) => ({ ...prev, role: e.target.value }))}
+            className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2"
+          >
+            <option value="client">Client</option>
+            <option value="admin">Admin</option>
+          </select>
+          <div className="md:col-span-2">
+            <button
+              type="submit"
+              className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-emerald-600/20 transition-opacity hover:opacity-95"
+            >
+              <Plus className="h-4 w-4" />
+              Create User
+            </button>
+          </div>
+        </form>
+      </div>
 
       <div className="overflow-x-auto">
         <table className="w-full text-left">
@@ -130,9 +313,9 @@ function StaffManagementSection({ users, onRoleUpdated }: { users: any[]; onRole
             <tr className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-widest border-b border-slate-100 dark:border-slate-700">
               <th className="px-4 py-4">Name</th>
               <th className="px-4 py-4">Email</th>
-              <th className="px-4 py-4">Current Role</th>
-              <th className="px-4 py-4">Change Role</th>
+              <th className="px-4 py-4">Role</th>
               <th className="px-4 py-4">Status</th>
+              <th className="px-4 py-4">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
@@ -143,43 +326,39 @@ function StaffManagementSection({ users, onRoleUpdated }: { users: any[]; onRole
                 </td>
               </tr>
             ) : (
-              users.map(user => (
-                <tr key={user.id} className="hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-                  <td className="px-4 py-4 font-bold">{user.name}</td>
-                  <td className="px-4 py-4 text-sm text-slate-600 dark:text-slate-400">{user.email}</td>
+              users.map((listedUser) => (
+                <tr key={listedUser.id} className="hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                  <td className="px-4 py-4 font-bold">{listedUser.name}</td>
+                  <td className="px-4 py-4 text-sm text-slate-600 dark:text-slate-400">{listedUser.email}</td>
                   <td className="px-4 py-4">
                     <span className={`text-xs px-3 py-1 rounded-full font-bold ${
-                      user.role === 'admin' 
-                        ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400' 
+                      listedUser.role === 'admin'
+                        ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400'
                         : 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400'
                     }`}>
-                      {user.role}
+                      {listedUser.role}
                     </span>
                   </td>
                   <td className="px-4 py-4">
-                    <div className="flex gap-2">
-                      {user.role !== 'admin' && (
-                        <button
-                          disabled={updatingUserId === user.id}
-                          onClick={() => handleRoleUpdate(user.id, 'admin')}
-                          className="text-xs bg-purple-500 text-white px-4 py-2 rounded-lg hover:bg-purple-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-bold"
-                        >
-                          {updatingUserId === user.id ? 'Updating...' : 'Make Admin'}
-                        </button>
-                      )}
-                      {user.role !== 'client' && (
-                        <button
-                          disabled={updatingUserId === user.id}
-                          onClick={() => handleRoleUpdate(user.id, 'client')}
-                          className="text-xs bg-emerald-500 text-black px-4 py-2 rounded-lg hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-bold"
-                        >
-                          {updatingUserId === user.id ? 'Updating...' : 'Make Client'}
-                        </button>
-                      )}
-                    </div>
+                    <span className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 px-3 py-1 rounded-full">Active</span>
                   </td>
                   <td className="px-4 py-4">
-                    <span className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 px-3 py-1 rounded-full">Active</span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => openEditModal(listedUser)}
+                        className="p-2 text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg"
+                        aria-label={`Edit ${listedUser.name}`}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => requestDeleteUser(listedUser)}
+                        className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg"
+                        aria-label={`Delete ${listedUser.name}`}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))
@@ -188,16 +367,77 @@ function StaffManagementSection({ users, onRoleUpdated }: { users: any[]; onRole
         </table>
       </div>
 
-      <div className="mt-8 p-6 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl">
-        <h3 className="font-bold text-blue-900 dark:text-blue-300 mb-2">📋 Role Management Guide</h3>
-        <ul className="text-sm text-blue-800 dark:text-blue-400 space-y-1 list-disc list-inside">
-          <li><strong>Admin Users:</strong> Have full access to the admin dashboard, analytics engine, and system configuration</li>
-          <li><strong>Client Users:</strong> Can only access their assigned clinics on the client dashboard</li>
-          <li>Click "Make Admin" or "Make Client" to change a user's role immediately</li>
-          <li>After role change, the user will need to log in again to see the changes</li>
-        </ul>
-      </div>
+      <Modal isOpen={showEditModal} onClose={() => setShowEditModal(false)} title="Edit User">
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium mb-1">Name</label>
+            <input
+              type="text"
+              value={editForm.name}
+              onChange={(e) => setEditForm((prev) => ({ ...prev, name: e.target.value }))}
+              className="w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 bg-white dark:bg-slate-800"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">Email</label>
+            <input
+              type="email"
+              value={editForm.email}
+              onChange={(e) => setEditForm((prev) => ({ ...prev, email: e.target.value }))}
+              className="w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 bg-white dark:bg-slate-800"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">Role</label>
+            <select
+              value={editForm.role}
+              onChange={(e) => setEditForm((prev) => ({ ...prev, role: e.target.value }))}
+              className="w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 bg-white dark:bg-slate-800"
+            >
+              <option value="client">Client</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">New Password (optional)</label>
+            <input
+              type="password"
+              value={editForm.password}
+              onChange={(e) => setEditForm((prev) => ({ ...prev, password: e.target.value }))}
+              className="w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 bg-white dark:bg-slate-800"
+              placeholder="Leave blank to keep current password"
+            />
+          </div>
 
+          <div className="flex gap-3 pt-2">
+            <button
+              onClick={handleSaveEdit}
+              className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-emerald-600/20 transition-opacity hover:opacity-95"
+            >
+              <Save className="h-4 w-4" />
+              Save Changes
+            </button>
+            <button
+              onClick={() => setShowEditModal(false)}
+              className="px-4 py-2 rounded-xl bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-white hover:bg-slate-300 dark:hover:bg-slate-600"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      <DeleteConfirmationModal
+        isOpen={deleteModal.isOpen}
+        title="Delete User"
+        description="This will permanently delete this user and remove all related clinic assignments."
+        itemName={deleteModal.userName}
+        isLoading={deleteModal.isLoading}
+        confirmLabel="Delete User"
+        cancelLabel="Keep User"
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setDeleteModal({ isOpen: false, userId: '', userName: '', isLoading: false })}
+      />
     </div>
   );
 }
@@ -206,7 +446,7 @@ function AdminDashboardContent() {
   const searchParams = useSearchParams();
   const ADMIN_SECTIONS = [
     'Global Stats',
-    'Staff Management',
+    'User Management',
     'Registered Clients',
     'Client Sites',
     'AI Models',
@@ -223,6 +463,7 @@ function AdminDashboardContent() {
   const toViewValue = (label: string) => label.toLowerCase().replace(/\s+/g, '-');
   const toSectionLabel = (view: string | null) => {
     if (!view) return null;
+    if (view === 'staff-management') return 'User Management';
     return ADMIN_SECTIONS.find((label) => toViewValue(label) === view) || null;
   };
 
@@ -1059,7 +1300,7 @@ function AdminDashboardContent() {
         <nav className="space-y-2 flex-grow">
           <NavItem icon={LayoutDashboard} label={t('Global Stats')} active={section==='Global Stats'} onClick={() => { navigateToSection('Global Stats'); setShowMobileMenu(false); }} dark={dark} />
           <NavItem icon={BarChart3} label={t('Analytics')} active={section==='Analytics'} onClick={() => { navigateToSection('Analytics'); setShowMobileMenu(false); }} dark={dark} />
-          <NavItem icon={Users} label={t('Staff Management')} active={section==='Staff Management'} onClick={() => { navigateToSection('Staff Management'); setShowMobileMenu(false); }} dark={dark} />
+          <NavItem icon={Users} label={t('User Management')} active={section==='User Management'} onClick={() => { navigateToSection('User Management'); setShowMobileMenu(false); }} dark={dark} />
           <NavItem icon={Building2} label={t('Registered Clients')} active={section==='Registered Clients'} onClick={() => { navigateToSection('Registered Clients'); setShowMobileMenu(false); }} dark={dark} />
           <NavItem icon={Globe} label={t('Client Sites')} active={section==='Client Sites'} onClick={() => { navigateToSection('Client Sites'); setShowMobileMenu(false); }} dark={dark} />
           <NavItem icon={Cpu} label={t('AI Models')} active={section==='AI Models'} onClick={() => { navigateToSection('AI Models'); setShowMobileMenu(false); }} dark={dark} />
@@ -1070,21 +1311,21 @@ function AdminDashboardContent() {
           <NavItem icon={Lock} label={t('Settings')} active={section==='Settings'} onClick={() => { navigateToSection('Settings'); setShowMobileMenu(false); }} dark={dark} />
           <NavItem icon={FileText} label={t('Blog Management')} active={section==='Blog Management'} onClick={() => { navigateToSection('Blog Management'); setShowMobileMenu(false); }} dark={dark} />
           <NavItem icon={Newspaper} label={t('News Management')} active={section==='News Management'} onClick={() => { navigateToSection('News Management'); setShowMobileMenu(false); }} dark={dark} />
-          <Link href="/dashboard/admin/chat-reports" className={`w-full text-left flex items-center gap-3 p-3 rounded-xl transition-all ${dark ? 'text-slate-400 hover:text-white hover:bg-slate-800' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100'}`}>
+          <Link href="/dashboard/admin/chat-reports" className={`w-full text-left flex items-center gap-3 p-3 rounded-xl transition-all ${dark ? 'text-slate-300 hover:text-white hover:bg-slate-700' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'}`}>
             <MessageSquare className="h-5 w-5" />
             <span className="text-sm">{t('Chat Reports')}</span>
           </Link>
-          <Link href="/dashboard/admin/leads" className={`w-full text-left flex items-center gap-3 p-3 rounded-xl transition-all ${dark ? 'text-slate-400 hover:text-white hover:bg-slate-800' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100'}`}>
+          <Link href="/dashboard/admin/leads" className={`w-full text-left flex items-center gap-3 p-3 rounded-xl transition-all ${dark ? 'text-slate-300 hover:text-white hover:bg-slate-700' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'}`}>
             <Users className="h-5 w-5" />
             <span className="text-sm">{t('Contact Leads')}</span>
           </Link>
-          <Link href="/dashboard/admin/subscribers" className={`w-full text-left flex items-center gap-3 p-3 rounded-xl transition-all ${dark ? 'text-slate-400 hover:text-white hover:bg-slate-800' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100'}`}>
+          <Link href="/dashboard/admin/subscribers" className={`w-full text-left flex items-center gap-3 p-3 rounded-xl transition-all ${dark ? 'text-slate-300 hover:text-white hover:bg-slate-700' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'}`}>
             <Mail className="h-5 w-5" />
             <span className="text-sm">{t('Newsletter Subscribers')}</span>
           </Link>
         </nav>
 
-        <button onClick={handleLogout} className={`flex items-center gap-3 transition-colors p-3 ${dark ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-slate-900'}`}>
+        <button onClick={handleLogout} className={`flex items-center gap-3 transition-colors p-3 ${dark ? 'text-slate-300 hover:text-white' : 'text-slate-600 hover:text-slate-900'}`}>
           <LogOut className="h-5 w-5" />
           <span className="text-sm font-bold">{t('Logout')}</span>
         </button>
@@ -1135,10 +1376,12 @@ function AdminDashboardContent() {
           isDark={dark}
           analyticsRefreshKey={analyticsRefreshKey}
           setAnalyticsRefreshKey={setAnalyticsRefreshKey}
-          onRoleUpdated={(updatedUser: any) => {
-            setUsers(prev => prev.map(u => (u.id === updatedUser.id ? { ...u, role: updatedUser.role } : u)));
-          }}
+          setUsers={setUsers}
+          setAssignments={setAssignments}
           isActionLoading={actionFeedback.loading}
+          startActionFeedback={startActionFeedback}
+          finishActionSuccess={finishActionSuccess}
+          finishActionError={finishActionError}
           t={t}
         />
         </div>
@@ -1823,7 +2066,7 @@ function NavItem({ icon: Icon, label, active = false, onClick, dark = false }: {
     <button
       onClick={onClick}
       className={`w-full text-left flex items-center gap-3 p-3 rounded-xl transition-all ${
-        active ? 'bg-emerald-500 text-black font-bold' : dark ? 'text-slate-400 hover:text-white hover:bg-slate-800' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100'
+        active ? 'bg-emerald-500 text-black font-bold' : dark ? 'text-slate-300 hover:text-white hover:bg-slate-700' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
       }`}
     >
       <Icon className="h-5 w-5" />
@@ -1875,8 +2118,12 @@ function ContentForSection(props: {
   isDark: boolean;
   analyticsRefreshKey: number;
   setAnalyticsRefreshKey: React.Dispatch<React.SetStateAction<number>>;
-  onRoleUpdated: (updatedUser: any) => void;
+  setUsers: React.Dispatch<React.SetStateAction<any[]>>;
+  setAssignments: React.Dispatch<React.SetStateAction<any[]>>;
   isActionLoading: boolean;
+  startActionFeedback: (loadingText: string) => void;
+  finishActionSuccess: (successMessage: string) => void;
+  finishActionError: () => void;
   t: (key: string) => string;
 }) {
   const {
@@ -1902,8 +2149,12 @@ function ContentForSection(props: {
     isDark,
     analyticsRefreshKey,
     setAnalyticsRefreshKey,
-    onRoleUpdated,
+    setUsers,
+    setAssignments,
     isActionLoading,
+    startActionFeedback,
+    finishActionSuccess,
+    finishActionError,
     t,
   } = props;
 
@@ -2082,9 +2333,17 @@ function ContentForSection(props: {
         </>
       );
 
-    case 'Staff Management':
+    case 'User Management':
       return (
-        <StaffManagementSection users={users} onRoleUpdated={onRoleUpdated} />
+        <StaffManagementSection
+          users={users}
+          setUsers={setUsers}
+          setAssignments={setAssignments}
+          currentUserId={user?.id}
+          startActionFeedback={startActionFeedback}
+          finishActionSuccess={finishActionSuccess}
+          finishActionError={finishActionError}
+        />
       );
 
     case 'Registered Clients':
