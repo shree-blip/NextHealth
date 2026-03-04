@@ -4,8 +4,8 @@ import { Metadata } from 'next';
 import prisma from '@/lib/prisma';
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
-import SocialShare from '@/components/SocialShare';
-import NewsArticleContent from '@/components/NewsArticleContent';
+import Link from 'next/link';
+import SinglePostLayout from '@/components/post/SinglePostLayout';
 
 // Cache news articles for 1 hour, then revalidate in background (ISR)
 export const revalidate = 3600;
@@ -111,36 +111,101 @@ export default async function NewsArticlePage({ params }: { params: Promise<{ sl
       />
       <Navbar />
 
-      {/* Hero / Cover Image */}
-      {article.coverImage && (
-        <div className="relative w-full h-[300px] sm:h-[420px] lg:h-[500px]">
-          <Image
-            src={article.coverImage}
-            alt={article.title}
-            fill
-            className="object-cover"
-            priority
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/30 to-transparent dark:from-slate-950/90 dark:via-slate-950/50" />
-          <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-10 lg:p-16">
-            <div className="mx-auto max-w-4xl">
-              {article.source && (
-                <span className="inline-flex items-center px-3 py-1 bg-blue-600/90 dark:bg-blue-500/90 text-white text-xs font-bold rounded-full mb-4 backdrop-blur-sm">
-                  {article.source}
-                </span>
-              )}
-              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white leading-tight tracking-tight">
-                {article.title}
-              </h1>
-            </div>
+      <SinglePostLayout
+        title={article.title}
+        shareTitle={article.title}
+        headerTop={
+          article.source ? (
+            <span className="inline-flex items-center px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200 text-xs font-bold rounded-full">
+              {article.source}
+            </span>
+          ) : undefined
+        }
+        headerMeta={
+          article.publishedAt ? (
+            <time className="inline-flex items-center rounded-full bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 px-3 py-1 font-medium text-sm">
+              {new Date(article.publishedAt).toLocaleDateString('en-US', {
+                month: 'long',
+                day: 'numeric',
+                year: 'numeric',
+              })}
+            </time>
+          ) : undefined
+        }
+        coverImage={article.coverImage}
+        coverAlt={article.title}
+      >
+        <div className="space-y-5">
+          {article.excerpt && (
+            <p className="text-lg sm:text-xl text-slate-600 dark:text-slate-300 leading-relaxed font-medium border-l-4 border-blue-500 dark:border-blue-400 pl-5 italic">
+              {article.excerpt}
+            </p>
+          )}
+
+          <div className="rounded-3xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm p-5 sm:p-8 lg:p-10 min-w-0">
+            <div
+              data-article-content
+              className="prose prose-slate prose-lg sm:prose-xl max-w-none
+                prose-headings:font-bold prose-headings:tracking-tight prose-headings:text-slate-900 dark:prose-headings:text-white
+                prose-h2:text-2xl sm:prose-h2:text-3xl prose-h2:mt-10 prose-h2:mb-4
+                prose-h3:text-xl sm:prose-h3:text-2xl prose-h3:mt-8 prose-h3:mb-3
+                prose-p:text-base sm:prose-p:text-lg prose-p:leading-relaxed prose-p:text-slate-700 dark:prose-p:text-slate-300
+                prose-li:text-base sm:prose-li:text-lg prose-li:text-slate-700 dark:prose-li:text-slate-300
+                prose-strong:text-slate-900 dark:prose-strong:text-white
+                prose-a:text-blue-600 dark:prose-a:text-blue-400 prose-a:no-underline hover:prose-a:underline
+                prose-code:text-slate-900 dark:prose-code:text-slate-100
+                prose-pre:bg-slate-900 dark:prose-pre:bg-slate-950 prose-pre:overflow-x-auto
+                prose-blockquote:text-slate-700 dark:prose-blockquote:text-slate-300 prose-blockquote:border-slate-300 dark:prose-blockquote:border-slate-600
+                prose-img:rounded-xl break-words"
+              dangerouslySetInnerHTML={{ __html: article.content }}
+            />
+          </div>
+
+          <div className="pt-6 border-t border-slate-200 dark:border-slate-700">
+            <Link href="/news" className="inline-flex items-center gap-2 text-blue-600 dark:text-blue-400 font-semibold hover:text-blue-700 dark:hover:text-blue-300 transition-colors">
+              ← Back to Healthcare News
+            </Link>
           </div>
         </div>
-      )}
+      </SinglePostLayout>
 
-      <section className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 py-8">
-        <SocialShare title={article.title} />
-      </section>
-      <NewsArticleContent article={serializedArticle} moreNews={serializedMore} />
+      {serializedMore.length > 0 && (
+        <section className="py-12 sm:py-16 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-700">
+          <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-white mb-8">More Healthcare News</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {serializedMore.map((news) => (
+                <Link key={news.slug} href={`/news/${news.slug}`} className="group">
+                  <article className="rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700 hover:shadow-lg transition-all hover:-translate-y-1 bg-white dark:bg-slate-800 h-full">
+                    <div className="relative h-44 overflow-hidden">
+                      <Image
+                        src={news.coverImage || '/4.png'}
+                        alt={news.title}
+                        fill
+                        sizes="(min-width: 1024px) 30vw, (min-width: 768px) 45vw, 100vw"
+                        className="object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                      {news.source && (
+                        <span className="absolute top-3 left-3 px-2.5 py-1 bg-blue-600/90 dark:bg-blue-500/90 text-white text-[11px] font-bold rounded-full">
+                          {news.source}
+                        </span>
+                      )}
+                    </div>
+                    <div className="p-5">
+                      <p className="text-xs text-slate-400 dark:text-slate-500 mb-2">
+                        {news.publishedAt && new Date(news.publishedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      </p>
+                      <h3 className="font-bold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors line-clamp-2">
+                        {news.title}
+                      </h3>
+                    </div>
+                  </article>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       <Footer />
     </main>

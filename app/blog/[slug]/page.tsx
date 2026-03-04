@@ -10,6 +10,7 @@ import TableOfContents from '@/components/TableOfContents';
 import RelatedPosts from '@/components/RelatedPosts';
 import CommentsPlaceholder from '@/components/CommentsPlaceholder';
 import BlogPostMeta from '@/components/BlogPostMeta';
+import SinglePostLayout from '@/components/post/SinglePostLayout';
 
 // Cache posts for 1 hour, then revalidate in background (ISR)
 export const revalidate = 3600;
@@ -128,58 +129,41 @@ export default async function BlogPost({ params }: { params: Promise<{ slug: str
         dangerouslySetInnerHTML={{ __html: JSON.stringify(blogSchema) }}
       />
       <Navbar />
-      <article className="mx-auto max-w-5xl py-12 sm:py-16 px-4 sm:px-6 lg:px-8">
-        <header className="rounded-3xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm p-6 sm:p-10">
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-slate-900 dark:text-white leading-tight">
-            {post.title}
-          </h1>
-
-          <div className="mt-6">
-            <CategoriesTags categories={post.categories} tags={post.tags} />
-          </div>
-
-          <div className="mt-5">
-            <BlogPostMeta authorName={post.author?.name || null} publishedAt={post.publishedAt?.toISOString() || null} />
-          </div>
-        </header>
-
-        {post.coverImage && (
-          <div className="relative w-full h-64 sm:h-80 lg:h-[28rem] mt-8 rounded-3xl overflow-hidden border border-slate-200 dark:border-slate-700 shadow-sm">
-            <Image src={post.coverImage} alt={post.title} fill className="object-cover" />
-          </div>
-        )}
-
-        <div className="mt-8">
-          <SocialShare title={post.title} />
-        </div>
-
-        <div className="mt-6">
+      <SinglePostLayout
+        title={post.title}
+        shareTitle={post.title}
+        headerTop={<CategoriesTags categories={post.categories} tags={post.tags} />}
+        headerMeta={<BlogPostMeta authorName={post.author?.name || null} publishedAt={post.publishedAt?.toISOString() || null} />}
+        coverImage={post.coverImage}
+        coverAlt={post.title}
+      >
+        <div className="space-y-5">
           <TableOfContents html={post.content} />
+
+          <div className="rounded-3xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm p-5 sm:p-8 lg:p-10 min-w-0">
+            <div
+              data-article-content
+              className="prose prose-slate prose-lg sm:prose-xl max-w-none
+                prose-headings:font-bold prose-headings:tracking-tight prose-headings:text-slate-900 dark:prose-headings:text-white
+                prose-h2:text-2xl sm:prose-h2:text-3xl prose-h2:mt-10 prose-h2:mb-4
+                prose-h3:text-xl sm:prose-h3:text-2xl prose-h3:mt-8 prose-h3:mb-3
+                prose-p:text-base sm:prose-p:text-lg prose-p:text-slate-700 dark:prose-p:text-slate-300 prose-p:leading-relaxed
+                prose-li:text-base sm:prose-li:text-lg prose-li:text-slate-700 dark:prose-li:text-slate-300
+                prose-strong:text-slate-900 dark:prose-strong:text-white
+                prose-a:text-blue-600 dark:prose-a:text-blue-400 prose-a:underline hover:prose-a:text-blue-800 dark:hover:prose-a:text-blue-300
+                prose-code:text-slate-900 dark:prose-code:text-slate-100
+                prose-pre:bg-slate-900 dark:prose-pre:bg-slate-950 prose-pre:overflow-x-auto
+                prose-blockquote:text-slate-700 dark:prose-blockquote:text-slate-300 prose-blockquote:border-slate-300 dark:prose-blockquote:border-slate-600
+                prose-img:rounded-xl break-words"
+              dangerouslySetInnerHTML={{ __html: post.content }}
+            />
+          </div>
+
+          <RelatedPosts posts={relatedPosts} />
+
+          <CommentsPlaceholder />
         </div>
-
-        <div className="mt-6 rounded-3xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm p-6 sm:p-10">
-          <div
-            data-article-content
-            className="prose prose-slate prose-lg sm:prose-xl max-w-none
-              prose-headings:font-bold prose-headings:tracking-tight prose-headings:text-slate-900 dark:prose-headings:text-white
-              prose-h2:text-2xl sm:prose-h2:text-3xl prose-h2:mt-10 prose-h2:mb-4
-              prose-h3:text-xl sm:prose-h3:text-2xl prose-h3:mt-8 prose-h3:mb-3
-              prose-p:text-base sm:prose-p:text-lg prose-p:text-slate-700 dark:prose-p:text-slate-300 prose-p:leading-relaxed
-              prose-li:text-base sm:prose-li:text-lg prose-li:text-slate-700 dark:prose-li:text-slate-300
-              prose-strong:text-slate-900 dark:prose-strong:text-white
-              prose-a:text-blue-600 dark:prose-a:text-blue-400 prose-a:underline hover:prose-a:text-blue-800 dark:hover:prose-a:text-blue-300
-              prose-code:text-slate-900 dark:prose-code:text-slate-100
-              prose-pre:bg-slate-900 dark:prose-pre:bg-slate-950
-              prose-blockquote:text-slate-700 dark:prose-blockquote:text-slate-300 prose-blockquote:border-slate-300 dark:prose-blockquote:border-slate-600
-              prose-img:rounded-xl"
-            dangerouslySetInnerHTML={{ __html: post.content }}
-          />
-        </div>
-
-        <RelatedPosts posts={relatedPosts} />
-
-        <CommentsPlaceholder />
-      </article>
+      </SinglePostLayout>
       <Footer />
     </main>
   );
