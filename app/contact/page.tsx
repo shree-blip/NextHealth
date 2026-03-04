@@ -156,8 +156,9 @@ export default function ContactPage() {
                     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
                       <h3 className="text-2xl font-bold mb-6 flex items-center gap-3"><Activity className="text-emerald-500" /> Scale Metric</h3>
                       <div className="space-y-4">
-                        <label className="block text-sm font-bold uppercase tracking-widest text-slate-500 mb-2">Number of Current Physical Locations</label>
+                        <label htmlFor="locations" className="block text-sm font-bold uppercase tracking-widest text-slate-500 mb-2">Number of Current Physical Locations</label>
                         <select 
+                          id="locations"
                           value={formData.locations}
                           onChange={(e) => setFormData({...formData, locations: e.target.value})}
                           className="w-full bg-slate-100 border border-slate-200 rounded-2xl py-4 px-6 text-lg focus:outline-none focus:border-emerald-500 transition-colors appearance-none"
@@ -176,8 +177,9 @@ export default function ContactPage() {
                     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
                       <h3 className="text-2xl font-bold mb-6 flex items-center gap-3"><DollarSign className="text-emerald-500" /> Financial Qualifier</h3>
                       <div className="space-y-4">
-                        <label className="block text-sm font-bold uppercase tracking-widest text-slate-500 mb-2">Current or Projected Monthly Ad Spend</label>
+                        <label htmlFor="adSpend" className="block text-sm font-bold uppercase tracking-widest text-slate-500 mb-2">Current or Projected Monthly Ad Spend</label>
                         <select 
+                          id="adSpend"
                           value={formData.adSpend}
                           onChange={(e) => setFormData({...formData, adSpend: e.target.value})}
                           className="w-full bg-slate-100 border border-slate-200 rounded-2xl py-4 px-6 text-lg focus:outline-none focus:border-emerald-500 transition-colors appearance-none"

@@ -1,6 +1,7 @@
 'use client';
 import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { useSitePreferences } from '@/components/SitePreferencesProvider';
 
 const logos = [
@@ -77,11 +78,12 @@ export default function TrustedBy() {
           <div className="flex flex-wrap justify-center items-center gap-8 opacity-60">
             {logos.map((logo, idx) => (
               <div key={idx} className="grayscale hover:grayscale-0 transition-all">
-                <img
+                <Image
                   src={logo.image}
                   alt={logo.name}
+                  width={120}
+                  height={48}
                   loading="lazy"
-                  decoding="async"
                   className="h-12 w-auto object-contain"
                 />
               </div>
@@ -110,11 +112,12 @@ export default function TrustedBy() {
                 {localizedTestimonials[currentTestimonial].quote}
               </p>
               <div className="flex items-center justify-center gap-4">
-                <img 
+                <Image 
                   src={localizedTestimonials[currentTestimonial].image} 
                   alt={localizedTestimonials[currentTestimonial].author}
+                  width={64}
+                  height={64}
                   loading="lazy"
-                  decoding="async"
                   className="w-16 h-16 rounded-full object-cover"
                 />
                 <div className="text-left">
@@ -131,6 +134,7 @@ export default function TrustedBy() {
               <button
                 key={idx}
                 onClick={() => setCurrentTestimonial(idx)}
+                aria-label={`Go to testimonial ${idx + 1}`}
                 className={`w-3 h-3 rounded-full transition-colors ${
                   idx === currentTestimonial ? 'bg-emerald-500' : 'bg-slate-300'
                 }`}

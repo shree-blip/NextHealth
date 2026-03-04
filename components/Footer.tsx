@@ -79,9 +79,9 @@ export default function Footer() {
             </div>
 
             <div className="flex gap-4">
-              <Link href="https://instagram.com" className={`p-2 rounded-full transition-colors ${isDark ? 'bg-slate-800 hover:bg-slate-700' : 'bg-slate-200 hover:bg-slate-300'}`}><Instagram className={`h-5 w-5 ${isDark ? 'text-white' : 'text-slate-700'}`} /></Link>
-              <Link href="https://linkedin.com" className={`p-2 rounded-full transition-colors ${isDark ? 'bg-slate-800 hover:bg-slate-700' : 'bg-slate-200 hover:bg-slate-300'}`}><Linkedin className={`h-5 w-5 ${isDark ? 'text-white' : 'text-slate-700'}`} /></Link>
-              <Link href="https://facebook.com" className={`p-2 rounded-full transition-colors ${isDark ? 'bg-slate-800 hover:bg-slate-700' : 'bg-slate-200 hover:bg-slate-300'}`}><Facebook className={`h-5 w-5 ${isDark ? 'text-white' : 'text-slate-700'}`} /></Link>
+              <Link href="https://instagram.com" aria-label="Instagram" className={`p-2 rounded-full transition-colors ${isDark ? 'bg-slate-800 hover:bg-slate-700' : 'bg-slate-200 hover:bg-slate-300'}`}><Instagram className={`h-5 w-5 ${isDark ? 'text-white' : 'text-slate-700'}`} /></Link>
+              <Link href="https://linkedin.com" aria-label="LinkedIn" className={`p-2 rounded-full transition-colors ${isDark ? 'bg-slate-800 hover:bg-slate-700' : 'bg-slate-200 hover:bg-slate-300'}`}><Linkedin className={`h-5 w-5 ${isDark ? 'text-white' : 'text-slate-700'}`} /></Link>
+              <Link href="https://facebook.com" aria-label="Facebook" className={`p-2 rounded-full transition-colors ${isDark ? 'bg-slate-800 hover:bg-slate-700' : 'bg-slate-200 hover:bg-slate-300'}`}><Facebook className={`h-5 w-5 ${isDark ? 'text-white' : 'text-slate-700'}`} /></Link>
             </div>
           </div>
 
@@ -126,10 +126,10 @@ export default function Footer() {
         </div>
 
         <div className={`border-t pt-8 flex flex-col md:flex-row items-center justify-between gap-4 ${isDark ? 'border-slate-800' : 'border-slate-200'}`}>
-          <p className={isDark ? 'text-slate-500' : 'text-slate-500'}>
+          <p className={isDark ? 'text-slate-500' : 'text-slate-600'}>
             © {new Date().getFullYear()} The NextGen Healthcare Marketing. {t('All rights reserved.')}
           </p>
-          <div className={`flex gap-8 text-sm ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>
+          <div className={`flex gap-8 text-sm ${isDark ? 'text-slate-500' : 'text-slate-600'}`}>
             <Link href="/privacy" className={`transition-colors ${isDark ? 'hover:text-white' : 'hover:text-emerald-600'}`}>{t('Privacy Policy')}</Link>
             <Link href="/terms" className={`transition-colors ${isDark ? 'hover:text-white' : 'hover:text-emerald-600'}`}>{t('Terms of Service')}</Link>
             <Link href="/hipaa" className={`transition-colors ${isDark ? 'hover:text-white' : 'hover:text-emerald-600'}`}>{t('HIPAA Compliance')}</Link>

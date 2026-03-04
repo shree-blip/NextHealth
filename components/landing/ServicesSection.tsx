@@ -1,6 +1,7 @@
 'use client';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useSitePreferences } from '@/components/SitePreferencesProvider';
 
 const services = [
@@ -89,13 +90,14 @@ export default function ServicesSection() {
             >
               <Link href={service.link}>
                 <div className="group relative bg-slate-50 rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 h-full">
-                  <div className="aspect-video overflow-hidden">
-                    <img 
+                  <div className="aspect-video overflow-hidden relative">
+                    <Image 
                       src={service.image} 
                       alt={service.title} 
+                      fill
+                      sizes="(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw"
                       loading="lazy"
-                      decoding="async"
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                      className="object-cover group-hover:scale-110 transition-transform duration-500"
                     />
                   </div>
                   <div className="p-6">

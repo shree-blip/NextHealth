@@ -1,6 +1,7 @@
 'use client';
 import { motion } from 'framer-motion';
 import { useState } from 'react';
+import Image from 'next/image';
 import { Check } from 'lucide-react';
 import { useSitePreferences } from '@/components/SitePreferencesProvider';
 
@@ -61,12 +62,13 @@ export default function CtaContactForm() {
     <section className={`py-24 relative overflow-hidden ${isDark ? 'bg-gradient-to-br from-emerald-900 via-slate-900 to-emerald-800' : 'bg-gradient-to-br from-emerald-50 via-white to-blue-50'}`}>
       {/* Background image */}
       <div className={`absolute inset-0 ${isDark ? 'opacity-20' : 'opacity-10'}`}>
-        <img
+        <Image
           src="/11.png"
           alt=""
+          fill
           loading="lazy"
-          decoding="async"
-          className="w-full h-full object-cover"
+          sizes="100vw"
+          className="object-cover"
         />
       </div>
       <div className={`absolute inset-0 ${isDark ? 'bg-black/40' : 'bg-white/30'}`} />

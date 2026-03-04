@@ -9,7 +9,7 @@ interface LoadingScreenProps {
   onComplete?: () => void;
 }
 
-export default function LoadingScreen({ durationMs = 2000, onComplete }: LoadingScreenProps) {
+export default function LoadingScreen({ durationMs = 400, onComplete }: LoadingScreenProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [progress, setProgress] = useState(0);
   const rafRef = useRef<number>(0);

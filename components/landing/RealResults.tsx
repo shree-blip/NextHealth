@@ -1,5 +1,6 @@
 'use client';
 import { motion } from 'framer-motion';
+import Image from 'next/image';
 import { useSitePreferences } from '@/components/SitePreferencesProvider';
 
 const results = [
@@ -65,13 +66,14 @@ export default function RealResults() {
               className="group"
             >
               <div className={`rounded-2xl overflow-hidden transition-colors ${isDark ? 'bg-slate-800 hover:bg-slate-700' : 'bg-white border border-slate-200 hover:shadow-xl'}`}>
-                <div className="aspect-video overflow-hidden">
-                  <img 
+                <div className="aspect-video overflow-hidden relative">
+                  <Image 
                     src={result.image} 
                     alt={result.client} 
+                    fill
+                    sizes="(min-width: 1024px) 25vw, (min-width: 768px) 50vw, 100vw"
                     loading="lazy"
-                    decoding="async"
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    className="object-cover group-hover:scale-105 transition-transform duration-500"
                   />
                 </div>
                 <div className="p-6">
@@ -160,11 +162,12 @@ export default function RealResults() {
               whileHover={{ scale: 1.02 }}
               className="rounded-2xl overflow-hidden shadow-2xl"
             >
-              <img 
+              <Image 
                 src="/Search_console_dahbord.png" 
                 alt="Google Search Console Dashboard" 
+                width={800}
+                height={450}
                 loading="lazy"
-                decoding="async"
                 className="w-full h-auto object-cover hover:opacity-90 transition-opacity"
               />
               <div className={`p-6 ${isDark ? 'bg-slate-800' : 'bg-white border-t border-slate-200'}`}>
@@ -176,11 +179,12 @@ export default function RealResults() {
               whileHover={{ scale: 1.02 }}
               className="rounded-2xl overflow-hidden shadow-2xl"
             >
-              <img 
+              <Image 
                 src="/GMB-Dashboard.png" 
                 alt="Google My Business Dashboard" 
+                width={800}
+                height={450}
                 loading="lazy"
-                decoding="async"
                 className="w-full h-auto object-cover hover:opacity-90 transition-opacity"
               />
               <div className={`p-6 ${isDark ? 'bg-slate-800' : 'bg-white border-t border-slate-200'}`}>

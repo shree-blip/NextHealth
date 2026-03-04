@@ -340,7 +340,7 @@ export default function ChatBot() {
                   <Send className="h-4 w-4" />
                 </button>
               </form>
-              <p className={`text-[10px] text-center mt-2 ${isDark ? 'text-slate-600' : 'text-slate-400'}`}>
+              <p className={`text-xs text-center mt-2 ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>
                 {language === 'es' ? 'Asistente de IA · Las respuestas pueden variar' : 'AI Assistant · Responses may vary'}
               </p>
             </div>

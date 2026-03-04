@@ -21,30 +21,17 @@ import { useSitePreferences } from '@/components/SitePreferencesProvider';
 
 const socialRainIcons = [
   { Icon: FaFacebook, color: '#1877F2', left: '4%', delay: '-1.2s', duration: '24.5s', size: 20, sway: '18px' },
-  { Icon: FaInstagram, color: '#E4405F', left: '9%', delay: '-3.1s', duration: '26.2s', size: 20, sway: '14px' },
-  { Icon: FaXTwitter, color: '#000000', left: '14%', delay: '-2.4s', duration: '25.4s', size: 18, sway: '20px' },
-  { Icon: FaLinkedin, color: '#0A66C2', left: '19%', delay: '-5.8s', duration: '27s', size: 20, sway: '16px' },
-  { Icon: FaYoutube, color: '#FF0000', left: '24%', delay: '-4.2s', duration: '24.8s', size: 20, sway: '18px' },
-  { Icon: FaTiktok, color: '#25F4EE', left: '29%', delay: '-6.5s', duration: '26.6s', size: 19, sway: '15px' },
-  { Icon: FaPinterest, color: '#E60023', left: '34%', delay: '-0.7s', duration: '25.8s', size: 20, sway: '17px' },
-  { Icon: FaSnapchat, color: '#FFFC00', left: '39%', delay: '-7.1s', duration: '27.4s', size: 20, sway: '14px' },
-  { Icon: FaReddit, color: '#FF4500', left: '44%', delay: '-2.9s', duration: '25.2s', size: 20, sway: '21px' },
-  { Icon: FaWhatsapp, color: '#25D366', left: '49%', delay: '-5.2s', duration: '26.4s', size: 20, sway: '13px' },
-  { Icon: FaTelegram, color: '#24A1DE', left: '54%', delay: '-3.9s', duration: '24.9s', size: 20, sway: '19px' },
-  { Icon: FaDiscord, color: '#5865F2', left: '59%', delay: '-6.2s', duration: '27.1s', size: 20, sway: '16px' },
-
-  { Icon: FaFacebook, color: '#1877F2', left: '64%', delay: '-4.6s', duration: '25.7s', size: 20, sway: '12px' },
-  { Icon: FaInstagram, color: '#E4405F', left: '68%', delay: '-1.9s', duration: '26.8s', size: 20, sway: '22px' },
-  { Icon: FaXTwitter, color: '#000000', left: '72%', delay: '-7.5s', duration: '25.3s', size: 18, sway: '15px' },
-  { Icon: FaLinkedin, color: '#0A66C2', left: '76%', delay: '-3.4s', duration: '27.2s', size: 20, sway: '19px' },
-  { Icon: FaYoutube, color: '#FF0000', left: '80%', delay: '-5.9s', duration: '24.6s', size: 20, sway: '14px' },
-  { Icon: FaTiktok, color: '#25F4EE', left: '84%', delay: '-2.2s', duration: '26.1s', size: 19, sway: '20px' },
-  { Icon: FaPinterest, color: '#E60023', left: '88%', delay: '-8.1s', duration: '25.9s', size: 20, sway: '16px' },
-  { Icon: FaSnapchat, color: '#FFFC00', left: '91%', delay: '-1.1s', duration: '27.6s', size: 20, sway: '23px' },
-  { Icon: FaReddit, color: '#FF4500', left: '94%', delay: '-6.7s', duration: '26.7s', size: 20, sway: '11px' },
-  { Icon: FaWhatsapp, color: '#25D366', left: '96%', delay: '-2.8s', duration: '25.1s', size: 20, sway: '18px' },
-  { Icon: FaTelegram, color: '#24A1DE', left: '98%', delay: '-7.2s', duration: '26.5s', size: 20, sway: '13px' },
-  { Icon: FaDiscord, color: '#5865F2', left: '99%', delay: '-4.3s', duration: '27.3s', size: 20, sway: '17px' },
+  { Icon: FaInstagram, color: '#E4405F', left: '14%', delay: '-3.1s', duration: '26.2s', size: 20, sway: '14px' },
+  { Icon: FaXTwitter, color: '#000000', left: '24%', delay: '-2.4s', duration: '25.4s', size: 18, sway: '20px' },
+  { Icon: FaLinkedin, color: '#0A66C2', left: '34%', delay: '-5.8s', duration: '27s', size: 20, sway: '16px' },
+  { Icon: FaYoutube, color: '#FF0000', left: '44%', delay: '-4.2s', duration: '24.8s', size: 20, sway: '18px' },
+  { Icon: FaTiktok, color: '#25F4EE', left: '54%', delay: '-6.5s', duration: '26.6s', size: 19, sway: '15px' },
+  { Icon: FaPinterest, color: '#E60023', left: '64%', delay: '-0.7s', duration: '25.8s', size: 20, sway: '17px' },
+  { Icon: FaSnapchat, color: '#FFFC00', left: '72%', delay: '-7.1s', duration: '27.4s', size: 20, sway: '14px' },
+  { Icon: FaReddit, color: '#FF4500', left: '80%', delay: '-2.9s', duration: '25.2s', size: 20, sway: '21px' },
+  { Icon: FaWhatsapp, color: '#25D366', left: '86%', delay: '-5.2s', duration: '26.4s', size: 20, sway: '13px' },
+  { Icon: FaTelegram, color: '#24A1DE', left: '92%', delay: '-3.9s', duration: '24.9s', size: 20, sway: '19px' },
+  { Icon: FaDiscord, color: '#5865F2', left: '97%', delay: '-6.2s', duration: '27.1s', size: 20, sway: '16px' },
 ];
 
 export default function HeroNew() {
@@ -260,6 +247,17 @@ export default function HeroNew() {
           }
           50% {
             transform: scale(2.12) rotate(8deg);
+          }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .social-rain-icon {
+            animation: none !important;
+            opacity: 0.3;
+            top: 20%;
+          }
+          .social-rain-icon-inner {
+            animation: none !important;
           }
         }
 

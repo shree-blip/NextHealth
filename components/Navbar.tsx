@@ -349,8 +349,8 @@ export default function Navbar() {
                 }`}
               >
                 <motion.span
-                  animate={{ scale: [1, 1.08, 1], y: [0, -1, 0] }}
-                  transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
+                  animate={{ scale: [1, 1.05, 1] }}
+                  transition={{ duration: 2, repeat: 2, ease: 'easeInOut' }}
                   className={`inline-flex h-7 w-7 items-center justify-center rounded-full ${
                     scrolled
                       ? theme === 'dark'
@@ -476,7 +476,7 @@ export default function Navbar() {
 
           {/* Mobile Menu Button */}
           <div className="md:hidden">
-            <button onClick={() => setIsOpen(!isOpen)} className={scrolled ? (theme === 'dark' ? 'text-slate-200 hover:text-white' : 'text-slate-600 hover:text-slate-900') : 'text-white hover:text-white/80'}>
+            <button onClick={() => setIsOpen(!isOpen)} aria-label={isOpen ? 'Close menu' : 'Open menu'} className={scrolled ? (theme === 'dark' ? 'text-slate-200 hover:text-white' : 'text-slate-600 hover:text-slate-900') : 'text-white hover:text-white/80'}>
               {isOpen ? <X /> : <Menu />}
             </button>
           </div>
@@ -574,8 +574,8 @@ export default function Navbar() {
               }`}
             >
               <motion.span
-                animate={{ scale: [1, 1.08, 1], y: [0, -1, 0] }}
-                transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
+                animate={{ scale: [1, 1.05, 1] }}
+                transition={{ duration: 2, repeat: 2, ease: 'easeInOut' }}
                 className={`inline-flex h-7 w-7 items-center justify-center rounded-full ${
                   theme === 'dark' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-emerald-500/15 text-emerald-600'
                 }`}

@@ -46,7 +46,7 @@ export default function Hero({
     <section className={`relative pt-32 pb-24 overflow-hidden ${isDark ? 'bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900' : 'bg-gradient-to-br from-slate-50 via-white to-slate-100'}`}>
       {/* Background Elements */}
       <div className="absolute inset-0">
-        <div className={`absolute top-0 left-1/4 w-[600px] h-[600px] ${isDark ? 'bg-emerald-500/20' : 'bg-emerald-500/10'} blur-[140px] rounded-full animate-pulse`} />
+        <div className={`absolute top-0 left-1/4 w-[600px] h-[600px] ${isDark ? 'bg-emerald-500/20' : 'bg-emerald-500/10'} blur-[140px] rounded-full`} />
         <div className={`absolute bottom-0 right-1/4 w-[600px] h-[600px] ${isDark ? 'bg-blue-500/10' : 'bg-blue-500/5'} blur-[140px] rounded-full`} />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(16,185,129,0.05),transparent_50%)]" />
       </div>

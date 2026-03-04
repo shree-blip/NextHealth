@@ -4,6 +4,7 @@ import Footer from '@/components/Footer';
 import FadeIn from '@/components/FadeIn';
 import FAQ from '@/components/FAQ';
 import Services from '@/components/Services';
+import Image from 'next/image';
 import { Search, Megaphone, ShieldCheck, Globe, MessageSquare, Activity, MapPin, Target, Zap } from 'lucide-react';
 import { Metadata } from 'next';
 
@@ -256,7 +257,7 @@ export default function ServicesPage() {
 
             <div className="order-1 lg:order-2">
               <div className="relative h-80 bg-gray-100 rounded-2xl overflow-hidden">
-                <img src="/16.png" alt="custom software mock" className="w-full h-full object-cover" />
+                <Image src="/16.png" alt="custom software mock" fill sizes="(min-width: 1024px) 50vw, 100vw" loading="lazy" className="object-cover" />
               </div>
             </div>
           </div>
@@ -285,7 +286,7 @@ export default function ServicesPage() {
             </div>
             <div className="order-2">
               <div className="relative h-72 bg-gray-100 rounded-2xl overflow-hidden">
-                <img src="/Search_console_dahbord.png" alt="automation mock" className="w-full h-full object-cover" />
+                <Image src="/Search_console_dahbord.png" alt="automation mock" fill sizes="(min-width: 1024px) 50vw, 100vw" loading="lazy" className="object-cover" />
               </div>
             </div>
           </div>
@@ -349,10 +350,13 @@ export default function ServicesPage() {
                 className="group relative rounded-3xl border border-slate-200 bg-white p-5 text-center shadow-sm transition-all duration-300 hover:-translate-y-1.5 hover:shadow-xl hover:border-emerald-300"
               >
                 <div className="relative mx-auto h-28 w-28 overflow-hidden rounded-full ring-4 ring-emerald-100 transition-all duration-300 group-hover:ring-emerald-300 group-hover:scale-105">
-                  <img
+                  <Image
                     src={member.image}
                     alt={member.name}
-                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                    fill
+                    sizes="112px"
+                    loading="lazy"
+                    className="object-cover transition-transform duration-500 group-hover:scale-110"
                   />
                   <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-emerald-500/15 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
                 </div>
