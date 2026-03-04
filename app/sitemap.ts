@@ -1,12 +1,8 @@
 import { MetadataRoute } from 'next';
-import prisma from '@/lib/prisma';
-
-// Force dynamic rendering so sitemap is generated at runtime, not build time
-export const dynamic = 'force-dynamic';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://thenextgenhealth.com';
 
-export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+export default function sitemap(): MetadataRoute.Sitemap {
   // Static pages
   const staticPages: MetadataRoute.Sitemap = [
     {
@@ -179,33 +175,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
   ];
 
-  // Dynamic blog posts
-  const posts = await prisma.post.findMany({
-    where: { publishedAt: { not: null } },
-    select: { slug: true, updatedAt: true },
-    orderBy: { publishedAt: 'desc' },
-  });
-
-  const blogEntries: MetadataRoute.Sitemap = posts.map((post) => ({
-    url: `${SITE_URL}/blog/${post.slug}`,
-    lastModified: post.updatedAt,
-    changeFrequency: 'weekly' as const,
-    priority: 0.7,
-  }));
-
-  // Dynamic news articles
-  const articles = await prisma.newsArticle.findMany({
-    where: { publishedAt: { not: null } },
-    select: { slug: true, updatedAt: true },
-    orderBy: { publishedAt: 'desc' },
-  });
-
-  const newsEntries: MetadataRoute.Sitemap = articles.map((article) => ({
-    url: `${SITE_URL}/news/${article.slug}`,
-    lastModified: article.updatedAt,
-    changeFrequency: 'weekly' as const,
-    priority: 0.7,
-  }));
-
-  return [...staticPages, ...blogEntries, ...newsEntries];
+  return staticPages;
 }
