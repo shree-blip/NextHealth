@@ -323,9 +323,6 @@ function ClientDashboard() {
 
   if (!user) return <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-emerald-500" /></div>;
 
-  const totalLeads = myClinics.reduce((sum, c) => sum + c.leads, 0);
-  const totalAppointments = myClinics.reduce((sum, c) => sum + c.appointments, 0);
-
   const currentPlanIdRaw = subStatus?.planId || null;
   const currentPlanId = currentPlanIdRaw === 'platinum' ? 'premium' : currentPlanIdRaw;
   const currentPlanTier = PLANS.find(p => p.id === currentPlanId)?.tier || 0;
@@ -369,7 +366,7 @@ function ClientDashboard() {
         <nav className="space-y-2 flex-grow mt-4">
           <NavItem icon={BarChart3} label="Overview" active={activeView === 'overview'} onClick={() => setActiveView('overview')} />
           <NavItem icon={Users} label="Patient Leads" badge="Coming Soon" onClick={() => {}} />
-          <NavItem icon={Calendar} label="Appointments" badge="Coming Soon" onClick={() => {}} />
+          <NavItem icon={Calendar} label="Patient Count" badge="Coming Soon" onClick={() => {}} />
           <NavItem icon={MessageSquare} label="AI Conversations" badge="Coming Soon" onClick={() => {}} />
           <NavItem icon={TrendingUp} label="Analytics" active={activeView === 'analytics'} onClick={() => setActiveView('analytics')} />
           <NavItem
@@ -495,8 +492,6 @@ function ClientDashboard() {
             >
               <OverviewView
                 myClinics={myClinics}
-                totalLeads={totalLeads}
-                totalAppointments={totalAppointments}
                 currentPlanId={currentPlanId}
                 onUpgradeClick={() => setActiveView('membership')}
               />
@@ -650,32 +645,142 @@ function MembershipView({
 /* ─── Overview View ─── */
 function OverviewView({
   myClinics,
-  totalLeads,
-  totalAppointments,
   currentPlanId,
   onUpgradeClick,
 }: {
   myClinics: any[];
-  totalLeads: number;
-  totalAppointments: number;
   currentPlanId: string | null;
   onUpgradeClick: () => void;
 }) {
   const CLINIC_COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+  const MONTH_NAMES: Record<number, string> = {
+    1: 'January', 2: 'February', 3: 'March', 4: 'April',
+    5: 'May', 6: 'June', 7: 'July', 8: 'August',
+    9: 'September', 10: 'October', 11: 'November', 12: 'December',
+  };
 
-  // Prepare chart data for multi-location comparison
-  const clinicChartData = myClinics.map(c => ({
+  const [analyticsData, setAnalyticsData] = useState<any[]>([]);
+  const [loadingAnalytics, setLoadingAnalytics] = useState(true);
+
+  // Fetch real WeeklyAnalytics for all assigned clinics
+  useEffect(() => {
+    if (myClinics.length === 0) return;
+    let cancelled = false;
+    const fetchAll = async () => {
+      setLoadingAnalytics(true);
+      try {
+        const all: any[] = [];
+        for (const clinic of myClinics) {
+          const res = await fetch(`/api/analytics/weekly?clinicId=${clinic.id}`);
+          if (res.ok) {
+            const data = await res.json();
+            all.push(...(data.analytics || []));
+          }
+        }
+        if (!cancelled) setAnalyticsData(all);
+      } catch (err) {
+        console.error('Failed to fetch overview analytics:', err);
+      } finally {
+        if (!cancelled) setLoadingAnalytics(false);
+      }
+    };
+    fetchAll();
+    return () => { cancelled = true; };
+  }, [myClinics]);
+
+  // ── Compute last two completed months ──
+  // Current date-based: "last completed month" and "month before last"
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth() + 1; // 1-indexed
+
+  // Last completed month
+  const lastMonth = currentMonth === 1 ? 12 : currentMonth - 1;
+  const lastMonthYear = currentMonth === 1 ? currentYear - 1 : currentYear;
+  // Month before last
+  const prevMonth = lastMonth === 1 ? 12 : lastMonth - 1;
+  const prevMonthYear = lastMonth === 1 ? lastMonthYear - 1 : lastMonthYear;
+
+  const lastMonthLabel = `${MONTH_NAMES[lastMonth]} ${lastMonthYear}`;
+  const prevMonthLabel = `${MONTH_NAMES[prevMonth]} ${prevMonthYear}`;
+
+  // Filter analytics by month
+  const lastMonthData = analyticsData.filter(a => a.year === lastMonthYear && a.month === lastMonth);
+  const prevMonthData = analyticsData.filter(a => a.year === prevMonthYear && a.month === prevMonth);
+
+  // ── Per-clinic aggregation for the last completed month ──
+  const clinicStats = myClinics.map((clinic, idx) => {
+    const lm = lastMonthData.filter(a => a.clinicId === clinic.id);
+    const pm = prevMonthData.filter(a => a.clinicId === clinic.id);
+
+    const lastPatients = lm.reduce((s: number, a: any) => s + (a.patientCount || 0), 0);
+    const prevPatients = pm.reduce((s: number, a: any) => s + (a.patientCount || 0), 0);
+    const lastTraffic = lm.reduce((s: number, a: any) => s + (a.totalTraffic || 0), 0);
+    const prevTraffic = pm.reduce((s: number, a: any) => s + (a.totalTraffic || 0), 0);
+    const lastCalls = lm.reduce((s: number, a: any) => s + (a.callsRequested || 0), 0);
+    const prevCalls = pm.reduce((s: number, a: any) => s + (a.callsRequested || 0), 0);
+
+    const pctChange = (curr: number, prev: number) =>
+      prev > 0 ? ((curr - prev) / prev) * 100 : curr > 0 ? 100 : 0;
+
+    return {
+      id: clinic.id,
+      name: clinic.name,
+      location: clinic.location,
+      type: clinic.type,
+      lastPatients,
+      prevPatients,
+      patientGrowth: pctChange(lastPatients, prevPatients),
+      lastTraffic,
+      prevTraffic,
+      trafficGrowth: pctChange(lastTraffic, prevTraffic),
+      lastCalls,
+      prevCalls,
+      callsGrowth: pctChange(lastCalls, prevCalls),
+      color: CLINIC_COLORS[idx % CLINIC_COLORS.length],
+    };
+  });
+
+  // ── Totals across all clinics ──
+  const totalPatients = clinicStats.reduce((s, c) => s + c.lastPatients, 0);
+  const totalPrevPatients = clinicStats.reduce((s, c) => s + c.prevPatients, 0);
+  const totalTraffic = clinicStats.reduce((s, c) => s + c.lastTraffic, 0);
+  const totalPrevTraffic = clinicStats.reduce((s, c) => s + c.prevTraffic, 0);
+  const totalCalls = clinicStats.reduce((s, c) => s + c.lastCalls, 0);
+  const totalPrevCalls = clinicStats.reduce((s, c) => s + c.prevCalls, 0);
+
+  const fmtChange = (curr: number, prev: number) => {
+    if (prev === 0) return curr > 0 ? '+100%' : '0%';
+    const pct = ((curr - prev) / prev) * 100;
+    return `${pct >= 0 ? '+' : ''}${pct.toFixed(1)}%`;
+  };
+
+  // ── Chart data ──
+  // Patient Count by Location (bar, sorted highest first)
+  const patientBarData = [...clinicStats]
+    .sort((a, b) => b.lastPatients - a.lastPatients)
+    .map(c => ({
+      name: c.name.length > 18 ? c.name.substring(0, 18) + '...' : c.name,
+      patients: c.lastPatients,
+      traffic: c.lastTraffic,
+    }));
+
+  // Patient Growth by Location (bar with % change)
+  const growthBarData = clinicStats.map(c => ({
     name: c.name.length > 18 ? c.name.substring(0, 18) + '...' : c.name,
-    leads: c.leads,
-    appointments: c.appointments,
+    growth: Number(c.patientGrowth.toFixed(1)),
+    prev: c.prevPatients,
+    current: c.lastPatients,
   }));
 
-  // Pie chart data for leads distribution
-  const leadsDistribution = myClinics.map((c, idx) => ({
-    name: c.name,
-    value: c.leads,
-    color: CLINIC_COLORS[idx % CLINIC_COLORS.length],
-  })).filter(d => d.value > 0);
+  // Patient Share by Location (pie chart for last month)
+  const patientShareData = clinicStats
+    .filter(c => c.lastPatients > 0)
+    .map(c => ({
+      name: c.name,
+      value: c.lastPatients,
+      color: c.color,
+    }));
 
   return (
     <>
@@ -707,15 +812,24 @@ function OverviewView({
           <Building2 className="h-16 w-16 mx-auto mb-4 text-slate-300 dark:text-slate-600" />
           <h2 className="text-2xl font-bold mb-4">No Clinics Assigned</h2>
           <p className="text-slate-600 dark:text-slate-400 mb-2">Please contact your administrator to assign clinics to your dashboard.</p>
-          <p className="text-sm text-slate-400 dark:text-slate-500">Once assigned, you&apos;ll see live leads, appointments, and analytics for each location.</p>
+          <p className="text-sm text-slate-400 dark:text-slate-500">Once assigned, you&apos;ll see live patient counts and analytics for each location.</p>
+        </div>
+      ) : loadingAnalytics ? (
+        <div className="flex items-center justify-center py-24">
+          <Loader2 className="h-8 w-8 animate-spin text-emerald-500" />
         </div>
       ) : (
         <>
+          {/* Comparison period label */}
+          <div className="mb-4 text-sm text-slate-500 dark:text-slate-400">
+            Comparing <span className="font-bold text-slate-700 dark:text-slate-200">{prevMonthLabel}</span> → <span className="font-bold text-slate-700 dark:text-slate-200">{lastMonthLabel}</span>
+          </div>
+
           {/* Stats Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-            <StatCard label="Total Leads (Live)" value={totalLeads.toString()} change="+12.5%" />
-            <StatCard label="Appointments (Live)" value={totalAppointments.toString()} change="+8.2%" />
-            <StatCard label="Conversion Rate" value={totalLeads > 0 ? `${Math.round((totalAppointments / totalLeads) * 100)}%` : '0%'} change="+4.1%" />
+            <StatCard label="Patient Count" value={totalPatients.toLocaleString()} change={fmtChange(totalPatients, totalPrevPatients)} negative={totalPatients < totalPrevPatients} />
+            <StatCard label="Total Traffic" value={totalTraffic.toLocaleString()} change={fmtChange(totalTraffic, totalPrevTraffic)} negative={totalTraffic < totalPrevTraffic} />
+            <StatCard label="GMB Calls" value={totalCalls.toLocaleString()} change={fmtChange(totalCalls, totalPrevCalls)} negative={totalCalls < totalPrevCalls} />
             <StatCard label="Active Locations" value={myClinics.length.toString()} change="" />
           </div>
 
@@ -723,13 +837,10 @@ function OverviewView({
           <div className="glass rounded-[2.5rem] p-8 border border-slate-200 dark:border-slate-700 mb-12">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-xl font-bold">Your Assigned Facilities</h3>
-              <div className="flex items-center gap-2 text-xs text-emerald-500 font-bold">
-                <div className="h-2 w-2 bg-emerald-500 rounded-full animate-pulse" />
-                Live Sync Active
-              </div>
+              <span className="text-xs text-slate-400 dark:text-slate-500 font-semibold">{lastMonthLabel} data</span>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {myClinics.map((clinic, idx) => (
+              {clinicStats.map((clinic, idx) => (
                 <motion.div
                   key={clinic.id}
                   initial={{ opacity: 0, y: 10 }}
@@ -737,11 +848,11 @@ function OverviewView({
                   transition={{ delay: idx * 0.1 }}
                   className="bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-6 relative overflow-hidden"
                 >
-                  <div className="absolute top-0 right-0 w-24 h-24 blur-2xl rounded-full" style={{ backgroundColor: `${CLINIC_COLORS[idx % CLINIC_COLORS.length]}15` }} />
+                  <div className="absolute top-0 right-0 w-24 h-24 blur-2xl rounded-full" style={{ backgroundColor: `${clinic.color}15` }} />
                   <div className="flex items-center gap-3 mb-4">
                     <div
                       className="h-10 w-10 rounded-xl flex items-center justify-center text-white font-bold text-sm shrink-0"
-                      style={{ backgroundColor: CLINIC_COLORS[idx % CLINIC_COLORS.length] }}
+                      style={{ backgroundColor: clinic.color }}
                     >
                       {clinic.name.substring(0, 2).toUpperCase()}
                     </div>
@@ -754,17 +865,17 @@ function OverviewView({
                   </div>
                   <div className="flex justify-between items-center text-sm mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
                     <div>
-                      <span className="text-slate-500 dark:text-slate-400 block text-xs">Live Leads</span>
-                      <span className="font-bold text-emerald-500 text-2xl">{clinic.leads}</span>
+                      <span className="text-slate-500 dark:text-slate-400 block text-xs">Patient Count</span>
+                      <span className="font-bold text-emerald-500 text-2xl">{clinic.lastPatients}</span>
                     </div>
                     <div>
-                      <span className="text-slate-500 dark:text-slate-400 block text-xs">Appointments</span>
-                      <span className="font-bold text-slate-900 dark:text-white text-2xl">{clinic.appointments}</span>
+                      <span className="text-slate-500 dark:text-slate-400 block text-xs">Traffic</span>
+                      <span className="font-bold text-slate-900 dark:text-white text-2xl">{clinic.lastTraffic}</span>
                     </div>
                     <div>
-                      <span className="text-slate-500 dark:text-slate-400 block text-xs">Conversion</span>
-                      <span className="font-bold text-blue-500 text-2xl">
-                        {clinic.leads > 0 ? `${Math.round((clinic.appointments / clinic.leads) * 100)}%` : '—'}
+                      <span className="text-slate-500 dark:text-slate-400 block text-xs">Growth</span>
+                      <span className={`font-bold text-2xl ${clinic.patientGrowth >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                        {clinic.patientGrowth >= 0 ? '+' : ''}{clinic.patientGrowth.toFixed(0)}%
                       </span>
                     </div>
                   </div>
@@ -775,14 +886,15 @@ function OverviewView({
 
           {/* Charts Row */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
-            {/* Multi-Location Bar Chart */}
-            {clinicChartData.length > 0 && (
+            {/* Patient Count by Location */}
+            {patientBarData.length > 0 && (
               <div className="glass rounded-[2.5rem] p-8 border border-slate-200 dark:border-slate-700">
-                <h3 className="text-xl font-bold mb-6">Leads vs Appointments by Location</h3>
+                <h3 className="text-xl font-bold mb-6">Patient Count by Location</h3>
+                <p className="text-xs text-slate-400 dark:text-slate-500 -mt-4 mb-4">{lastMonthLabel}</p>
                 <ResponsiveContainer width="100%" height={280}>
-                  <BarChart data={clinicChartData} layout={clinicChartData.length > 3 ? 'vertical' : 'horizontal'}>
+                  <BarChart data={patientBarData} layout={patientBarData.length > 3 ? 'vertical' : 'horizontal'}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                    {clinicChartData.length > 3 ? (
+                    {patientBarData.length > 3 ? (
                       <>
                         <XAxis type="number" fontSize={12} />
                         <YAxis type="category" dataKey="name" fontSize={11} width={130} />
@@ -795,21 +907,22 @@ function OverviewView({
                     )}
                     <Tooltip contentStyle={{ borderRadius: '12px', border: '1px solid #e5e7eb' }} />
                     <Legend />
-                    <Bar dataKey="leads" fill="#10b981" name="Leads" radius={[4, 4, 4, 4]} />
-                    <Bar dataKey="appointments" fill="#3b82f6" name="Appointments" radius={[4, 4, 4, 4]} />
+                    <Bar dataKey="patients" fill="#10b981" name="Patient Count" radius={[4, 4, 4, 4]} />
+                    <Bar dataKey="traffic" fill="#3b82f6" name="Traffic" radius={[4, 4, 4, 4]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
             )}
 
-            {/* Leads Distribution Pie Chart */}
-            {leadsDistribution.length > 0 && (
+            {/* Patient Share Pie Chart */}
+            {patientShareData.length > 0 && (
               <div className="glass rounded-[2.5rem] p-8 border border-slate-200 dark:border-slate-700">
-                <h3 className="text-xl font-bold mb-6">Leads Distribution by Location</h3>
+                <h3 className="text-xl font-bold mb-6">Patient Share by Location</h3>
+                <p className="text-xs text-slate-400 dark:text-slate-500 -mt-4 mb-4">{lastMonthLabel}</p>
                 <ResponsiveContainer width="100%" height={280}>
                   <PieChart>
                     <Pie
-                      data={leadsDistribution}
+                      data={patientShareData}
                       cx="50%"
                       cy="50%"
                       innerRadius={50}
@@ -818,7 +931,7 @@ function OverviewView({
                       label={({ name, value }: { name?: string; value?: number }) => `${(name || '').length > 12 ? (name || '').substring(0, 12) + '...' : name || ''}: ${value ?? 0}`}
                       dataKey="value"
                     >
-                      {leadsDistribution.map((entry, index) => (
+                      {patientShareData.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={entry.color} />
                       ))}
                     </Pie>
@@ -829,32 +942,29 @@ function OverviewView({
             )}
           </div>
 
-          {/* Activity Feed */}
-          <div className="glass rounded-[2.5rem] p-8 border border-slate-200 dark:border-slate-700">
-            <h3 className="text-xl font-bold mb-8">Recent Activity</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <ActivityItem 
-                title="New Appointment" 
-                desc="John Doe booked for Dental Cleaning" 
-                time="2m ago" 
-              />
-              <ActivityItem 
-                title="Insurance Verified" 
-                desc="Sarah Smith's BlueCross verified by AI" 
-                time="15m ago" 
-              />
-              <ActivityItem 
-                title="Lead Generated" 
-                desc="Facebook Ad: Emergency Care" 
-                time="1h ago" 
-              />
-              <ActivityItem 
-                title="Review Received" 
-                desc="5-star review from Mike R." 
-                time="3h ago" 
-              />
+          {/* Patient Growth by Location */}
+          {growthBarData.length > 0 && (
+            <div className="glass rounded-[2.5rem] p-8 border border-slate-200 dark:border-slate-700 mb-12">
+              <h3 className="text-xl font-bold mb-2">Patient Growth by Location</h3>
+              <p className="text-xs text-slate-400 dark:text-slate-500 mb-6">{prevMonthLabel} → {lastMonthLabel} (% change)</p>
+              <ResponsiveContainer width="100%" height={280}>
+                <BarChart data={growthBarData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                  <XAxis dataKey="name" fontSize={11} />
+                  <YAxis fontSize={12} tickFormatter={(v: number) => `${v}%`} />
+                  <Tooltip
+                    contentStyle={{ borderRadius: '12px', border: '1px solid #e5e7eb' }}
+                    formatter={(value: number | string | undefined, name: string | undefined) => {
+                      if (name === 'Growth %') return [`${value}%`, name];
+                      return [value, name];
+                    }}
+                  />
+                  <Legend />
+                  <Bar dataKey="growth" fill="#8b5cf6" name="Growth %" radius={[4, 4, 4, 4]} />
+                </BarChart>
+              </ResponsiveContainer>
             </div>
-          </div>
+          )}
         </>
       )}
     </>
