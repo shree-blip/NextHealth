@@ -6,7 +6,7 @@ import {
   LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, AreaChart, Area,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
-import { TrendingUp, FileText, Globe, Phone, DollarSign, Users, Loader2, Building2, ChevronDown, ArrowUpRight } from 'lucide-react';
+import { TrendingUp, FileText, Globe, Phone, DollarSign, Users, Loader2, Building2, ChevronDown, ArrowUpRight, RefreshCw } from 'lucide-react';
 import { useSitePreferences } from '@/components/SitePreferencesProvider';
 import io, { Socket } from 'socket.io-client';
 
@@ -71,8 +71,11 @@ export default function ClientAnalyticsView({ refreshTrigger }: { refreshTrigger
   const [selectedMonth, setSelectedMonth] = useState<string>('all');
   const [selectedWeek, setSelectedWeek] = useState<string>('all');
   const [dateFilter, setDateFilter] = useState<string>('');
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const socketRef = useRef<Socket | null>(null);
   const clinicIdRef = useRef<string>('');
+  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Initialize Socket.io connection
   useEffect(() => {
@@ -114,6 +117,31 @@ export default function ClientAnalyticsView({ refreshTrigger }: { refreshTrigger
     }
   }, [selectedClinic, refreshTrigger]);
 
+  // Auto-refresh polling mechanism (every 60 seconds)
+  // This replaces Socket.io for Vercel serverless deployment
+  useEffect(() => {
+    if (!selectedClinic) return;
+
+    // Clear any existing interval
+    if (pollingIntervalRef.current) {
+      clearInterval(pollingIntervalRef.current);
+    }
+
+    // Set up polling interval (60 seconds)
+    pollingIntervalRef.current = setInterval(() => {
+      if (clinicIdRef.current) {
+        console.log('[Client Analytics] Auto-refreshing data...');
+        fetchAnalytics(clinicIdRef.current, true); // Silent refresh
+      }
+    }, 60000); // 60 seconds
+
+    return () => {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+      }
+    };
+  }, [selectedClinic]);
+
   const fetchClinics = async () => {
     try {
       setLoading(true);
@@ -148,9 +176,12 @@ export default function ClientAnalyticsView({ refreshTrigger }: { refreshTrigger
     }
   };
 
-  const fetchAnalytics = async (clinicId: string) => {
-    setLoading(true);
+  const fetchAnalytics = async (clinicId: string, silent = false) => {
+    if (!silent) {
+      setLoading(true);
+    }
     try {
+      console.log('[Client Analytics] Fetching analytics for clinic:', clinicId);
       let allAnalytics: WeeklyAnalytics[] = [];
 
       // If fetching all locations, fetch analytics for all assigned clinics
@@ -168,11 +199,13 @@ export default function ClientAnalyticsView({ refreshTrigger }: { refreshTrigger
           const data = await res.json();
           allAnalytics = data.analytics || [];
         } else {
-          console.error('Failed to fetch analytics:', res.status);
+          console.error('[Client Analytics] Failed to fetch analytics:', res.status);
         }
       }
 
+      console.log('[Client Analytics] Loaded', allAnalytics.length, 'analytics records');
       setAnalytics(allAnalytics);
+      setLastUpdated(new Date());
 
       // Auto-fill filter with last week's data
       if (allAnalytics.length > 0) {
@@ -456,18 +489,41 @@ export default function ClientAnalyticsView({ refreshTrigger }: { refreshTrigger
       {/* Edit Report Filters */}
       <div className={`rounded-2xl p-6 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
         <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-          <h3 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Edit Report Filters</h3>
-          <button
-            onClick={() => {
-              setSelectedYear('all');
-              setSelectedMonth('all');
-              setSelectedWeek('all');
-              setDateFilter('');
-            }}
-            className="px-4 py-2 rounded-lg bg-emerald-500 text-black font-bold hover:bg-emerald-400"
-          >
-            Reset Filters
-          </button>
+          <div>
+            <h3 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Edit Report Filters</h3>
+            {lastUpdated && (
+              <p className={`text-xs mt-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                Last updated: {lastUpdated.toLocaleTimeString()}
+              </p>
+            )}
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={async () => {
+                if (selectedClinic && !isRefreshing) {
+                  setIsRefreshing(true);
+                  await fetchAnalytics(selectedClinic);
+                  setIsRefreshing(false);
+                }
+              }}
+              disabled={isRefreshing}
+              className="px-4 py-2 rounded-lg bg-blue-500 text-white font-bold hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            >
+              <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+              Refresh
+            </button>
+            <button
+              onClick={() => {
+                setSelectedYear('all');
+                setSelectedMonth('all');
+                setSelectedWeek('all');
+                setDateFilter('');
+              }}
+              className="px-4 py-2 rounded-lg bg-emerald-500 text-black font-bold hover:bg-emerald-400"
+            >
+              Reset Filters
+            </button>
+          </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <select

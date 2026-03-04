@@ -52,21 +52,36 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { clinicId, year, month, weekNumber, weekLabel, ...data } = body;
 
+    console.log('[Analytics API POST] Received data for:', { clinicId, year, month, weekNumber, weekLabel });
+
     if (!clinicId || !year || !month || !weekNumber || !weekLabel) {
+      console.error('[Analytics API POST] Missing required fields',' body:', body);
       return NextResponse.json(
         { error: 'Missing required fields: clinicId, year, month, weekNumber, weekLabel' },
         { status: 400 }
       );
     }
 
+    // Ensure numeric values are properly typed
+    const numericYear = Number(year);
+    const numericMonth = Number(month);
+    const numericWeekNumber = Number(weekNumber);
+
+    if (isNaN(numericYear) || isNaN(numericMonth) || isNaN(numericWeekNumber)) {
+      console.error('[Analytics API POST] Invalid numeric values:', { year, month, weekNumber });
+      return NextResponse.json({ error: 'Year, month, and weekNumber must be valid numbers' }, { status: 400 });
+    }
+
+    console.log('[Analytics API POST] Upserting analytics data...');
+
     // Upsert the analytics data
     const analytics = await prisma.weeklyAnalytics.upsert({
       where: {
         clinicId_year_month_weekNumber: {
           clinicId,
-          year,
-          month,
-          weekNumber
+          year: numericYear,
+          month: numericMonth,
+          weekNumber: numericWeekNumber
         }
       },
       update: {
@@ -76,18 +91,22 @@ export async function POST(request: NextRequest) {
       },
       create: {
         clinicId,
-        year,
-        month,
-        weekNumber,
+        year: numericYear,
+        month: numericMonth,
+        weekNumber: numericWeekNumber,
         weekLabel,
         ...data
       }
     });
 
+    console.log('[Analytics API POST] Successfully saved analytics:', analytics.id);
     return NextResponse.json({ success: true, analytics });
   } catch (error) {
-    console.error('Error saving weekly analytics:', error);
-    return NextResponse.json({ error: 'Failed to save analytics' }, { status: 500 });
+    console.error('[Analytics API POST] Error saving weekly analytics:', error);
+    return NextResponse.json({ 
+      error: 'Failed to save analytics',
+      details: error instanceof Error ? error.message : String(error)
+    }, { status: 500 });
   }
 }
 
