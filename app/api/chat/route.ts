@@ -6,13 +6,14 @@ export const fetchCache = 'force-no-store';
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY!;
 
-const SYSTEM_PROMPT = `You are The NextGen Healthcare Marketing's friendly 24/7 AI assistant. You help visitors with questions about our services, pricing, and healthcare marketing.
+const SYSTEM_PROMPT = `You are Alex, The NextGen Healthcare Marketing's friendly marketing assistant. You're helpful, human, and genuinely interested in helping healthcare providers grow their practices.
 
 ABOUT THE COMPANY:
-- The NextGen Healthcare Marketing is a specialized digital healthcare marketing firm for healthcare providers
+- The NextGen Healthcare Marketing: specialized digital healthcare marketing for providers
 - Located at 3811 Turtle Creek Blvd, Suite 600, Dallas, TX 75219
 - Email: info@thenextgenhealth.com
 - We serve ERs, urgent care centers, MedSpas, wellness clinics, dental offices, and other healthcare providers
+- Google Partner & Meta Certified with HIPAA-aware practices
 
 SERVICES WE OFFER:
 - SEO & Local Search Optimization
@@ -30,26 +31,50 @@ SERVICES WE OFFER:
 - Marketing Automation with AI
 
 PRICING TIERS:
-- Starter: Starting at $1,500/mo — ideal for solo practitioners, includes SEO, GBP, basic social
-- Growth: Starting at $3,500/mo — multi-location practices, adds PPC, content, email campaigns
+- Starter: Starting at $1,500/mo — solo practitioners, includes SEO, GBP, basic social
+- Growth: Starting at $3,500/mo — multi-location practices, adds PPC, content, email
 - Enterprise: Custom pricing — hospital systems & large groups, full-service with dedicated team
 
+OUR DASHBOARD:
+- One unified dashboard with real data and real results
+- Built for non-technical clients (no need to juggle multiple tools)
+- Combines Google Ads, Meta, SEO, Google Business Profile, and patient metrics
+- Real-time reporting and insights
+- Mobile-friendly access
+- Dramatically simplifies reporting and strategy decisions
+
 KEY DIFFERENTIATORS:
-- Google Partner & Meta Certified
-- HIPAA-aware marketing practices
 - Proven results: 340%+ avg increase in patient inquiries
-- Specialized exclusively in healthcare — we understand HIPAA, medical terminology, and patient acquisition
-- AI-powered marketing automation
+- Specialized exclusively in healthcare
+- HIPAA-aware and compliant
 - Bilingual support (English & Spanish)
+- All analytics in one place — no more switching between tools
+
+TONE & CONVERSATION STYLE:
+- Be warm, conversational, and genuinely helpful
+- Use simple, natural language — sound like a real person
+- Ask follow-up questions to understand their needs (e.g., "What's your biggest marketing challenge right now?")
+- Give substantive answers (NOT short robotic replies)
+- When relevant, mention how our dashboard simplifies reporting and gives them one place for all data
+- Promote the dashboard when discussing analytics, reporting, or multiple marketing channels
+- Suggest booking a free strategy call for detailed recommendations
+- Direct scheduling inquiries to /contact
+- For interested prospects, recommend a demo of our dashboard
+
+WHEN TO MENTION THE DASHBOARD:
+- User asks about analytics or reporting
+- User mentions using multiple tools or platforms
+- User asks about getting visibility into marketing performance
+- User seems interested in simplifying their marketing stack
 
 GUIDELINES:
-- Be warm, professional, and concise (2-3 sentences when possible)
-- Always be helpful and suggest booking a free strategy call for detailed pricing or custom solutions
-- For scheduling, direct them to the /contact page
-- If asked something outside healthcare marketing scope, politely redirect
-- Never share internal processes, proprietary data, or make guarantees about specific results
-- Use simple language, avoid jargon unless the visitor uses it first
-- If unsure, suggest they contact the team via the contact page`;
+- Be concise but substantive (2-4 sentences typical)
+- Always be helpful and suggest next steps
+- If someone asks something outside healthcare marketing, gently redirect to what you can help with
+- Never make specific guarantees, but feel free to reference our 340%+ track record
+- Use examples from healthcare (ERs, urgent care, MedSpas, dental, wellness) when helpful
+- If unsure, suggest they contact the team or book a demo
+- End with a natural follow-up question or CTA when appropriate`;
 
 interface Message {
   role: 'user' | 'assistant';
@@ -69,31 +94,45 @@ function fallbackReply(input: string, language: 'en' | 'es' = 'en'): string {
 
   if (q.includes('price') || q.includes('pricing') || q.includes('cost') || q.includes('precio')) {
     return isEs
-      ? 'Nuestros planes comienzan en $1,500/mes (Starter), $3,500/mes (Growth) y Enterprise personalizado. Si desea una recomendación exacta para su clínica, puede agendar una consulta gratuita en /contact.'
-      : 'Our plans start at $1,500/mo (Starter), $3,500/mo (Growth), and custom Enterprise pricing. For an exact recommendation for your clinic, book a free strategy call at /contact.';
+      ? 'Nuestros planes comienzan en $1,500/mes (Starter), $3,500/mes (Growth) y Enterprise personalizado. Cada plan crece contigo. ¿Qué tipo de centro tienes? Así veo cuál se adapta mejor.'
+      : 'Our plans start at $1,500/mo (Starter), $3,500/mo (Growth), and custom Enterprise pricing. Each tier grows with you. What type of practice do you have? I can suggest the best fit.';
   }
 
   if (q.includes('service') || q.includes('offer') || q.includes('servicio')) {
     return isEs
-      ? 'Ofrecemos SEO local, Google/Meta Ads, diseño web, redes sociales, contenido, campañas de email y automatización de marketing para clínicas. Si me dice su tipo de centro, le sugiero el paquete ideal.'
-      : 'We offer local SEO, Google/Meta Ads, website design, social media, content, email campaigns, and marketing automation for healthcare practices. If you share your clinic type, I can suggest the best package.';
+      ? 'Ofrecemos SEO local, Google/Meta Ads, diseño web HIPAA, redes sociales, contenido, email marketing, automatización y un dashboard unificado. Especializados 100% en healthcare. ¿Cuál de estos es tu mayor reto ahora?'
+      : 'We handle local SEO, Google/Meta Ads, HIPAA-compliant web design, social media, content, email campaigns, marketing automation, and our unified dashboard. We\'re 100% specialized in healthcare. What\'s your biggest challenge right now?';
   }
 
   if (q.includes('book') || q.includes('consult') || q.includes('schedule') || q.includes('consulta') || q.includes('agendar')) {
     return isEs
-      ? 'Puede reservar una consulta estratégica gratuita en la página /contact. Si quiere, también le digo qué información preparar para aprovechar mejor la llamada.'
-      : 'You can book a free strategy consultation on the /contact page. If you’d like, I can also tell you what info to prepare so the call is most useful.';
+      ? 'Perfecto. Puedes agendar una consulta estratégica gratuita en /contact, o si prefieres ver primero nuestro dashboard, también podemos hacer una demo. ¿Qué te interesa más?'
+      : 'Perfect! You can book a free strategy call at /contact, or if you\'d like to see our dashboard first, we can do a demo. What works better for you?';
   }
 
-  if (q.includes('urgent care') || q.includes('er') || q.includes('medspa') || q.includes('clinic') || q.includes('clínica')) {
+  if (q.includes('urgent care') || q.includes('er') || q.includes('medspa') || q.includes('clinic') || q.includes('dental') || q.includes('clínica')) {
     return isEs
-      ? 'Sí, trabajamos con urgent care, ERs, MedSpas y otras clínicas de salud. Adaptamos la estrategia por especialidad, ubicación y objetivos de captación de pacientes.'
-      : 'Yes, we work with urgent care centers, ERs, MedSpas, and other healthcare clinics. We tailor strategy by specialty, location, and patient acquisition goals.';
+      ? 'Sí, trabajamos con urgent cares, ERs, MedSpas, consultórios dentales, clínicas de bienestar. Adaptamos todo por especialidad. Muchos clientes nuestros pasaban de saltar entre 5-6 herramientas a usar nuestro dashboard. ¿Te gustaría ver cómo funciona?'
+      : 'Yes, we work with urgent care centers, ERs, MedSpas, dental offices, wellness clinics — all healthcare specialties. Many of our clients went from juggling 5-6 marketing tools to using our all-in-one dashboard. Would that help you?';
+  }
+
+  // Dashboard & Analytics Keywords
+  if (q.includes('dashboard') || q.includes('analytics') || q.includes('reporting') || q.includes('data')) {
+    return isEs
+      ? 'Exacto, ese es nuestro punto fuerte. 📊 Tenemos un dashboard unificado que te muestra datos reales de Google Ads, Meta, SEO y Google Business Profile todo en un lugar. No más saltar entre múltiples herramientas. ¿Te gustaría ver una demo?'
+      : 'That\'s exactly where we shine! 📊 Our dashboard puts all your marketing data in one place — Google Ads, Meta, SEO, patient metrics, everything. No more juggling multiple tools. Would you like to see a demo?';
+  }
+
+  // Results & Performance Keywords
+  if (q.includes('result') || q.includes('patient') || q.includes('inquir') || q.includes('growth')) {
+    return isEs
+      ? 'Nuestros clientes ven un aumento promedio del 340% en consultas de pacientes. Con nuestro dashboard, tienes total visibility en qué funciona y dónde enfocar presupuesto. ¿Tienes un objetivo de crecimiento específico?'
+      : 'Our clients see an average 340%+ increase in patient inquiries. With our dashboard, you get complete visibility into what\'s working. Do you have a specific growth target in mind?';
   }
 
   return isEs
-    ? 'Gracias por su mensaje. Puedo ayudarle con servicios, precios y estrategia para su clínica. Para una recomendación personalizada, reserve una llamada gratuita en /contact.'
-    : 'Thanks for your message. I can help with services, pricing, and strategy for your practice. For a tailored recommendation, book a free call at /contact.';
+    ? 'Gracias por tu pregunta. Puedo ayudarte con servicios, precios, o cómo nuestro dashboard centraliza todo tu marketing. ¿Hay algo específico en lo que pueda asistirte?'
+    : 'Thanks for reaching out! I can help with services, pricing, or how our dashboard puts all your marketing in one place. What matters most to you right now?';
 }
 
 function summarizeConversation(messages: Message[], language: 'en' | 'es' = 'en') {

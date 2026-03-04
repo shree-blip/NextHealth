@@ -256,10 +256,10 @@ interface SectionInputProps {
   readOnly?: boolean;
 }
 
-function SectionInput({ label, name, type = 'number', value, onChange, step, min = '0', helperText, readOnly = false }: SectionInputProps) {
+function SectionInput({ label, name, type = 'number', value, onChange, step = 'any', min = '0', helperText, readOnly = false }: SectionInputProps) {
   return (
     <div>
-      <label className="block text-sm font-bold mb-2 text-slate-700 dark:text-slate-300">{label}</label>
+      <label className="block text-sm font-semibold mb-2.5 text-slate-700 dark:text-slate-200 transition-colors">{label}</label>
       <input
         type={type}
         name={name}
@@ -268,9 +268,14 @@ function SectionInput({ label, name, type = 'number', value, onChange, step, min
         min={min}
         step={step}
         readOnly={readOnly}
-        className={`w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 dark:text-slate-200 ${readOnly ? 'bg-slate-100 dark:bg-slate-700 cursor-not-allowed' : ''}`}
+        placeholder="0"
+        className={`w-full px-4 py-3 border-2 rounded-xl transition-all font-medium ${
+          readOnly
+            ? 'bg-slate-100 dark:bg-slate-700/50 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 cursor-not-allowed'
+            : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-emerald-500 dark:focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 dark:focus:ring-emerald-500/30 hover:border-slate-300 dark:hover:border-slate-600'
+        }`}
       />
-      {helperText && <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{helperText}</p>}
+      {helperText && <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5">{helperText}</p>}
     </div>
   );
 }
@@ -308,18 +313,18 @@ function MetricsInputGrid({ metrics, onChange }: { metrics: FormMetrics; onChang
   return (
     <div className="space-y-6">
       {/* SECTION 1: Content & SEO */}
-      <div className="p-4 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
-        <h4 className="font-bold text-blue-600 dark:text-blue-400 mb-4 text-sm uppercase tracking-wider">📊 Content & SEO</h4>
+      <div className="p-5 rounded-2xl border border-slate-200 dark:border-slate-700 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/20 dark:to-cyan-950/20 backdrop-blur-sm">
+        <h4 className="font-bold text-blue-700 dark:text-blue-300 mb-4 text-xs uppercase tracking-widest flex items-center gap-2"><span>📊</span> Content & SEO</h4>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <SectionInput label="Blogs Published" name="blogsPublished" value={metrics.blogsPublished} onChange={onChange} />
-          <SectionInput label="Avg Ranking" name="avgRanking" value={metrics.avgRanking} onChange={onChange} step="any" />
+          <SectionInput label="Avg Ranking" name="avgRanking" value={metrics.avgRanking} onChange={onChange} helperText="Supports decimals (e.g., 4.5)" />
           <SectionInput label="Total Traffic" name="totalTraffic" value={metrics.totalTraffic} onChange={onChange} />
         </div>
       </div>
 
       {/* SECTION 2: Google My Business (GMB) */}
-      <div className="p-4 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
-        <h4 className="font-bold text-orange-600 dark:text-orange-400 mb-4 text-sm uppercase tracking-wider">🗺️ Google My Business</h4>
+      <div className="p-5 rounded-2xl border border-slate-200 dark:border-slate-700 bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950/20 dark:to-amber-950/20 backdrop-blur-sm">
+        <h4 className="font-bold text-orange-700 dark:text-orange-300 mb-4 text-xs uppercase tracking-widest flex items-center gap-2"><span>🗺️</span> Google My Business</h4>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <SectionInput label="Calls Requested" name="callsRequested" value={metrics.callsRequested} onChange={onChange} />
           <SectionInput label="Website Visits" name="websiteVisits" value={metrics.websiteVisits} onChange={onChange} />
@@ -328,46 +333,46 @@ function MetricsInputGrid({ metrics, onChange }: { metrics: FormMetrics; onChang
       </div>
 
       {/* SECTION 3: Meta (Facebook/Instagram) */}
-      <div className="p-4 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
-        <h4 className="font-bold text-indigo-600 dark:text-indigo-400 mb-4 text-sm uppercase tracking-wider">📘 Meta (Facebook/Instagram)</h4>
+      <div className="p-5 rounded-2xl border border-slate-200 dark:border-slate-700 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 backdrop-blur-sm">
+        <h4 className="font-bold text-purple-700 dark:text-purple-300 mb-4 text-xs uppercase tracking-widest flex items-center gap-2"><span>📘</span> Meta (Facebook/Instagram)</h4>
         
         {/* Meta Manual Inputs */}
-        <div className="mb-4 pb-4 border-b border-slate-300 dark:border-slate-600">
-          <p className="text-xs font-semibold text-slate-600 dark:text-slate-400 mb-3 uppercase">Manual Inputs</p>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="mb-5 pb-5 border-b border-slate-200 dark:border-slate-700">
+          <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 mb-4 uppercase tracking-wide">📝 Manual Inputs</p>
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
             <SectionInput label="Impressions" name="metaImpressions" value={metrics.metaImpressions} onChange={onChange} />
             <SectionInput label="Clicks" name="metaClicks" value={metrics.metaClicks} onChange={onChange} />
             <SectionInput label="Conversions" name="metaConversions" value={metrics.metaConversions} onChange={onChange} />
-            <SectionInput label="Ad Spend ($)" name="metaAdSpend" value={metrics.metaAdSpend} onChange={onChange} step="any" />
+            <SectionInput label="Ad Spend ($)" name="metaAdSpend" value={metrics.metaAdSpend} onChange={onChange} helperText="Supports decimals (e.g., 125.50)" />
           </div>
         </div>
 
         {/* Meta Auto-Calculated */}
-        <p className="text-xs font-semibold text-slate-600 dark:text-slate-400 mb-3 uppercase">Auto-Calculated</p>
+        <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 mb-4 uppercase tracking-wide">⚙️ Auto-Calculated</p>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <SectionInput label="CTR (%)" name="metaCTR" value={metaCTR.toString()} onChange={onChange} readOnly={true} helperText="(Clicks ÷ Impressions) × 100" />
-          <SectionInput label="CPC ($)" name="metaCPC" value={metaCPC.toString()} onChange={onChange} readOnly={true} helperText="Ad Spend ÷ Clicks" />
-          <SectionInput label="Cost Per Conv ($)" name="metaCostPerConversion" value={metaCostPerConv.toString()} onChange={onChange} readOnly={true} helperText="Ad Spend ÷ Conversions" />
+          <SectionInput label="CPC ($)" name="metaCPC" value={metaCPC.toString()} onChange={onChange} readOnly={true} helperText="Auto: Spend ÷ Clicks" />
+          <SectionInput label="Cost Per Conv ($)" name="metaCostPerConversion" value={metaCostPerConv.toString()} onChange={onChange} readOnly={true} helperText="Auto-calculated" />
         </div>
       </div>
 
       {/* SECTION 4: Google Ads */}
-      <div className="p-4 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
-        <h4 className="font-bold text-red-600 dark:text-red-400 mb-4 text-sm uppercase tracking-wider">🔍 Google Ads (Search & Display)</h4>
+      <div className="p-5 rounded-2xl border border-slate-200 dark:border-slate-700 bg-gradient-to-br from-red-50 to-orange-50 dark:from-red-950/20 dark:to-orange-950/20 backdrop-blur-sm">
+        <h4 className="font-bold text-red-700 dark:text-red-300 mb-4 text-xs uppercase tracking-widest flex items-center gap-2"><span>🔍</span> Google Ads (Search & Display)</h4>
         
         {/* Google Manual Inputs */}
-        <div className="mb-4 pb-4 border-b border-slate-300 dark:border-slate-600">
-          <p className="text-xs font-semibold text-slate-600 dark:text-slate-400 mb-3 uppercase">Manual Inputs</p>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="mb-5 pb-5 border-b border-slate-200 dark:border-slate-700">
+          <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 mb-4 uppercase tracking-wide">📝 Manual Inputs</p>
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
             <SectionInput label="Impressions" name="googleImpressions" value={metrics.googleImpressions} onChange={onChange} />
             <SectionInput label="Clicks" name="googleClicks" value={metrics.googleClicks} onChange={onChange} />
             <SectionInput label="Conversions" name="googleConversions" value={metrics.googleConversions} onChange={onChange} />
-            <SectionInput label="Total Cost ($)" name="googleTotalCost" value={metrics.googleTotalCost} onChange={onChange} step="any" />
+            <SectionInput label="Total Cost ($)" name="googleTotalCost" value={metrics.googleTotalCost} onChange={onChange} helperText="Supports decimals (e.g., 250.75)" />
           </div>
         </div>
 
         {/* Google Auto-Calculated */}
-        <p className="text-xs font-semibold text-slate-600 dark:text-slate-400 mb-3 uppercase">Auto-Calculated</p>
+        <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 mb-4 uppercase tracking-wide">⚙️ Auto-Calculated</p>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <SectionInput label="CTR (%)" name="googleCTR" value={googleCTR.toString()} onChange={onChange} readOnly={true} helperText="(Clicks ÷ Impressions) × 100" />
           <SectionInput label="CPC ($)" name="googleCPC" value={googleCPC.toString()} onChange={onChange} readOnly={true} helperText="Total Cost ÷ Clicks" />
@@ -377,34 +382,34 @@ function MetricsInputGrid({ metrics, onChange }: { metrics: FormMetrics; onChang
       </div>
 
       {/* SECTION 5: Social Media */}
-      <div className="p-4 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
-        <h4 className="font-bold text-pink-600 dark:text-pink-400 mb-4 text-sm uppercase tracking-wider">📱 Social Media</h4>
+      <div className="p-5 rounded-2xl border border-slate-200 dark:border-slate-700 bg-gradient-to-br from-pink-50 to-rose-50 dark:from-pink-950/20 dark:to-rose-950/20 backdrop-blur-sm">
+        <h4 className="font-bold text-pink-700 dark:text-pink-300 mb-4 text-xs uppercase tracking-widest flex items-center gap-2"><span>📱</span> Social Media</h4>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <SectionInput label="Posts" name="socialPosts" value={metrics.socialPosts} onChange={onChange} />
-          <SectionInput label="Views" name="socialViews" value={metrics.socialViews} onChange={onChange} />
+          <SectionInput label="Views" name="socialViews" value={metrics.socialViews} onChange={onChange} helperText="Supports decimals (e.g., 1250.5)" />
         </div>
       </div>
 
       {/* SECTION 6: Patient Metrics */}
-      <div className="p-4 rounded-lg border border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-950/50">
-        <h4 className="font-bold text-emerald-600 dark:text-emerald-400 mb-4 text-sm uppercase tracking-wider">👥 Patient Metrics</h4>
+      <div className="p-5 rounded-2xl border border-slate-200 dark:border-slate-700 bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/20 dark:to-teal-950/20 backdrop-blur-sm">
+        <h4 className="font-bold text-emerald-700 dark:text-emerald-300 mb-4 text-xs uppercase tracking-widest flex items-center gap-2"><span>👥</span> Patient Metrics</h4>
         
         {/* Manual Inputs */}
-        <div className="mb-4 pb-4 border-b border-emerald-300 dark:border-emerald-700">
-          <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-300 mb-3 uppercase">Manual Inputs</p>
+        <div className="mb-5 pb-5 border-b border-slate-200 dark:border-slate-700">
+          <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 mb-4 uppercase tracking-wide">📝 Manual Inputs</p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <SectionInput label="Patient Count" name="patientCount" value={metrics.patientCount} onChange={onChange} helperText="Total patients for the week" />
-            <SectionInput label="Digital Conversion" name="digitalConversion" value={metrics.digitalConversion} onChange={onChange} />
+            <SectionInput label="Digital Conversion" name="digitalConversion" value={metrics.digitalConversion} onChange={onChange} helperText="Supports decimals (e.g., 45.5)" />
           </div>
         </div>
 
         {/* Auto-Calculated */}
-        <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-300 mb-3 uppercase">Auto-Calculated</p>
+        <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 mb-4 uppercase tracking-wide">⚙️ Auto-Calculated</p>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <SectionInput label="Daily Patient Avg" name="dailyPatientAvg" value={dailyPatientAvg} onChange={onChange} readOnly={true} helperText="Patient Count ÷ 7" />
           <SectionInput label="Conversion Rate (%)" name="conversionRate" value={conversionRate.toString()} onChange={onChange} readOnly={true} helperText="(Digital Conversion ÷ Patient Count) × 100" />
         </div>
-        <p className="text-xs text-emerald-700 dark:text-emerald-300 mt-3 p-2 bg-emerald-100 dark:bg-emerald-900/30 rounded">
+        <p className="text-xs text-emerald-700 dark:text-emerald-300 mt-3 p-3 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg border border-emerald-200 dark:border-emerald-800/50">
           ℹ️ All calculated fields update automatically when you change the manual inputs above.
         </p>
       </div>
@@ -551,9 +556,9 @@ export default function AnalyticsForm({ onSaved }: { onSaved?: () => void } = {}
     try {
       const payload: Record<string, any> = {
         clinicId: selectedClinicId,
-        year: selectedWeek.year,
-        month: selectedWeek.month,
-        weekNumber: selectedWeek.weekNumber,
+        year: Number(selectedWeek.year),
+        month: Number(selectedWeek.month),
+        weekNumber: Number(selectedWeek.weekNumber),
         weekLabel: selectedWeek.weekLabel,
       };
 
@@ -568,6 +573,8 @@ export default function AnalyticsForm({ onSaved }: { onSaved?: () => void } = {}
         }
       }
 
+      console.log('[Weekly Analytics Entry] Saving payload:', payload);
+
       const res = await fetch('/api/analytics/weekly', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -576,10 +583,12 @@ export default function AnalyticsForm({ onSaved }: { onSaved?: () => void } = {}
 
       if (!res.ok) {
         const err = await res.json();
+        console.error('[Weekly Analytics Entry] API Error:', err);
         throw new Error(err.error || 'Failed to save analytics');
       }
 
       const result = await res.json();
+      console.log('[Weekly Analytics Entry] Save successful:', result);
       const saved = result.analytics;
 
       if (saved) {
@@ -588,20 +597,29 @@ export default function AnalyticsForm({ onSaved }: { onSaved?: () => void } = {}
 
       setSubmitted(true);
 
+      // Wait briefly for database to settle, then refresh data
+      await new Promise(resolve => setTimeout(resolve, 300));
+
       const refreshRes = await fetch(`/api/analytics/weekly?clinicId=${selectedClinicId}`);
+      if (!refreshRes.ok) {
+        throw new Error('Failed to refresh data');
+      }
+
       const refreshData = await refreshRes.json();
+      console.log('[Weekly Analytics Entry] Refreshed data:', refreshData);
       setExistingData(refreshData.analytics || []);
       onSaved?.();
 
       socketRef.current?.emit('weekly_analytics_saved', {
         clinicId: selectedClinicId,
-        year: selectedWeek.year,
-        month: selectedWeek.month,
-        weekNumber: selectedWeek.weekNumber,
+        year: Number(selectedWeek.year),
+        month: Number(selectedWeek.month),
+        weekNumber: Number(selectedWeek.weekNumber),
       });
 
       setTimeout(() => setSubmitted(false), 2500);
     } catch (err: any) {
+      console.error('[Weekly Analytics Entry] Error:', err);
       setError(err.message || 'Error saving analytics');
     } finally {
       setLoading(false);
@@ -631,11 +649,12 @@ export default function AnalyticsForm({ onSaved }: { onSaved?: () => void } = {}
     setEditLoading(true);
 
     try {
+      // Ensure numeric fields are properly typed as numbers
       const payload: Record<string, any> = {
         clinicId: selectedClinicId,
-        year: editingRecord.year,
-        month: editingRecord.month,
-        weekNumber: editingRecord.weekNumber,
+        year: Number(editingRecord.year),
+        month: Number(editingRecord.month),
+        weekNumber: Number(editingRecord.weekNumber),
         weekLabel: editingRecord.weekLabel,
       };
 
@@ -650,6 +669,8 @@ export default function AnalyticsForm({ onSaved }: { onSaved?: () => void } = {}
         }
       }
 
+      console.log('[Weekly History Edit] Saving payload:', payload);
+
       const res = await fetch('/api/analytics/weekly', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -658,27 +679,40 @@ export default function AnalyticsForm({ onSaved }: { onSaved?: () => void } = {}
 
       if (!res.ok) {
         const err = await res.json();
+        console.error('[Weekly History Edit] API Error:', err);
         throw new Error(err.error || 'Failed to save analytics');
       }
 
+      const saveResult = await res.json();
+      console.log('[Weekly History Edit] Save successful:', saveResult);
+
       setEditSuccess(true);
 
+      // Wait briefly for database to settle, then refresh data
+      await new Promise(resolve => setTimeout(resolve, 300));
+
       const refreshRes = await fetch(`/api/analytics/weekly?clinicId=${selectedClinicId}`);
+      if (!refreshRes.ok) {
+        throw new Error('Failed to refresh data');
+      }
+
       const refreshData = await refreshRes.json();
+      console.log('[Weekly History Edit] Refreshed data:', refreshData);
       setExistingData(refreshData.analytics || []);
       onSaved?.();
 
       socketRef.current?.emit('weekly_analytics_saved', {
         clinicId: selectedClinicId,
-        year: editingRecord.year,
-        month: editingRecord.month,
-        weekNumber: editingRecord.weekNumber,
+        year: Number(editingRecord.year),
+        month: Number(editingRecord.month),
+        weekNumber: Number(editingRecord.weekNumber),
       });
 
       setTimeout(() => {
         setShowEditModal(false);
       }, 1500);
     } catch (err: any) {
+      console.error('[Weekly History Edit] Error:', err);
       setEditError(err.message || 'Error saving analytics');
     } finally {
       setEditLoading(false);
@@ -706,60 +740,85 @@ export default function AnalyticsForm({ onSaved }: { onSaved?: () => void } = {}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
             onClick={() => !editLoading && setShowEditModal(false)}
           >
             <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              transition={{ type: 'spring', damping: 30, stiffness: 400, duration: 0.2 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-white dark:bg-slate-900 rounded-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+              className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl dark:border-2 dark:border-slate-700/60 w-full max-w-3xl max-h-[90vh] overflow-y-auto"
             >
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold">{editingRecord.weekLabel}</h2>
+              {/* Modal Header with Gradient */}
+              <div className="sticky top-0 bg-gradient-to-r from-cyan-50 to-blue-50 dark:from-cyan-950/30 dark:to-blue-950/30 rounded-t-3xl px-6 py-5 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between gap-4 z-10">
+                <div className="flex items-center gap-3">
+                  <span className="text-3xl">📅</span>
+                  <div>
+                    <h2 className="text-xl font-bold text-slate-900 dark:text-white">{editingRecord.weekLabel}</h2>
+                    <p className="text-xs text-slate-600 dark:text-slate-400">Edit weekly metrics and sync instantly</p>
+                  </div>
+                </div>
                 <button
                   onClick={() => setShowEditModal(false)}
                   disabled={editLoading}
-                  className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg disabled:opacity-50"
+                  className="p-2.5 hover:bg-cyan-200/40 dark:hover:bg-cyan-900/40 rounded-full disabled:opacity-50 transition-colors"
                 >
-                  <X className="h-5 w-5" />
+                  <X className="h-6 w-6 text-slate-600 dark:text-slate-400" />
                 </button>
               </div>
 
+              {/* Error Message */}
               {editError && (
-                <div className="flex items-center gap-3 p-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl mb-4 text-red-700 dark:text-red-300">
-                  <AlertCircle className="h-5 w-5 shrink-0" />
-                  <span className="font-semibold text-sm">{editError}</span>
+                <div className="mx-6 mt-5 flex items-start gap-3 p-4 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50 rounded-2xl text-red-700 dark:text-red-300 animate-in fade-in">
+                  <AlertCircle className="h-5 w-5 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-semibold text-sm">{editError}</p>
+                  </div>
                 </div>
               )}
 
+              {/* Success Message */}
               {editSuccess && (
-                <div className="flex items-center gap-3 p-4 bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 rounded-xl mb-4 text-emerald-700 dark:text-emerald-300">
-                  <Check className="h-5 w-5 shrink-0" />
-                  <span className="font-semibold text-sm">Saved successfully! Closes now...</span>
+                <div className="mx-6 mt-5 flex items-start gap-3 p-4 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/50 rounded-2xl text-emerald-700 dark:text-emerald-300 animate-in fade-in">
+                  <Check className="h-5 w-5 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-semibold text-sm">✓ Saved successfully! Data syncing to dashboards...</p>
+                  </div>
                 </div>
               )}
 
-              <form onSubmit={handleEditSubmit} className="space-y-6">
+              <form onSubmit={handleEditSubmit} className="space-y-6 px-6 py-6">
                 <MetricsInputGrid metrics={editMetrics} onChange={handleEditMetricChange} />
 
-                <div className="flex gap-3 pt-4 border-t border-slate-200 dark:border-slate-700">
-                  <button
-                    type="submit"
-                    disabled={editLoading}
-                    className="flex-1 bg-emerald-500 text-black font-bold py-3 rounded-lg hover:bg-emerald-400 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
-                  >
-                    {editLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-                    {editLoading ? 'Saving...' : 'Save Changes'}
-                  </button>
+                {/* Modern Footer with Split Layout */}
+                <div className="flex gap-4 pt-6 border-t border-slate-200 dark:border-slate-700">
                   <button
                     type="button"
                     onClick={() => setShowEditModal(false)}
                     disabled={editLoading}
-                    className="px-6 py-3 bg-slate-200 dark:bg-slate-700 rounded-lg hover:bg-slate-300 dark:hover:bg-slate-600 transition-all font-bold disabled:opacity-50"
+                    className="px-6 py-3 bg-slate-100 dark:bg-slate-800/60 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed border border-slate-200 dark:border-slate-700"
                   >
                     Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={editLoading}
+                    className="flex-1 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 dark:from-emerald-600 dark:to-teal-600 dark:hover:from-emerald-500 dark:hover:to-teal-500 text-white font-bold py-3 px-6 rounded-xl flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
+                  >
+                    {editLoading ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <Check className="h-4 w-4" />
+                        Save Changes
+                      </>
+                    )}
                   </button>
                 </div>
               </form>
@@ -901,7 +960,7 @@ export default function AnalyticsForm({ onSaved }: { onSaved?: () => void } = {}
         <button
           type="submit"
           disabled={loading || isLoadingWeekData}
-          className="w-full bg-emerald-500 text-black font-bold py-4 rounded-2xl hover:bg-emerald-400 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+          className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 dark:from-emerald-600 dark:to-teal-600 dark:hover:from-emerald-500 dark:hover:to-teal-500 text-white font-bold py-4 px-6 rounded-2xl shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {loading ? (
             <>
@@ -928,11 +987,11 @@ export default function AnalyticsForm({ onSaved }: { onSaved?: () => void } = {}
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-slate-200 dark:border-slate-700">
-                  <th className="text-left py-3 px-3 font-bold">Week</th>
-                  <th className="text-left py-3 px-3 font-bold">Traffic</th>
-                  <th className="text-left py-3 px-3 font-bold">Blogs</th>
-                  <th className="text-left py-3 px-3 font-bold">Calls</th>
-                  <th className="text-left py-3 px-3 font-bold">Action</th>
+                  <th className="text-left py-3 px-3 font-bold text-slate-700 dark:text-slate-300">Week</th>
+                  <th className="text-left py-3 px-3 font-bold text-slate-700 dark:text-slate-300">Traffic</th>
+                  <th className="text-left py-3 px-3 font-bold text-slate-700 dark:text-slate-300">Blogs</th>
+                  <th className="text-left py-3 px-3 font-bold text-slate-700 dark:text-slate-300">Calls</th>
+                  <th className="text-left py-3 px-3 font-bold text-slate-700 dark:text-slate-300">Action</th>
                 </tr>
               </thead>
               <tbody>

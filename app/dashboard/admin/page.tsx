@@ -1568,7 +1568,7 @@ function AdminDashboardContent() {
               <button
                 onClick={handleGmbConnect}
                 disabled={gmbState.connecting || gmbState.loading}
-                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-blue-500 text-white text-xs font-bold hover:bg-blue-600 disabled:opacity-50"
+                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-500 text-white text-xs font-bold disabled:opacity-50 transition-colors"
               >
                 <Link2 className="h-3.5 w-3.5" />
                 {gmbState.connection ? 'Reconnect Google' : 'Connect Google'}
@@ -2176,7 +2176,7 @@ function ContentForSection(props: {
               </button>
               <button 
                 onClick={onAddClinic}
-                className="flex items-center gap-2 bg-blue-500 text-white px-6 py-3 rounded-xl font-bold hover:bg-blue-400 transition-all"
+                className="flex items-center gap-2 bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-500 text-white px-6 py-3 rounded-xl font-bold transition-all"
               >
                 <Plus className="h-5 w-5" /> {t('New Clinic')}
               </button>
@@ -2285,13 +2285,13 @@ function ContentForSection(props: {
                               </button>
                               <button 
                                 onClick={() => onEditClinic(clinic)}
-                                className="text-xs bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-400 transition-colors font-bold"
+                                className="text-xs bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-500 text-white px-3 py-1 rounded transition-colors font-bold"
                               >
                                 Edit
                               </button>
                               <button 
                                 onClick={() => onDeleteClinic(clinic.id)}
-                                className="text-xs bg-red-500 text-white px-3 py-1 rounded hover:bg-red-400 transition-colors font-bold"
+                                className="text-xs bg-red-500 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-500 text-white px-3 py-1 rounded transition-colors font-bold"
                               >
                                 Delete
                               </button>

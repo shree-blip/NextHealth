@@ -54,8 +54,8 @@ export default function ChatBot() {
         id: 'greeting',
         role: 'assistant',
         content: language === 'es'
-          ? '¡Hola! 👋 Soy el asistente de The NextGen. Estoy disponible 24/7 para ayudarle con preguntas sobre nuestros servicios de marketing médico. ¿En qué puedo ayudarle hoy?'
-          : "Hi there! 👋 I'm The NextGen's AI assistant. I'm available 24/7 to help with questions about our healthcare marketing services. How can I help you today?",
+          ? '¡Hola! 👋 Soy Alex, tu asistente de marketing médico. Estoy aquí para responder cualquier pregunta sobre nuestros servicios, planes de precios, o cómo podemos ayudar a tu clínica a crecer. ¿Por dónde empezamos?'
+          : "Hey there! 👋 I'm Alex, your healthcare marketing assistant. I'm here to answer questions about our services, pricing, how we help clinics grow, or anything else you'd like to know. What can I help with?",
         timestamp: new Date(),
       };
       setMessages([greeting]);
@@ -173,7 +173,7 @@ export default function ChatBot() {
             aria-label="Open chat"
           >
             <MessageCircle className="h-5 w-5" />
-            <span className="text-sm font-bold hidden sm:inline">{language === 'es' ? 'Chat 24/7' : 'Chat 24/7'}</span>
+            <span className="text-sm font-bold hidden sm:inline">{language === 'es' ? 'Chat con Alex' : 'Chat with Alex'}</span>
             {/* Pulse ring */}
             <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-300 opacity-75" />
@@ -215,10 +215,10 @@ export default function ChatBot() {
                   <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-400 rounded-full border-2 border-emerald-600" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-sm">The NextGen Assistant</h3>
+                  <h3 className="font-bold text-sm">Alex</h3>
                   <p className="text-[11px] text-emerald-100 flex items-center gap-1">
                     <Sparkles className="h-3 w-3" />
-                    {language === 'es' ? 'IA · En línea 24/7' : 'AI-Powered · Online 24/7'}
+                    {language === 'es' ? 'Asistente de Marketing' : 'Marketing Assistant'}
                   </p>
                 </div>
               </div>

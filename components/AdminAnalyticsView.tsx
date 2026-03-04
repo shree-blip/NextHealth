@@ -430,7 +430,7 @@ export default function AdminAnalyticsView({ isDark, refreshTrigger }: AdminAnal
             onClick={() => setFilterPreset('compare_last_week')}
             className={`px-3 py-2 rounded-lg text-sm font-semibold border transition-colors ${
               filterPreset === 'compare_last_week'
-                ? 'bg-blue-500 text-white border-blue-500'
+                ? 'bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-500 text-white border-blue-500'
                 : isDark
                   ? 'bg-slate-900 border-slate-700 text-slate-300 hover:border-blue-500'
                   : 'bg-white border-slate-200 text-slate-700 hover:border-blue-500'
@@ -442,7 +442,7 @@ export default function AdminAnalyticsView({ isDark, refreshTrigger }: AdminAnal
             onClick={() => setFilterPreset('compare_last_month')}
             className={`px-3 py-2 rounded-lg text-sm font-semibold border transition-colors ${
               filterPreset === 'compare_last_month'
-                ? 'bg-blue-500 text-white border-blue-500'
+                ? 'bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-500 text-white border-blue-500'
                 : isDark
                   ? 'bg-slate-900 border-slate-700 text-slate-300 hover:border-blue-500'
                   : 'bg-white border-slate-200 text-slate-700 hover:border-blue-500'
