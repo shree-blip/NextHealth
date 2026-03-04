@@ -723,8 +723,10 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false }:
             </div>
           )}
         </div>
+      )}
 
-        {/* Report Header */}
+      {/* Report Header */}
+      <div className={`rounded-2xl p-6 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <button
