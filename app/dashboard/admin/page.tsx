@@ -48,6 +48,8 @@ import AdminAnalyticsView from '@/components/AdminAnalyticsView';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { useSitePreferences } from '@/components/SitePreferencesProvider';
+import AdminSettings from '@/components/AdminSettings';
+import { useAdminTranslation } from '@/hooks/useAdminTranslation';
 import Image from 'next/image';
 
 // Modal Component
@@ -237,6 +239,7 @@ function AdminDashboardContent() {
   const [selectedClinic, setSelectedClinic] = useState('');
   const { theme } = useSitePreferences();
   const dark = theme === 'dark';
+  const { t } = useAdminTranslation();
 
   // Modal states
   const [showAddClientModal, setShowAddClientModal] = useState(false);
@@ -722,50 +725,53 @@ function AdminDashboardContent() {
         </div>
 
         <nav className="space-y-2 flex-grow">
-          <NavItem icon={LayoutDashboard} label="Global Stats" active={section==='Global Stats'} onClick={() => { navigateToSection('Global Stats'); setShowMobileMenu(false); }} dark={dark} />
-          <NavItem icon={BarChart3} label="Analytics" active={section==='Analytics'} onClick={() => { navigateToSection('Analytics'); setShowMobileMenu(false); }} dark={dark} />
-          <NavItem icon={Users} label="Staff Management" active={section==='Staff Management'} onClick={() => { navigateToSection('Staff Management'); setShowMobileMenu(false); }} dark={dark} />
-          <NavItem icon={Building2} label="Registered Clients" active={section==='Registered Clients'} onClick={() => { navigateToSection('Registered Clients'); setShowMobileMenu(false); }} dark={dark} />
-          <NavItem icon={Globe} label="Client Sites" active={section==='Client Sites'} onClick={() => { navigateToSection('Client Sites'); setShowMobileMenu(false); }} dark={dark} />
-          <NavItem icon={Cpu} label="AI Models" active={section==='AI Models'} onClick={() => { navigateToSection('AI Models'); setShowMobileMenu(false); }} dark={dark} />
-          <NavItem icon={Database} label="Lead Database" active={section==='Lead Database'} onClick={() => { navigateToSection('Lead Database'); setShowMobileMenu(false); }} dark={dark} />
-          <NavItem icon={ShieldAlert} label="Security Logs" active={section==='Security Logs'} onClick={() => { navigateToSection('Security Logs'); setShowMobileMenu(false); }} dark={dark} />
-          <NavItem icon={Settings} label="System Config" active={section==='System Config'} onClick={() => { navigateToSection('System Config'); setShowMobileMenu(false); }} dark={dark} />
-          <NavItem icon={User} label="My Profile" active={section==='My Profile'} onClick={() => { navigateToSection('My Profile'); setShowMobileMenu(false); }} dark={dark} />
-          <NavItem icon={Lock} label="Settings" active={section==='Settings'} onClick={() => { navigateToSection('Settings'); setShowMobileMenu(false); }} dark={dark} />
-          <NavItem icon={FileText} label="Blog Management" active={section==='Blog Management'} onClick={() => { navigateToSection('Blog Management'); setShowMobileMenu(false); }} dark={dark} />
-          <NavItem icon={Newspaper} label="News Management" active={section==='News Management'} onClick={() => { navigateToSection('News Management'); setShowMobileMenu(false); }} dark={dark} />
+          <NavItem icon={LayoutDashboard} label={t('Global Stats')} active={section==='Global Stats'} onClick={() => { navigateToSection('Global Stats'); setShowMobileMenu(false); }} dark={dark} />
+          <NavItem icon={BarChart3} label={t('Analytics')} active={section==='Analytics'} onClick={() => { navigateToSection('Analytics'); setShowMobileMenu(false); }} dark={dark} />
+          <NavItem icon={Users} label={t('Staff Management')} active={section==='Staff Management'} onClick={() => { navigateToSection('Staff Management'); setShowMobileMenu(false); }} dark={dark} />
+          <NavItem icon={Building2} label={t('Registered Clients')} active={section==='Registered Clients'} onClick={() => { navigateToSection('Registered Clients'); setShowMobileMenu(false); }} dark={dark} />
+          <NavItem icon={Globe} label={t('Client Sites')} active={section==='Client Sites'} onClick={() => { navigateToSection('Client Sites'); setShowMobileMenu(false); }} dark={dark} />
+          <NavItem icon={Cpu} label={t('AI Models')} active={section==='AI Models'} onClick={() => { navigateToSection('AI Models'); setShowMobileMenu(false); }} dark={dark} />
+          <NavItem icon={Database} label={t('Lead Database')} active={section==='Lead Database'} onClick={() => { navigateToSection('Lead Database'); setShowMobileMenu(false); }} dark={dark} />
+          <NavItem icon={ShieldAlert} label={t('Security Logs')} active={section==='Security Logs'} onClick={() => { navigateToSection('Security Logs'); setShowMobileMenu(false); }} dark={dark} />
+          <NavItem icon={Settings} label={t('System Config')} active={section==='System Config'} onClick={() => { navigateToSection('System Config'); setShowMobileMenu(false); }} dark={dark} />
+          <NavItem icon={User} label={t('My Profile')} active={section==='My Profile'} onClick={() => { navigateToSection('My Profile'); setShowMobileMenu(false); }} dark={dark} />
+          <NavItem icon={Lock} label={t('Settings')} active={section==='Settings'} onClick={() => { navigateToSection('Settings'); setShowMobileMenu(false); }} dark={dark} />
+          <NavItem icon={FileText} label={t('Blog Management')} active={section==='Blog Management'} onClick={() => { navigateToSection('Blog Management'); setShowMobileMenu(false); }} dark={dark} />
+          <NavItem icon={Newspaper} label={t('News Management')} active={section==='News Management'} onClick={() => { navigateToSection('News Management'); setShowMobileMenu(false); }} dark={dark} />
           <Link href="/dashboard/admin/chat-reports" className={`w-full text-left flex items-center gap-3 p-3 rounded-xl transition-all ${dark ? 'text-slate-400 hover:text-white hover:bg-slate-800' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100'}`}>
             <MessageSquare className="h-5 w-5" />
-            <span className="text-sm">Chat Reports</span>
+            <span className="text-sm">{t('Chat Reports')}</span>
           </Link>
           <Link href="/dashboard/admin/leads" className={`w-full text-left flex items-center gap-3 p-3 rounded-xl transition-all ${dark ? 'text-slate-400 hover:text-white hover:bg-slate-800' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100'}`}>
             <Users className="h-5 w-5" />
-            <span className="text-sm">Contact Leads</span>
+            <span className="text-sm">{t('Contact Leads')}</span>
           </Link>
           <Link href="/dashboard/admin/subscribers" className={`w-full text-left flex items-center gap-3 p-3 rounded-xl transition-all ${dark ? 'text-slate-400 hover:text-white hover:bg-slate-800' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100'}`}>
             <Mail className="h-5 w-5" />
-            <span className="text-sm">Newsletter Subscribers</span>
+            <span className="text-sm">{t('Newsletter Subscribers')}</span>
           </Link>
         </nav>
 
         <button onClick={handleLogout} className={`flex items-center gap-3 transition-colors p-3 ${dark ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-slate-900'}`}>
           <LogOut className="h-5 w-5" />
-          <span className="text-sm font-bold">Logout</span>
+          <span className="text-sm font-bold">{t('Logout')}</span>
         </button>
       </aside>
 
       {/* Main Content */}
       <main className="flex-grow p-8 overflow-y-auto flex flex-col">
-        {/* Mobile Menu Button */}
-        <button
-          onClick={() => setShowMobileMenu(!showMobileMenu)}
-          className="lg:hidden mb-6 p-2 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-800 self-start"
-        >
-          <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-          </svg>
-        </button>
+        {/* Header with Mobile Menu Button and Settings */}
+        <div className="flex items-center justify-between mb-6 lg:mb-8">
+          <button
+            onClick={() => setShowMobileMenu(!showMobileMenu)}
+            className="lg:hidden p-2 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-800"
+          >
+            <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+          <AdminSettings />
+        </div>
 
         <div className="flex-grow">
         <ContentForSection
@@ -800,6 +806,7 @@ function AdminDashboardContent() {
           onRoleUpdated={(updatedUser: any) => {
             setUsers(prev => prev.map(u => (u.id === updatedUser.id ? { ...u, role: updatedUser.role } : u)));
           }}
+          t={t}
         />
         </div>
       </main>
@@ -1516,6 +1523,7 @@ function ContentForSection(props: {
   analyticsRefreshKey: number;
   setAnalyticsRefreshKey: React.Dispatch<React.SetStateAction<number>>;
   onRoleUpdated: (updatedUser: any) => void;
+  t: (key: string) => string;
 }) {
   const {
     section,
@@ -1541,6 +1549,7 @@ function ContentForSection(props: {
     analyticsRefreshKey,
     setAnalyticsRefreshKey,
     onRoleUpdated,
+    t,
   } = props;
 
   switch(section) {
@@ -1549,35 +1558,35 @@ function ContentForSection(props: {
         <>
           <header className="flex items-center justify-between mb-12">
             <div>
-              <h1 className="text-[20px] font-bold mb-1">Command Center</h1>
-              <p className="text-slate-500 dark:text-slate-400">Welcome, {user.name}. System health is optimal.</p>
+              <h1 className="text-[20px] font-bold mb-1">{t('Command Center')}</h1>
+              <p className="text-slate-500 dark:text-slate-400">{t('Welcome')}, {user.name}. {t('System health is optimal')}.</p>
             </div>
             <div className="flex gap-3">
               <button 
                 onClick={onAddClient}
                 className="flex items-center gap-2 bg-emerald-500 text-black px-6 py-3 rounded-xl font-bold hover:bg-emerald-400 transition-all"
               >
-                <Plus className="h-5 w-5" /> New User
+                <Plus className="h-5 w-5" /> {t('New User')}
               </button>
               <button 
                 onClick={onAddClinic}
                 className="flex items-center gap-2 bg-blue-500 text-white px-6 py-3 rounded-xl font-bold hover:bg-blue-400 transition-all"
               >
-                <Plus className="h-5 w-5" /> New Clinic
+                <Plus className="h-5 w-5" /> {t('New Clinic')}
               </button>
             </div>
           </header>
 
           {/* Real-time Clinic Management (same as before) */}
           <div className="glass rounded-[2.5rem] p-8 border border-slate-200 dark:border-slate-700 mb-12">
-            <h3 className="text-xl font-bold mb-6">Assign Clinics to Clients</h3>
+            <h3 className="text-xl font-bold mb-6">{t('Assign Clinics to Clients')}</h3>
             <div className="flex flex-wrap gap-4 mb-8">
               <select 
                 className="bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 dark:text-slate-200 focus:outline-none focus:border-emerald-500 min-w-[200px]"
                 value={selectedUser}
                 onChange={(e) => setSelectedUser(e.target.value)}
               >
-                <option value="">Select Client User</option>
+                <option value="">{t('Select Client User')}</option>
                 {users.filter(u => u.role === 'client').map(u => (
                   <option key={u.id} value={u.id}>{u.name} ({u.email})</option>
                 ))}
@@ -1587,7 +1596,7 @@ function ContentForSection(props: {
                 value={selectedClinic}
                 onChange={(e) => setSelectedClinic(e.target.value)}
               >
-                <option value="">Select Clinic/ER</option>
+                <option value="">{t('Select Clinic/ER')}</option>
                 {clinics.map(c => (
                   <option key={c.id} value={c.id}>{c.name} - {c.location}</option>
                 ))}
