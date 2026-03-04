@@ -1,5 +1,6 @@
 'use client';
 import { motion } from 'framer-motion';
+import Image from 'next/image';
 import { useSitePreferences } from '@/components/SitePreferencesProvider';
 
 const steps = [
@@ -84,13 +85,14 @@ export default function NexHealthApproach() {
                   </div>
                   
                   {/* Image */}
-                  <div className="mb-4 rounded-lg overflow-hidden">
-                    <img
+                  <div className="mb-4 rounded-lg overflow-hidden relative h-32">
+                    <Image
                       src={step.image}
                       alt={step.title}
+                      fill
                       loading="lazy"
-                      decoding="async"
-                      className="w-full h-32 object-cover"
+                      sizes="(min-width: 1024px) 18vw, (min-width: 768px) 45vw, 100vw"
+                      className="object-cover"
                     />
                   </div>
                   
