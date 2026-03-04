@@ -220,7 +220,8 @@ export default function ClientAnalyticsView({ refreshTrigger }: { refreshTrigger
         setSelectedYear(String(latestWeek.year));
         setSelectedMonth(String(latestWeek.month));
         setSelectedWeek(String(latestWeek.weekNumber));
-        setDateFilter(latestWeek.weekLabel);
+        // Don't set dateFilter - let numeric filters handle matching
+        setDateFilter('');
       } else {
         setSelectedYear('all');
         setSelectedMonth('all');
@@ -375,6 +376,8 @@ export default function ClientAnalyticsView({ refreshTrigger }: { refreshTrigger
     googleSpend: acc.googleSpend + week.googleTotalCost,
     socialViews: acc.socialViews + week.socialViews,
   }), { traffic: 0, blogs: 0, calls: 0, metaSpend: 0, googleSpend: 0, socialViews: 0 });
+
+  console.log('[Client Analytics] Filtered', filteredAnalytics.length, 'weeks, Totals:', totals);
 
   // Determine spend label based on filter level
   const getSpendLabel = () => {
