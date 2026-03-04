@@ -10,7 +10,7 @@ import { Check, BarChart, Clock, Users, ShieldCheck } from 'lucide-react';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Healthcare Marketing Pricing & Retainers | The NextGen Healthcare Marketing',
+  title: 'Healthcare Marketing Pricing & Retainers',
   description: 'Transparent pricing for healthcare marketing and clinical automation. View our retainer models for Wellness Clinics, Urgent Cares, and ERs in Texas.',
   alternates: {
     canonical: 'https://thenextgenhealth.com/pricing',

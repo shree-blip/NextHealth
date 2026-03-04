@@ -10,7 +10,7 @@ import { HeartPulse, Stethoscope, Activity, ShieldPlus, Target, TrendingUp, User
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Marketing for ERs, Urgent Cares & Wellness Clinics | The NextGen Healthcare Marketing',
+  title: 'Healthcare Industry Marketing Solutions',
   description: 'Specialized marketing strategies for Freestanding ERs, Urgent Care centers, and Wellness & Longevity clinics across Texas. Dominate local search and acquire high-acuity patients.',
   alternates: {
     canonical: 'https://thenextgenhealth.com/industries',

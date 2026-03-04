@@ -1,0 +1,25 @@
+# Allow all bots to crawl the entire site
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /_next/
+Disallow: /.next/
+
+# Specific rules for Googlebot
+User-agent: Googlebot
+Allow: /
+Disallow: /api/
+Disallow: /_next/
+Disallow: /.next/
+
+# Specific rules for Bingbot
+User-agent: Bingbot
+Allow: /
+Allow: /login
+Allow: /signup
+Disallow: /api/
+Disallow: /_next/
+Disallow: /.next/
+
+# Sitemap location
+Sitemap: https://thenextgenhealth.com/sitemap.xml

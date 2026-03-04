@@ -21,7 +21,7 @@ export default function PrivacyPolicy() {
       
       <section className="pt-12 pb-24">
         <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
-          <h1 className="h1 font-bold mb-8 tracking-tight">Privacy Policy</h1>
+          <h2 className="h1 font-bold mb-8 tracking-tight">Privacy Policy</h2>
           <div className="prose prose-slate max-w-none prose-emerald">
             <p className="text-slate-600 mb-6">Last updated: {new Date().toLocaleDateString()}</p>
             

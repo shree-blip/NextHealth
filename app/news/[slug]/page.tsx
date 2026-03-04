@@ -9,18 +9,51 @@ import NewsArticleContent from '@/components/NewsArticleContent';
 
 // Cache news articles for 1 hour, then revalidate in background (ISR)
 export const revalidate = 3600;
+export const dynamicParams = true; // Allow SSR for new news articles
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://thenextgenhealth.com';
 
-export async function generateMetadata(): Promise<Metadata> {
-  return {
-    title: 'News | The NextGen Healthcare Marketing',
-    description: 'Read our latest news article.',
-  };
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  try {
+    const { slug } = await params;
+    const article = await prisma.newsArticle.findUnique({
+      where: { slug },
+      select: { title: true, source: true, excerpt: true }
+    });
+    
+    if (!article) {
+      return {
+        title: 'News | The NextGen Healthcare Marketing',
+        description: 'Read our latest news article.',
+      };
+    }
+
+    return {
+      title: article.title,
+      description: article.excerpt,
+      alternates: {
+        canonical: `${SITE_URL}/news/${slug}`,
+      }
+    };
+  } catch (e) {
+    return {
+      title: 'News | The NextGen Healthcare Marketing',
+      description: 'Read our latest news article.',
+    };
+  }
 }
 
 export async function generateStaticParams() {
-  return [];
+  try {
+    const articles = await prisma.newsArticle.findMany({
+      where: { publishedAt: { not: null } },
+      select: { slug: true },
+      take: 50
+    });
+    return articles.map(article => ({ slug: article.slug }));
+  } catch (e) {
+    return [];
+  }
 }
 
 export default async function NewsArticlePage({ params }: { params: Promise<{ slug: string }> }) {

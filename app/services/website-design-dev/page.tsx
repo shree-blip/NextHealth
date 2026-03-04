@@ -4,7 +4,7 @@ import ServicePageTemplate from '@/components/ServicePageTemplate';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Website Design & Development for Healthcare | Conversion-Optimized Websites',
+  title: 'Healthcare Web Design & Development',
   description: 'Fast, beautiful, conversion-optimized websites for medical practices. HIPAA-compliant healthcare web design that turns visitors into appointments.',
   keywords: 'medical website design, healthcare web development, doctor website, clinic website design, HIPAA-compliant web design',
   alternates: {

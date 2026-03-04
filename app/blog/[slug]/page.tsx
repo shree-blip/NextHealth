@@ -13,20 +13,53 @@ import BlogPostMeta from '@/components/BlogPostMeta';
 
 // Cache posts for 1 hour, then revalidate in background (ISR)
 export const revalidate = 3600;
+export const dynamicParams = true; // Allow SSR for new blog posts
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://thenextgenhealth.com';
 
-// Avoid DB calls at build time. Use minimal static metadata or fallback.
-export async function generateMetadata(): Promise<Metadata> {
-  return {
-    title: 'Blog Post | The NextGen Healthcare Marketing',
-    description: 'Read our latest blog post.',
-  };
+// Fetch blog post metadata for dynamic rendering
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  try {
+    const { slug } = await params;
+    const post = await prisma.post.findUnique({
+      where: { slug },
+      select: { title: true, metaDesc: true, excerpt: true, seoTitle: true }
+    });
+    
+    if (!post) {
+      return {
+        title: 'Blog Post | The NextGen Healthcare Marketing',
+        description: 'Read our latest blog post.',
+      };
+    }
+
+    return {
+      title: post.seoTitle || post.title || 'Blog Post | The NextGen Healthcare Marketing',
+      description: post.metaDesc || post.excerpt || 'Read our latest blog post.',
+      alternates: {
+        canonical: `${SITE_URL}/blog/${slug}`,
+      }
+    };
+  } catch (e) {
+    return {
+      title: 'Blog Post | The NextGen Healthcare Marketing',
+      description: 'Read our latest blog post.',
+    };
+  }
 }
 
-// Avoid DB calls at build time. Return empty array to disable static generation.
+// Pre-generate pages for known blog slugs at build time
 export async function generateStaticParams() {
-  return [];
+  try {
+    const posts = await prisma.post.findMany({
+      where: { publishedAt: { not: null } },
+      select: { slug: true },
+      take: 50
+    });
+    return posts.map(post => ({ slug: post.slug }));
+  } catch (e) {
+    return [];
+  }
 }
 
 export default async function BlogPost({ params }: { params: Promise<{ slug: string }> }) {

@@ -1,7 +1,7 @@
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Healthcare Automation & Free N8N Templates | The NextGen Healthcare Marketing',
+  title: 'Healthcare Automation & Free N8N Templates',
   description: 'Download free, HIPAA-ready N8N automation templates for healthcare practices. Patient intake, appointment reminders, review collection, insurance verification, AI chatbots, and more.',
   alternates: {
     canonical: 'https://thenextgenhealth.com/automation',

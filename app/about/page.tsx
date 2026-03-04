@@ -10,7 +10,7 @@ import { ShieldCheck, Target, Zap, CheckCircle2, Building, Users, Lock, Award } 
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'About NexHealth Healthcare Marketing | Healthcare Marketing Experts in TX',
+  title: 'About Us - Healthcare Marketing Experts',
   description: 'Learn about NexHealth Healthcare Marketing, the premier healthcare marketing and automation firm in Irving, TX. We specialize in HIPAA-compliant growth systems for medical practices.',
   alternates: {
     canonical: 'https://thenextgenhealth.com/about',

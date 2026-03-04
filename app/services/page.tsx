@@ -9,7 +9,7 @@ import { Search, Megaphone, ShieldCheck, Globe, MessageSquare, Activity, MapPin,
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Medical SEO & Healthcare Marketing Services | The NextGen Healthcare Marketing',
+  title: 'Healthcare Marketing Services & Solutions',
   description: 'Comprehensive healthcare marketing services including Local SEO, Google Ads, Reputation Management, and HIPAA-compliant web design for Texas clinics.',
   alternates: {
     canonical: 'https://thenextgenhealth.com/services',
