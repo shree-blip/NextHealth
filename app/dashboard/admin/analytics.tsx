@@ -129,7 +129,9 @@ function calculateAllMetrics(metrics: FormMetrics): Partial<Record<MetricField, 
 function parseMetricsForSave(source: FormMetrics): { values: Partial<Record<MetricField, number>>; error?: string } {
   const values: Partial<Record<MetricField, number>> = {};
 
-  // List of fields that should NOT be manually saved (they're auto-calculated)
+  // These fields are NOT read from the form (they're read-only / calculated).
+  // They ARE computed by calculateAllMetrics() below and saved to the database
+  // via Object.assign(values, calculated).
   const autoCalculatedFields = new Set<MetricField>([
     'metaCTR',
     'metaCPC',

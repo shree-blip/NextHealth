@@ -26,7 +26,9 @@ interface WeeklyAnalytics {
   metaImpressions: number;
   metaClicks: number;
   metaCTR: number;
+  metaCPC: number;
   metaConversions: number;
+  metaCostPerConversion: number;
   metaAdSpend: number;
   googleImpressions: number;
   googleClicks: number;
