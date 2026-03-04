@@ -727,7 +727,7 @@ export default function AnalyticsForm({ onSaved }: { onSaved?: () => void } = {}
     >
       {/* Clean Single Heading */}
       <div className="mb-8">
-        <h1 className="text-4xl font-black mb-3">Weekly Analytics Entry</h1>
+        <h1 className="text-4xl font-black mb-3 text-slate-900 dark:text-white">Weekly Analytics Entry</h1>
         <p className="text-slate-600 dark:text-slate-400 text-lg">
           Select a clinic and a week (Monday to Sunday). The form will load saved data. You can save partial updates. Click Edit on any saved week to modify it.
         </p>
@@ -981,7 +981,7 @@ export default function AnalyticsForm({ onSaved }: { onSaved?: () => void } = {}
           animate={{ opacity: 1, y: 0 }}
           className="mt-8 rounded-2xl border border-slate-200 dark:border-slate-700 bg-gradient-to-br from-cyan-50 to-blue-50 dark:from-cyan-950/50 dark:to-blue-950/50 p-6"
         >
-          <h2 className="text-2xl font-bold mb-4">📅 Week History</h2>
+          <h2 className="text-2xl font-bold mb-4 text-slate-900 dark:text-white">📅 Week History</h2>
           <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">Click "Edit" to update any week. Changes sync instantly to client dashboards.</p>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -996,16 +996,16 @@ export default function AnalyticsForm({ onSaved }: { onSaved?: () => void } = {}
               </thead>
               <tbody>
                 {existingData.map((item: any) => (
-                  <tr key={item.id} className="border-b border-slate-100 dark:border-slate-800 hover:bg-white dark:hover:bg-slate-800 transition-colors">
-                    <td className="py-3 px-3 font-semibold">{item.weekLabel}</td>
-                    <td className="py-3 px-3">{item.totalTraffic || '–'}</td>
-                    <td className="py-3 px-3">{item.blogsPublished || '–'}</td>
-                    <td className="py-3 px-3">{item.callsRequested || '–'}</td>
+                  <tr key={item.id} className="border-b border-slate-100 dark:border-slate-800 hover:bg-white dark:hover:bg-slate-800/50 transition-colors bg-white/50 dark:bg-slate-800/20">
+                    <td className="py-3 px-3 font-semibold text-slate-900 dark:text-slate-100">{item.weekLabel}</td>
+                    <td className="py-3 px-3 text-slate-700 dark:text-slate-300">{item.totalTraffic || '–'}</td>
+                    <td className="py-3 px-3 text-slate-700 dark:text-slate-300">{item.blogsPublished || '–'}</td>
+                    <td className="py-3 px-3 text-slate-700 dark:text-slate-300">{item.callsRequested || '–'}</td>
                     <td className="py-3 px-3">
                       <button
                         type="button"
                         onClick={() => openEditModal(item)}
-                        className="px-3 py-1 bg-blue-500 text-white text-xs font-bold rounded-md hover:bg-blue-400 transition-all inline-flex items-center gap-1"
+                        className="px-3 py-1 bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-500 text-white text-xs font-bold rounded-md transition-all inline-flex items-center gap-1"
                       >
                         <Edit2 className="h-3 w-3" /> Edit
                       </button>
