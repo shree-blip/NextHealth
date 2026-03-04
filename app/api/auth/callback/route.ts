@@ -116,6 +116,7 @@ export async function GET(req: NextRequest) {
 
     const response = new NextResponse(
       htmlResponse('OAUTH_AUTH_SUCCESS', {
+        token,
         user: {
           id: user.id,
           email: user.email,

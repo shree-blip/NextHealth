@@ -21,7 +21,7 @@ export default function LoginPage() {
   const { refreshUser } = useAuth();
 
   useEffect(() => {
-    const handleMessage = (event: MessageEvent) => {
+    const handleMessage = async (event: MessageEvent) => {
       const origin = event.origin;
       const appUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
       const allowedOrigin = new URL(appUrl).origin;
@@ -39,7 +39,27 @@ export default function LoginPage() {
 
       if (event.data?.type === 'OAUTH_AUTH_SUCCESS') {
         const user = event.data.user;
+        const token = event.data.token;
         const dashboardPath = user?.role === 'super_admin' ? '/dashboard/admin' : `/dashboard/${user.role}`;
+
+        try {
+          // Set the auth cookie from the main window context.
+          // The popup's Set-Cookie may be blocked by browsers that restrict
+          // cookies from third-party redirect chains (Safari ITP, Chrome, etc).
+          if (token) {
+            await fetch('/api/auth/token-login', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ token }),
+            });
+          }
+
+          // Refresh auth context so Navbar updates immediately
+          await refreshUser();
+        } catch (err) {
+          console.error('Failed to set auth token:', err);
+        }
+
         setIsRedirecting(true);
         setIsLoading(false);
         // Navigate with replace for cleaner history
