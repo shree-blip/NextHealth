@@ -44,7 +44,7 @@ import {
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import AnalyticsForm from './analytics';
-import AdminAnalyticsView from '@/components/AdminAnalyticsView';
+import ClientAnalyticsView from '@/components/ClientAnalyticsView';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import DeleteConfirmationModal from '@/components/DeleteConfirmationModal';
@@ -2652,7 +2652,7 @@ function ContentForSection(props: {
               </p>
             </div>
             <div className={`pt-6 border-t ${isDark ? 'border-slate-700' : 'border-slate-200'}`}>
-              <AdminAnalyticsView isDark={isDark} refreshTrigger={analyticsRefreshKey} />
+              <ClientAnalyticsView isAdmin refreshTrigger={analyticsRefreshKey} />
             </div>
           </div>
         </div>

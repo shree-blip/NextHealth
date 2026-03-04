@@ -61,7 +61,12 @@ const MONTH_NAMES: Record<number, string> = {
   9: 'September', 10: 'October', 11: 'November', 12: 'December',
 };
 
-export default function ClientAnalyticsView({ refreshTrigger }: { refreshTrigger?: number }) {
+interface ClientAnalyticsViewProps {
+  refreshTrigger?: number;
+  isAdmin?: boolean;
+}
+
+export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false }: ClientAnalyticsViewProps) {
   const { theme } = useSitePreferences();
   const isDark = theme === 'dark';
   const [analytics, setAnalytics] = useState<WeeklyAnalytics[]>([]);
@@ -147,7 +152,23 @@ export default function ClientAnalyticsView({ refreshTrigger }: { refreshTrigger
   const fetchClinics = async () => {
     try {
       setLoading(true);
-      // Get user's assigned clinics
+
+      if (isAdmin) {
+        // Admin mode: fetch all clinics directly
+        const res = await fetch('/api/admin/clinics');
+        if (res.ok) {
+          const data = await res.json();
+          setClinics(data.clinics || []);
+          // Default to "All Clinics" in admin mode
+          setSelectedClinic('all');
+        } else {
+          console.error('Failed to fetch clinics (admin):', res.status);
+          setLoading(false);
+        }
+        return;
+      }
+
+      // Client mode: get user's assigned clinics
       const res = await fetch('/api/auth/me');
       if (res.ok) {
         const user = await res.json();
@@ -188,11 +209,21 @@ export default function ClientAnalyticsView({ refreshTrigger }: { refreshTrigger
 
       // If fetching all locations, fetch analytics for all assigned clinics
       if (clinicId === 'all') {
-        for (const clinic of clinics) {
-          const res = await fetch(`/api/analytics/weekly?clinicId=${clinic.id}`);
+        if (isAdmin) {
+          // Admin mode: use the bulk endpoint for all clinics
+          const res = await fetch('/api/analytics/weekly/all');
           if (res.ok) {
             const data = await res.json();
-            allAnalytics = [...allAnalytics, ...(data.analytics || [])];
+            allAnalytics = data.analytics || [];
+          }
+        } else {
+          // Client mode: loop through assigned clinics
+          for (const clinic of clinics) {
+            const res = await fetch(`/api/analytics/weekly?clinicId=${clinic.id}`);
+            if (res.ok) {
+              const data = await res.json();
+              allAnalytics = [...allAnalytics, ...(data.analytics || [])];
+            }
           }
         }
       } else {
@@ -443,7 +474,7 @@ export default function ClientAnalyticsView({ refreshTrigger }: { refreshTrigger
   return (
     <div className="space-y-6">
       {/* Clinic Selector */}
-      {clinics.length > 1 && (
+      {(isAdmin || clinics.length > 1) && (
         <div className="relative">
           <button
             onClick={() => setShowDropdown(!showDropdown)}
@@ -454,7 +485,7 @@ export default function ClientAnalyticsView({ refreshTrigger }: { refreshTrigger
             }`}
           >
             <Building2 className="h-5 w-5 text-emerald-500" />
-            <span>{isAllLocations ? 'All Locations' : currentClinic?.name || 'Select Clinic'}</span>
+            <span>{isAllLocations ? (isAdmin ? 'All Clinics' : 'All Locations') : currentClinic?.name || 'Select Clinic'}</span>
             <ChevronDown className={`h-4 w-4 transition-transform ${showDropdown ? 'rotate-180' : ''}`} />
           </button>
           {showDropdown && (
@@ -470,7 +501,7 @@ export default function ClientAnalyticsView({ refreshTrigger }: { refreshTrigger
                   isAllLocations ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 font-bold' : ''
                 }`}
               >
-                All Locations
+                {isAdmin ? 'All Clinics' : 'All Locations'}
               </button>
               {clinics.map(clinic => (
                 <button
