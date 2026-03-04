@@ -22,15 +22,26 @@ export default function LoginPage() {
 
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
-      // Validate origin is from AI Studio preview or localhost
       const origin = event.origin;
-      if (!origin.endsWith('.run.app') && !origin.includes('localhost')) {
+      const appUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
+      const allowedOrigin = new URL(appUrl).origin;
+
+      if (!origin.endsWith('.run.app') && !origin.includes('localhost') && origin !== allowedOrigin) {
         return;
       }
+
+      if (event.data?.type === 'OAUTH_AUTH_ERROR') {
+        setError(event.data?.error || 'Google login failed');
+        setIsLoading(false);
+        setIsRedirecting(false);
+        return;
+      }
+
       if (event.data?.type === 'OAUTH_AUTH_SUCCESS') {
         const user = event.data.user;
         const dashboardPath = user?.role === 'super_admin' ? '/dashboard/admin' : `/dashboard/${user.role}`;
         setIsRedirecting(true);
+        setIsLoading(false);
         // Navigate immediately
         router.push(dashboardPath);
       }
