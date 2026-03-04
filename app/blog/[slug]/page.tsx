@@ -11,9 +11,8 @@ import RelatedPosts from '@/components/RelatedPosts';
 import CommentsPlaceholder from '@/components/CommentsPlaceholder';
 import BlogPostMeta from '@/components/BlogPostMeta';
 
-// Ensure dynamic paths not in generateStaticParams still render (don't 404)
-export const dynamicParams = true;
-export const dynamic = 'force-dynamic';
+// Cache posts for 1 hour, then revalidate in background (ISR)
+export const revalidate = 3600;
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://thenextgenhealth.com';
 

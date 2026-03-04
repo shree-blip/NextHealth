@@ -9,6 +9,7 @@ import TrustedBy from '@/components/landing/TrustedBy';
 import PricingPlans from '@/components/landing/PricingPlans';
 import CtaContactForm from '@/components/landing/CtaContactForm';
 import BlogInsights from '@/components/landing/BlogInsights';
+import NewsInsights from '@/components/landing/NewsInsights';
 import FAQ from '@/components/FAQ';
 import MapSection from '@/components/MapSection';
 
@@ -73,6 +74,9 @@ export default function Home() {
       
       {/* Blog Insights */}
       <BlogInsights />
+      
+      {/* News Insights */}
+      <NewsInsights />
       
       {/* FAQ */}
       <section className="py-20 bg-white">

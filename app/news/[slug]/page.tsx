@@ -7,9 +7,8 @@ import Image from 'next/image';
 import SocialShare from '@/components/SocialShare';
 import NewsArticleContent from '@/components/NewsArticleContent';
 
-// Ensure dynamic paths not in generateStaticParams still render (don't 404)
-export const dynamicParams = true;
-export const dynamic = 'force-dynamic';
+// Cache news articles for 1 hour, then revalidate in background (ISR)
+export const revalidate = 3600;
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://thenextgenhealth.com';
 
