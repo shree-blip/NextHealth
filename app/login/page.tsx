@@ -42,8 +42,10 @@ export default function LoginPage() {
         const dashboardPath = user?.role === 'super_admin' ? '/dashboard/admin' : `/dashboard/${user.role}`;
         setIsRedirecting(true);
         setIsLoading(false);
-        // Navigate immediately
-        router.push(dashboardPath);
+        // Navigate with replace for cleaner history
+        setTimeout(() => {
+          router.replace(dashboardPath);
+        }, 100);
       }
     };
     window.addEventListener('message', handleMessage);
@@ -86,11 +88,14 @@ export default function LoginPage() {
       // Refresh auth context so Navbar updates immediately
       await refreshUser();
       
-      // Show loading screen and trigger redirect immediately
+      // Show loading screen immediately before redirect
       setIsRedirecting(true);
+      setIsLoading(false);
       
-      // Navigate immediately - LoadingScreen will stay visible until component unmounts
-      router.push(dashboardPath);
+      // Small delay to ensure loading screen is visible, then navigate
+      setTimeout(() => {
+        router.replace(dashboardPath);
+      }, 100);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Login failed. Please try again.';
       setError(message);
@@ -133,7 +138,7 @@ export default function LoginPage() {
   return (
     <>
       {isRedirecting && (
-        <LoadingScreen durationMs={10000} />
+        <LoadingScreen durationMs={3000} />
       )}
       <Navbar />
       <main className="min-h-screen bg-slate-50 flex items-center justify-center p-4 relative overflow-hidden pt-32">

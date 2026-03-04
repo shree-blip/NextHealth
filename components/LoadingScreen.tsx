@@ -27,19 +27,20 @@ export default function LoadingScreen({ durationMs = 2000, onComplete }: Loading
 
     const tick = (now: number) => {
       const elapsed = now - startRef.current;
-      const pct = Math.min(Math.round((elapsed / durationMs) * 100), 100);
+      // Use easeOut curve for more natural progress
+      const linearProgress = elapsed / durationMs;
+      const easedProgress = 1 - Math.pow(1 - linearProgress, 3); // cubic ease-out
+      const pct = Math.min(Math.round(easedProgress * 100), 100);
       setProgress(pct);
 
       if (pct < 100) {
         rafRef.current = requestAnimationFrame(tick);
       } else {
-        // small delay after hitting 100% before dismissing
-        setTimeout(() => {
-          setIsLoading(false);
-          document.body.classList.add('loaded');
-          document.body.style.overflow = '';
-          onCompleteRef.current?.();
-        }, 300);
+        // Dismiss immediately when hitting 100%
+        setIsLoading(false);
+        document.body.classList.add('loaded');
+        document.body.style.overflow = '';
+        onCompleteRef.current?.();
       }
     };
 
