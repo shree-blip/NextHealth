@@ -1,0 +1,39 @@
+
+🔍 Finding records with old weekLabel format...
+
+   Found 21 records with old format
+   Total records: 88
+
+📋 Old format records to migrate:
+
+   January Week 3 (clinic cmm95p3s..., year=2026, month=1, week=3)
+   January Week 3 (clinic cmm95pks..., year=2026, month=1, week=3)
+   January Week 4 (clinic cmm95mco..., year=2026, month=1, week=4)
+   January Week 4 (clinic cmm95p3s..., year=2026, month=1, week=4)
+   January Week 4 (clinic cmm95pks..., year=2026, month=1, week=4)
+   February Week 1 (clinic cmm95ncq..., year=2026, month=2, week=1)
+   February Week 1 (clinic cmm95mco..., year=2026, month=2, week=1)
+   February Week 1 (clinic cmm95p3s..., year=2026, month=2, week=1)
+   February Week 1 (clinic cmm95pks..., year=2026, month=2, week=1)
+   February Week 2 (clinic cmm95ncq..., year=2026, month=2, week=2)
+   ... and 11 more
+
+🔄 Starting migration...
+
+   "January Week 3" → "2026 Week 4 (Jan 19–Jan 25)"
+      → Merging with existing record (cmm99d6r...)
+   "January Week 3" → "2026 Week 4 (Jan 19–Jan 25)"
+      → Merging with existing record (cmm99d6r...)
+   "January Week 4" → "2026 Week 5 (Jan 26–Feb 1)"
+   "January Week 4" → "2026 Week 5 (Jan 26–Feb 1)"
+   "January Week 4" → "2026 Week 5 (Jan 26–Feb 1)"
+   "February Week 1" → "2026 Week 6 (Feb 2–Feb 8)"
+      → Merging with existing record (cmmc9y8k...)
+   "February Week 1" → "2026 Week 6 (Feb 2–Feb 8)"
+   "February Week 1" → "2026 Week 6 (Feb 2–Feb 8)"
+   "February Week 1" → "2026 Week 6 (Feb 2–Feb 8)"
+   "February Week 2" → "2026 Week 7 (Feb 9–Feb 15)"
+      → Merging with existing record (cmmc9y9r...)
+   "February Week 2" → "2026 Week 7 (Feb 9–Feb 15)"
+   "February Week 2" → "2026 Week 7 (Feb 9–Feb 15)"
+   "February Week 2" → "2026 Week 7 (Feb 9–Feb 15)"

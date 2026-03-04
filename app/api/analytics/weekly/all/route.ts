@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { requireAdmin } from '@/lib/auth';
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  // Only admins can view all clinics' analytics
+  const auth = await requireAdmin(req);
+  if ('response' in auth) return auth.response;
+
   try {
     const analytics = await prisma.weeklyAnalytics.findMany({
       orderBy: [

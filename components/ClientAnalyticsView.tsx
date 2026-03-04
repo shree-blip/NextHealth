@@ -211,20 +211,30 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false }:
       if (clinicId === 'all') {
         if (isAdmin) {
           // Admin mode: use the bulk endpoint for all clinics
+          console.log('[Client Analytics] Admin mode: fetching all clinics from /api/analytics/weekly/all');
           const res = await fetch('/api/analytics/weekly/all');
           if (res.ok) {
             const data = await res.json();
             allAnalytics = data.analytics || [];
+            console.log('[Client Analytics] Admin: loaded', allAnalytics.length, 'records from all clinics');
+          } else {
+            console.error('[Client Analytics] Admin: failed to fetch all clinics:', res.status, res.statusText);
           }
         } else {
           // Client mode: loop through assigned clinics
+          console.log('[Client Analytics] Client mode: fetching data for', clinics.length, 'assigned clinics');
           for (const clinic of clinics) {
             const res = await fetch(`/api/analytics/weekly?clinicId=${clinic.id}`);
             if (res.ok) {
               const data = await res.json();
-              allAnalytics = [...allAnalytics, ...(data.analytics || [])];
+              const clinicData = data.analytics || [];
+              console.log('[Client Analytics] Loaded', clinicData.length, 'records for', clinic.name);
+              allAnalytics = [...allAnalytics, ...clinicData];
+            } else {
+              console.error('[Client Analytics] Failed to fetch for clinic', clinic.name, ':', res.status);
             }
           }
+          console.log('[Client Analytics] Client: total loaded', allAnalytics.length, 'records from', clinics.length, 'clinics');
         }
       } else {
         const res = await fetch(`/api/analytics/weekly?clinicId=${clinicId}`);
