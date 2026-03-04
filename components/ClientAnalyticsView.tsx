@@ -86,6 +86,17 @@ function getLastWeekFilters(): { year: number; month: number; weekNumber: number
   return { year, month, weekNumber: Math.max(weekNumber, 1) };
 }
 
+/**
+ * Convert year, month, weekNumber to the Monday of that ISO week.
+ */
+function getWeekMonday(year: number, month: number, weekNumber: number): Date {
+  const jan1 = new Date(year, 0, 1);
+  const jan1Day = jan1.getDay() || 7; // Mon=1 … Sun=7
+  const firstMonday = new Date(year, 0, 1 + (1 - jan1Day + 7) % 7);
+  const weekStart = new Date(firstMonday.getTime() + (weekNumber - 1) * 7 * 24 * 60 * 60 * 1000);
+  return weekStart;
+}
+
 interface ClientAnalyticsViewProps {
   refreshTrigger?: number;
   isAdmin?: boolean;
@@ -106,6 +117,11 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false }:
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+  const [showDateRange, setShowDateRange] = useState(false);
+  const [startDate, setStartDate] = useState<string>('');
+  const [endDate, setEndDate] = useState<string>('');
+  const [isSearchingDateRange, setIsSearchingDateRange] = useState(false);
+  const [hasDateRangeFilter, setHasDateRangeFilter] = useState(false);
   const socketRef = useRef<Socket | null>(null);
   const clinicIdRef = useRef<string>('');
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -174,6 +190,60 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false }:
       }
     };
   }, [selectedClinic]);
+
+  const resetToLastWeek = () => {
+    const lw = getLastWeekFilters();
+    const hasLW = analytics.some(a => a.year === lw.year && a.month === lw.month && a.weekNumber === lw.weekNumber);
+    if (hasLW) {
+      setSelectedYear(String(lw.year));
+      setSelectedMonth(String(lw.month));
+      setSelectedWeek(String(lw.weekNumber));
+    } else {
+      setSelectedYear('all');
+      setSelectedMonth('all');
+      setSelectedWeek('all');
+    }
+    setDateFilter('');
+    setStartDate('');
+    setEndDate('');
+    setHasDateRangeFilter(false);
+  };
+
+  const handleDateRangeSearch = async () => {
+    if (!startDate || !endDate) {
+      alert('Please select both start and end dates');
+      return;
+    }
+
+    setIsSearchingDateRange(true);
+    try {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      end.setDate(end.getDate() + 1); // Include end date fully
+
+      // Find weeks that fall within this range
+      const matchingWeeks = analytics.filter(entry => {
+        const weekMonday = getWeekMonday(entry.year, entry.month, entry.weekNumber);
+        return weekMonday >= start && weekMonday < end;
+      });
+
+      if (matchingWeeks.length === 0) {
+        alert('No data found for the selected date range');
+        setIsSearchingDateRange(false);
+        return;
+      }
+
+      // Set filters to match these weeks
+      setSelectedYear('all');
+      setSelectedMonth('all');
+      setSelectedWeek('all');
+      setDateFilter('');
+      setHasDateRangeFilter(true);
+      // We'll filter using the hasDateRangeFilter flag
+    } finally {
+      setIsSearchingDateRange(false);
+    }
+  };
 
   const fetchClinics = async () => {
     try {
@@ -360,6 +430,15 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false }:
   )).sort((a, b) => a - b);
 
   const filteredAnalytics = analytics.filter((entry) => {
+    // Date range filter takes precedence
+    if (hasDateRangeFilter && startDate && endDate) {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      end.setDate(end.getDate() + 1);
+      const weekMonday = getWeekMonday(entry.year, entry.month, entry.weekNumber);
+      return weekMonday >= start && weekMonday < end;
+    }
+
     const yearMatch = selectedYear === 'all' || entry.year === Number(selectedYear);
     const monthMatch = selectedMonth === 'all' || entry.month === Number(selectedMonth);
     const weekMatch = selectedWeek === 'all' || entry.weekNumber === Number(selectedWeek);
@@ -401,20 +480,7 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false }:
                 Refresh
               </button>
               <button
-                onClick={() => {
-                  const lw = getLastWeekFilters();
-                  const hasLW = analytics.some(a => a.year === lw.year && a.month === lw.month && a.weekNumber === lw.weekNumber);
-                  if (hasLW) {
-                    setSelectedYear(String(lw.year));
-                    setSelectedMonth(String(lw.month));
-                    setSelectedWeek(String(lw.weekNumber));
-                  } else {
-                    setSelectedYear('all');
-                    setSelectedMonth('all');
-                    setSelectedWeek('all');
-                  }
-                  setDateFilter('');
-                }}
+                onClick={resetToLastWeek}
                 className="px-4 py-2 rounded-lg bg-slate-500 text-white font-bold hover:bg-slate-400 flex items-center gap-2"
               >
                 <RotateCcw className="h-4 w-4" />
@@ -468,6 +534,64 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false }:
               className={`px-4 py-3 rounded-xl border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-100 placeholder:text-slate-500' : 'bg-white border-slate-200 text-slate-900 placeholder:text-slate-400'}`}
             />
           </div>
+
+          {/* Custom Date Range Section (no-data state) */}
+          <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+            <button
+              onClick={() => setShowDateRange(!showDateRange)}
+              className={`px-4 py-2 rounded-lg font-bold flex items-center gap-2 transition-all ${
+                isDark
+                  ? 'bg-slate-700 hover:bg-slate-600 text-slate-200'
+                  : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+              }`}
+            >
+              📅 Custom Date Range
+              {showDateRange ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            </button>
+
+            {showDateRange && (
+              <div className="mt-3 pt-3 border-t border-slate-200 dark:border-slate-700">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div>
+                    <label className={`block text-xs font-semibold mb-1 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+                      Start Date
+                    </label>
+                    <input
+                      type="date"
+                      value={startDate}
+                      onChange={(e) => setStartDate(e.target.value)}
+                      className={`w-full px-4 py-2 rounded-lg border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-100' : 'bg-white border-slate-200 text-slate-900'}`}
+                    />
+                  </div>
+                  <div>
+                    <label className={`block text-xs font-semibold mb-1 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+                      End Date
+                    </label>
+                    <input
+                      type="date"
+                      value={endDate}
+                      onChange={(e) => setEndDate(e.target.value)}
+                      className={`w-full px-4 py-2 rounded-lg border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-100' : 'bg-white border-slate-200 text-slate-900'}`}
+                    />
+                  </div>
+                </div>
+                <button
+                  onClick={handleDateRangeSearch}
+                  disabled={isSearchingDateRange || !startDate || !endDate}
+                  className="mt-3 px-4 py-2 rounded-lg bg-emerald-500 text-black font-bold hover:bg-emerald-400 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  {isSearchingDateRange ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Searching...
+                    </>
+                  ) : (
+                    '🔍 Search Date Range'
+                  )}
+                </button>
+              </div>
+            )}
+          </div>
         </div>
 
         <div className={`rounded-2xl p-8 border text-center ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
@@ -481,26 +605,28 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false }:
     );
   }
 
-  // Calculate totals
+  // Calculate totals with safeguards for null/undefined values
   const totals = filteredAnalytics.reduce((acc, week) => ({
-    traffic: acc.traffic + week.totalTraffic,
-    blogs: acc.blogs + week.blogsPublished,
-    calls: acc.calls + week.callsRequested,
-    metaSpend: acc.metaSpend + week.metaAdSpend,
-    googleSpend: acc.googleSpend + week.googleTotalCost,
-    socialViews: acc.socialViews + week.socialViews,
+    traffic: acc.traffic + (week.totalTraffic || 0),
+    blogs: acc.blogs + (week.blogsPublished || 0),
+    calls: acc.calls + (week.callsRequested || 0),
+    metaSpend: acc.metaSpend + (Number(week.metaAdSpend) || 0),
+    googleSpend: acc.googleSpend + (Number(week.googleTotalCost) || 0),
+    socialViews: acc.socialViews + (week.socialViews || 0),
   }), { traffic: 0, blogs: 0, calls: 0, metaSpend: 0, googleSpend: 0, socialViews: 0 });
 
   console.log('[Client Analytics] Filtered', filteredAnalytics.length, 'weeks, Totals:', totals);
 
-  // Determine period prefix based on active filter level
-  const periodPrefix = selectedWeek !== 'all'
-    ? 'Weekly'
-    : selectedMonth !== 'all'
-      ? 'Monthly'
-      : selectedYear !== 'all'
-        ? 'Yearly'
-        : 'Total';
+  // Determine period prefix based on active filter level or date range
+  const periodPrefix = hasDateRangeFilter
+    ? 'Period'
+    : selectedWeek !== 'all'
+      ? 'Weekly'
+      : selectedMonth !== 'all'
+        ? 'Monthly'
+        : selectedYear !== 'all'
+          ? 'Yearly'
+          : 'Total';
 
   const totalAdSpend = totals.metaSpend + totals.googleSpend;
 
@@ -597,10 +723,8 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false }:
             </div>
           )}
         </div>
-      )}
 
-      {/* Report Header */}
-      <div className={`rounded-2xl p-6 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
+        {/* Report Header */}
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <button
@@ -638,20 +762,7 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false }:
               Refresh
             </button>
             <button
-              onClick={() => {
-                const lw = getLastWeekFilters();
-                const hasLW = analytics.some(a => a.year === lw.year && a.month === lw.month && a.weekNumber === lw.weekNumber);
-                if (hasLW) {
-                  setSelectedYear(String(lw.year));
-                  setSelectedMonth(String(lw.month));
-                  setSelectedWeek(String(lw.weekNumber));
-                } else {
-                  setSelectedYear('all');
-                  setSelectedMonth('all');
-                  setSelectedWeek('all');
-                }
-                setDateFilter('');
-              }}
+              onClick={resetToLastWeek}
               className="px-4 py-2 rounded-lg bg-slate-500 text-white font-bold hover:bg-slate-400 flex items-center gap-2"
             >
               <RotateCcw className="h-4 w-4" />
@@ -661,7 +772,7 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false }:
         </div>
 
         {/* Collapsible Filter Controls */}
-        {showFilters && (
+        {showFilters && (<>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
             <select
               value={selectedYear}
@@ -711,7 +822,65 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false }:
               className={`px-4 py-3 rounded-xl border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-100 placeholder:text-slate-500' : 'bg-white border-slate-200 text-slate-900 placeholder:text-slate-400'}`}
             />
           </div>
-        )}
+
+          {/* Custom Date Range Section */}
+          <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+            <button
+              onClick={() => setShowDateRange(!showDateRange)}
+              className={`px-4 py-2 rounded-lg font-bold flex items-center gap-2 transition-all ${
+                isDark
+                  ? 'bg-slate-700 hover:bg-slate-600 text-slate-200'
+                  : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+              }`}
+            >
+              📅 Custom Date Range
+              {showDateRange ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            </button>
+
+            {showDateRange && (
+              <div className="mt-3 pt-3 border-t border-slate-200 dark:border-slate-700">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div>
+                    <label className={`block text-xs font-semibold mb-1 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+                      Start Date
+                    </label>
+                    <input
+                      type="date"
+                      value={startDate}
+                      onChange={(e) => setStartDate(e.target.value)}
+                      className={`w-full px-4 py-2 rounded-lg border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-100' : 'bg-white border-slate-200 text-slate-900'}`}
+                    />
+                  </div>
+                  <div>
+                    <label className={`block text-xs font-semibold mb-1 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+                      End Date
+                    </label>
+                    <input
+                      type="date"
+                      value={endDate}
+                      onChange={(e) => setEndDate(e.target.value)}
+                      className={`w-full px-4 py-2 rounded-lg border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-100' : 'bg-white border-slate-200 text-slate-900'}`}
+                    />
+                  </div>
+                </div>
+                <button
+                  onClick={handleDateRangeSearch}
+                  disabled={isSearchingDateRange || !startDate || !endDate}
+                  className="mt-3 px-4 py-2 rounded-lg bg-emerald-500 text-black font-bold hover:bg-emerald-400 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  {isSearchingDateRange ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Searching...
+                    </>
+                  ) : (
+                    '🔍 Search Date Range'
+                  )}
+                </button>
+              </div>
+            )}
+          </div>
+        </>)}
       </div>
 
       {/* Summary Cards */}
