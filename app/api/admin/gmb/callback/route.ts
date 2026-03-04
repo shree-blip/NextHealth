@@ -10,20 +10,27 @@ import {
 
 function popupHtml(success: boolean, message: string, clinicId?: string) {
   const payload = success
-    ? `{ type: 'GMB_OAUTH_SUCCESS', clinicId: '${clinicId || ''}', message: ${JSON.stringify(message)} }`
-    : `{ type: 'GMB_OAUTH_ERROR', message: ${JSON.stringify(message)} }`;
+    ? `{ type: 'gmb_auth_complete', success: true, clinicId: '${clinicId || ''}', message: ${JSON.stringify(message)} }`
+    : `{ type: 'gmb_auth_complete', success: false, message: ${JSON.stringify(message)} }`;
 
   return `
 <!doctype html>
 <html>
-  <body>
+  <head>
+    <title>Connecting Google Business Profile...</title>
+  </head>
+  <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto Oxide', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; background: #f5f5f5;">
+    <div style="text-align: center; padding: 20px; background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); max-width: 400px;">
+      <p style="font-size: 16px; color: #333; margin-bottom: 10px;"><strong>${success ? '✓ Connected!' : '✗ Connection Failed'}</strong></p>
+      <p style="font-size: 14px; color: #666; margin: 0;">${message}</p>
+    </div>
     <script>
       if (window.opener) {
         window.opener.postMessage(${payload}, window.location.origin);
       }
-      window.close();
+      // Close popup after 2 seconds
+      setTimeout(() => window.close(), 2000);
     </script>
-    <p>${message}</p>
   </body>
 </html>
 `;

@@ -383,28 +383,92 @@ function AdminDashboardContent() {
     router.push('/login');
   };
 
-  const handleAssign = () => {
-    if (selectedUser && selectedClinic) {
-      // TODO: Replace with API call for Vercel serverless
-      console.log('Assign:', selectedUser, selectedClinic);
+  const handleAssign = async () => {
+    if (!selectedUser || !selectedClinic) {
+      alert('Please select both a user and a clinic');
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/admin/clinics/assign', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: selectedUser, clinicId: selectedClinic }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to assign clinic');
+      }
+
+      alert('✅ Clinic assigned successfully');
+      setSelectedUser('');
+      setSelectedClinic('');
+      fetchAdminData();
+    } catch (error) {
+      console.error('Error assigning clinic:', error);
+      alert(`❌ Failed to assign clinic: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
-  const handleQuickAssign = (userId: string) => {
-    if (userId && quickAssignClinicId) {
-      console.log('Quick assign:', userId, quickAssignClinicId);
+  const handleQuickAssign = async (userId: string) => {
+    if (!userId || !quickAssignClinicId) {
+      alert('Missing user or clinic');
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/admin/clinics/assign', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, clinicId: quickAssignClinicId }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to assign clinic');
+      }
+
+      alert('✅ Clinic assigned successfully');
       setShowQuickAssignModal(false);
       setQuickAssignClinicId('');
       setSelectedUser('');
+      fetchAdminData();
+    } catch (error) {
+      console.error('Error assigning clinic:', error);
+      alert(`❌ Failed to assign clinic: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
-  const handleRemoveAssignment = (userId: string, clinicId: string) => {
-    console.log('Remove assignment:', userId, clinicId);
+  const handleRemoveAssignment = async (userId: string, clinicId: string) => {
+    if (!confirm('Are you sure you want to remove this assignment?')) return;
+
+    try {
+      const res = await fetch('/api/admin/clinics/assign', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, clinicId }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to remove assignment');
+      }
+
+      alert('✅ Assignment removed successfully');
+      fetchAdminData();
+    } catch (error) {
+      console.error('Error removing assignment:', error);
+      alert(`❌ Failed to remove assignment: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   };
 
-  const handleUpdateStats = (clinicId: string, leads: number, appointments: number) => {
-    console.log('Update stats:', clinicId, leads, appointments);
+  const handleUpdateStats = async (clinicId: string, leads: number, appointments: number) => {
+    // Stats update can be added as future enhancement
+    console.log('Update stats for clinic', clinicId, ':', { leads, appointments });
   };
 
   const handleAddClient = async () => {
@@ -438,28 +502,94 @@ function AdminDashboardContent() {
     }
   };
 
-  const handleAddClinic = () => {
-    if (newClinicName && newClinicType && newClinicLocation) {
-      console.log('Add clinic:', { newClinicName, newClinicType, newClinicLocation });
+  const handleAddClinic = async () => {
+    if (!newClinicName || !newClinicType || !newClinicLocation) {
+      alert('Please fill in all required fields');
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/admin/clinics/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: newClinicName,
+          type: newClinicType,
+          location: newClinicLocation,
+          assignedUsers: newClinicAssignedUser ? [newClinicAssignedUser] : [],
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to create clinic');
+      }
+
+      alert('✅ Clinic created successfully');
       setNewClinicName('');
       setNewClinicType('');
       setNewClinicLocation('');
       setNewClinicAssignedUser('');
       setShowAddClinicModal(false);
+      fetchAdminData();
+    } catch (error) {
+      console.error('Error creating clinic:', error);
+      alert(`❌ Failed to create clinic: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
-  const handleEditClinic = () => {
-    if (editingClinic) {
-      console.log('Edit clinic:', editingClinic);
+  const handleEditClinic = async () => {
+    if (!editingClinic) return;
+
+    try {
+      const res = await fetch(`/api/admin/clinics/${editingClinic.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: editingClinic.name,
+          type: editingClinic.type,
+          location: editingClinic.location,
+          assignedUsers: editingClinic.clientAssignments?.map((ca: any) => ca.userId) || [],
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to update clinic');
+      }
+
+      alert('✅ Clinic updated successfully');
       setEditingClinic(null);
       setShowEditClinicModal(false);
+      fetchAdminData();
+    } catch (error) {
+      console.error('Error updating clinic:', error);
+      alert(`❌ Failed to update clinic: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
-  const handleDeleteClinic = (clinicId: string) => {
-    if (confirm('Are you sure you want to delete this clinic?')) {
-      console.log('Delete clinic:', clinicId);
+  const handleDeleteClinic = async (clinicId: string) => {
+    if (!confirm('Are you sure you want to delete this clinic? This action cannot be undone.')) return;
+
+    try {
+      const res = await fetch(`/api/admin/clinics/${clinicId}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to delete clinic');
+      }
+
+      alert('✅ Clinic deleted successfully');
+      fetchAdminData();
+    } catch (error) {
+      console.error('Error deleting clinic:', error);
+      alert(`❌ Failed to delete clinic: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
@@ -545,22 +675,69 @@ function AdminDashboardContent() {
     }
   };
 
-  const handleGmbConnect = () => {
+  const handleGmbConnect = async () => {
     if (!editingClinic?.id) return;
 
     setGmbState(prev => ({ ...prev, connecting: true, error: '', message: '' }));
 
-    const popup = window.open(
-      `/api/admin/gmb/connect?clinicId=${encodeURIComponent(editingClinic.id)}`,
-      'gmb_oauth',
-      'width=560,height=720'
-    );
+    try {
+      // Get the OAuth URL from our endpoint
+      const urlRes = await fetch(`/api/admin/gmb/auth-url?clinicId=${encodeURIComponent(editingClinic.id)}`);
+      const urlData = await urlRes.json();
 
-    if (!popup) {
+      if (!urlRes.ok) {
+        throw new Error(urlData.error || 'Failed to generate auth URL');
+      }
+
+      // Set up message listener before opening popup
+      const handlePopupMessage = (event: MessageEvent) => {
+        if (event.origin !== window.location.origin) return;
+        if (event.data?.type === 'gmb_auth_complete') {
+          window.removeEventListener('message', handlePopupMessage);
+          if (event.data.success) {
+            setGmbState(prev => ({
+              ...prev,
+              connecting: false,
+              message: 'Google Business Profile connected successfully!',
+              error: '',
+            }));
+            // Refresh GMB data
+            if (editingClinic?.id) {
+              fetchGmbConnection(editingClinic.id);
+            }
+          } else {
+            setGmbState(prev => ({
+              ...prev,
+              connecting: false,
+              error: event.data.error || 'Failed to connect GMB',
+            }));
+          }
+        }
+      };
+
+      window.addEventListener('message', handlePopupMessage);
+
+      // Open popup with the auth URL
+      const popup = window.open(
+        urlData.authUrl,
+        'gmb_oauth',
+        `width=${urlData.popup?.width || 600},height=${urlData.popup?.height || 700}`
+      );
+
+      if (!popup) {
+        window.removeEventListener('message', handlePopupMessage);
+        setGmbState(prev => ({
+          ...prev,
+          connecting: false,
+          error: 'Popup blocked. Please allow popups and try again.',
+        }));
+      }
+    } catch (error: any) {
+      console.error('Error starting GMB connection:', error);
       setGmbState(prev => ({
         ...prev,
         connecting: false,
-        error: 'Popup blocked. Please allow popups and try again.',
+        error: error?.message || 'Failed to start GMB connection. Check configuration.',
       }));
     }
   };
