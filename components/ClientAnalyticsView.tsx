@@ -6,7 +6,7 @@ import {
   LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, AreaChart, Area,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
-import { TrendingUp, FileText, Globe, Phone, DollarSign, Users, Loader2, Building2, ChevronDown, ArrowUpRight, RefreshCw } from 'lucide-react';
+import { TrendingUp, FileText, Globe, Phone, DollarSign, Users, Loader2, Building2, ChevronDown, ArrowUpRight, RefreshCw, Filter, RotateCcw, Clock, ChevronUp } from 'lucide-react';
 import { useSitePreferences } from '@/components/SitePreferencesProvider';
 import io, { Socket } from 'socket.io-client';
 
@@ -61,6 +61,31 @@ const MONTH_NAMES: Record<number, string> = {
   9: 'September', 10: 'October', 11: 'November', 12: 'December',
 };
 
+/**
+ * Calculate the last week's year, month, and ISO week number based on the current date.
+ * "Last week" = the full Mon–Sun week before the current one.
+ */
+function getLastWeekFilters(): { year: number; month: number; weekNumber: number } {
+  const now = new Date();
+  // Go back 7 days to land in "last week"
+  const lastWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7);
+  // Find the Monday of that week (ISO: Monday = 1)
+  const day = lastWeek.getDay();
+  const diffToMonday = day === 0 ? -6 : 1 - day;
+  const monday = new Date(lastWeek.getFullYear(), lastWeek.getMonth(), lastWeek.getDate() + diffToMonday);
+
+  const year = monday.getFullYear();
+  const month = monday.getMonth() + 1; // 1-indexed
+
+  // ISO week number calculation
+  const jan1 = new Date(year, 0, 1);
+  const jan1Day = jan1.getDay() || 7; // Mon=1 … Sun=7
+  const firstThursday = new Date(year, 0, 1 + (4 - jan1Day + 7) % 7);
+  const weekNumber = Math.ceil(((monday.getTime() - firstThursday.getTime()) / 86400000 + 4) / 7);
+
+  return { year, month, weekNumber: Math.max(weekNumber, 1) };
+}
+
 interface ClientAnalyticsViewProps {
   refreshTrigger?: number;
   isAdmin?: boolean;
@@ -80,6 +105,7 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false }:
   const [dateFilter, setDateFilter] = useState<string>('');
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
   const socketRef = useRef<Socket | null>(null);
   const clinicIdRef = useRef<string>('');
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -250,20 +276,29 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false }:
       setAnalytics(allAnalytics);
       setLastUpdated(new Date());
 
-      // Auto-fill filter with last week's data
+      // Auto-fill filter with last week based on current date
       if (allAnalytics.length > 0) {
-        // Find the latest week
-        const sortedByDate = [...allAnalytics].sort((a, b) => {
-          if (a.year !== b.year) return b.year - a.year;
-          if (a.month !== b.month) return b.month - a.month;
-          return b.weekNumber - a.weekNumber;
-        });
-        
-        const latestWeek = sortedByDate[0];
-        setSelectedYear(String(latestWeek.year));
-        setSelectedMonth(String(latestWeek.month));
-        setSelectedWeek(String(latestWeek.weekNumber));
-        // Don't set dateFilter - let numeric filters handle matching
+        const lw = getLastWeekFilters();
+        // Check if last-week data exists in the dataset
+        const hasLastWeek = allAnalytics.some(
+          (a) => a.year === lw.year && a.month === lw.month && a.weekNumber === lw.weekNumber
+        );
+        if (hasLastWeek) {
+          setSelectedYear(String(lw.year));
+          setSelectedMonth(String(lw.month));
+          setSelectedWeek(String(lw.weekNumber));
+        } else {
+          // Fallback to the most recent week available
+          const sortedByDate = [...allAnalytics].sort((a, b) => {
+            if (a.year !== b.year) return b.year - a.year;
+            if (a.month !== b.month) return b.month - a.month;
+            return b.weekNumber - a.weekNumber;
+          });
+          const latestWeek = sortedByDate[0];
+          setSelectedYear(String(latestWeek.year));
+          setSelectedMonth(String(latestWeek.month));
+          setSelectedWeek(String(latestWeek.weekNumber));
+        }
         setDateFilter('');
       } else {
         setSelectedYear('all');
@@ -336,8 +371,57 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false }:
   if (filteredAnalytics.length === 0) {
     return (
       <div className="space-y-6">
+        {/* Report Header (no-data state) */}
         <div className={`rounded-2xl p-6 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
-          <h3 className={`text-lg font-bold mb-4 ${isDark ? 'text-white' : 'text-slate-900'}`}>Edit Report Filters</h3>
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+            <div className="flex items-center gap-3">
+              <h3 className={`text-lg font-bold flex items-center gap-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                <Filter className="h-4 w-4" /> Edit Report Filters
+              </h3>
+              {lastUpdated && (
+                <span className={`text-xs flex items-center gap-1.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                  <Clock className="h-3.5 w-3.5" />
+                  Last updated: {lastUpdated.toLocaleTimeString()}
+                </span>
+              )}
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={async () => {
+                  if (selectedClinic && !isRefreshing) {
+                    setIsRefreshing(true);
+                    await fetchAnalytics(selectedClinic);
+                    setIsRefreshing(false);
+                  }
+                }}
+                disabled={isRefreshing}
+                className="px-4 py-2 rounded-lg bg-blue-500 text-white font-bold hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                Refresh
+              </button>
+              <button
+                onClick={() => {
+                  const lw = getLastWeekFilters();
+                  const hasLW = analytics.some(a => a.year === lw.year && a.month === lw.month && a.weekNumber === lw.weekNumber);
+                  if (hasLW) {
+                    setSelectedYear(String(lw.year));
+                    setSelectedMonth(String(lw.month));
+                    setSelectedWeek(String(lw.weekNumber));
+                  } else {
+                    setSelectedYear('all');
+                    setSelectedMonth('all');
+                    setSelectedWeek('all');
+                  }
+                  setDateFilter('');
+                }}
+                className="px-4 py-2 rounded-lg bg-slate-500 text-white font-bold hover:bg-slate-400 flex items-center gap-2"
+              >
+                <RotateCcw className="h-4 w-4" />
+                Reset Filters
+              </button>
+            </div>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <select
               value={selectedYear}
@@ -383,19 +467,6 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false }:
               placeholder="Filter by date/week label"
               className={`px-4 py-3 rounded-xl border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-100 placeholder:text-slate-500' : 'bg-white border-slate-200 text-slate-900 placeholder:text-slate-400'}`}
             />
-          </div>
-          <div className="mt-4">
-            <button
-              onClick={() => {
-                setSelectedYear('all');
-                setSelectedMonth('all');
-                setSelectedWeek('all');
-                setDateFilter('');
-              }}
-              className="px-4 py-2 rounded-lg bg-emerald-500 text-black font-bold hover:bg-emerald-400"
-            >
-              Reset Filters
-            </button>
           </div>
         </div>
 
@@ -528,15 +599,27 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false }:
         </div>
       )}
 
-      {/* Edit Report Filters */}
+      {/* Report Header */}
       <div className={`rounded-2xl p-6 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
-        <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-          <div>
-            <h3 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Edit Report Filters</h3>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className={`px-4 py-2 rounded-lg font-bold flex items-center gap-2 transition-all ${
+                isDark
+                  ? 'bg-slate-700 hover:bg-slate-600 text-slate-200'
+                  : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+              }`}
+            >
+              <Filter className="h-4 w-4" />
+              Edit Report Filters
+              {showFilters ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            </button>
             {lastUpdated && (
-              <p className={`text-xs mt-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+              <span className={`text-xs flex items-center gap-1.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                <Clock className="h-3.5 w-3.5" />
                 Last updated: {lastUpdated.toLocaleTimeString()}
-              </p>
+              </span>
             )}
           </div>
           <div className="flex gap-2">
@@ -556,66 +639,79 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false }:
             </button>
             <button
               onClick={() => {
-                setSelectedYear('all');
-                setSelectedMonth('all');
-                setSelectedWeek('all');
+                const lw = getLastWeekFilters();
+                const hasLW = analytics.some(a => a.year === lw.year && a.month === lw.month && a.weekNumber === lw.weekNumber);
+                if (hasLW) {
+                  setSelectedYear(String(lw.year));
+                  setSelectedMonth(String(lw.month));
+                  setSelectedWeek(String(lw.weekNumber));
+                } else {
+                  setSelectedYear('all');
+                  setSelectedMonth('all');
+                  setSelectedWeek('all');
+                }
                 setDateFilter('');
               }}
-              className="px-4 py-2 rounded-lg bg-emerald-500 text-black font-bold hover:bg-emerald-400"
+              className="px-4 py-2 rounded-lg bg-slate-500 text-white font-bold hover:bg-slate-400 flex items-center gap-2"
             >
+              <RotateCcw className="h-4 w-4" />
               Reset Filters
             </button>
           </div>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <select
-            value={selectedYear}
-            onChange={(e) => {
-              setSelectedYear(e.target.value);
-              setSelectedMonth('all');
-              setSelectedWeek('all');
-            }}
-            className={`px-4 py-3 rounded-xl border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-100' : 'bg-white border-slate-200 text-slate-900'}`}
-          >
-            <option value="all">All Years</option>
-            {availableYears.map((year) => (
-              <option key={year} value={year}>{year}</option>
-            ))}
-          </select>
 
-          <select
-            value={selectedMonth}
-            onChange={(e) => {
-              setSelectedMonth(e.target.value);
-              setSelectedWeek('all');
-            }}
-            className={`px-4 py-3 rounded-xl border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-100' : 'bg-white border-slate-200 text-slate-900'}`}
-          >
-            <option value="all">All Months</option>
-            {availableMonths.map((month) => (
-              <option key={month} value={month}>{MONTH_NAMES[month] || `Month ${month}`}</option>
-            ))}
-          </select>
+        {/* Collapsible Filter Controls */}
+        {showFilters && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+            <select
+              value={selectedYear}
+              onChange={(e) => {
+                setSelectedYear(e.target.value);
+                setSelectedMonth('all');
+                setSelectedWeek('all');
+              }}
+              className={`px-4 py-3 rounded-xl border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-100' : 'bg-white border-slate-200 text-slate-900'}`}
+            >
+              <option value="all">All Years</option>
+              {availableYears.map((year) => (
+                <option key={year} value={year}>{year}</option>
+              ))}
+            </select>
 
-          <select
-            value={selectedWeek}
-            onChange={(e) => setSelectedWeek(e.target.value)}
-            className={`px-4 py-3 rounded-xl border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-100' : 'bg-white border-slate-200 text-slate-900'}`}
-          >
-            <option value="all">All Weeks</option>
-            {availableWeeks.map((week) => (
-              <option key={week} value={week}>Week {week}</option>
-            ))}
-          </select>
+            <select
+              value={selectedMonth}
+              onChange={(e) => {
+                setSelectedMonth(e.target.value);
+                setSelectedWeek('all');
+              }}
+              className={`px-4 py-3 rounded-xl border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-100' : 'bg-white border-slate-200 text-slate-900'}`}
+            >
+              <option value="all">All Months</option>
+              {availableMonths.map((month) => (
+                <option key={month} value={month}>{MONTH_NAMES[month] || `Month ${month}`}</option>
+              ))}
+            </select>
 
-          <input
-            type="text"
-            value={dateFilter}
-            onChange={(e) => setDateFilter(e.target.value)}
-            placeholder="Date/Week label (e.g. Nov Week 1)"
-            className={`px-4 py-3 rounded-xl border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-100 placeholder:text-slate-500' : 'bg-white border-slate-200 text-slate-900 placeholder:text-slate-400'}`}
-          />
-        </div>
+            <select
+              value={selectedWeek}
+              onChange={(e) => setSelectedWeek(e.target.value)}
+              className={`px-4 py-3 rounded-xl border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-100' : 'bg-white border-slate-200 text-slate-900'}`}
+            >
+              <option value="all">All Weeks</option>
+              {availableWeeks.map((week) => (
+                <option key={week} value={week}>Week {week}</option>
+              ))}
+            </select>
+
+            <input
+              type="text"
+              value={dateFilter}
+              onChange={(e) => setDateFilter(e.target.value)}
+              placeholder="Date/Week label (e.g. Nov Week 1)"
+              className={`px-4 py-3 rounded-xl border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-100 placeholder:text-slate-500' : 'bg-white border-slate-200 text-slate-900 placeholder:text-slate-400'}`}
+            />
+          </div>
+        )}
       </div>
 
       {/* Summary Cards */}

@@ -365,10 +365,10 @@ function ClientDashboard() {
       <aside className="w-64 border-r border-slate-100 dark:border-slate-800 flex flex-col p-6 hidden lg:flex dark:bg-slate-900/50">
         <nav className="space-y-2 flex-grow mt-4">
           <NavItem icon={BarChart3} label="Overview" active={activeView === 'overview'} onClick={() => setActiveView('overview')} />
+          <NavItem icon={TrendingUp} label="Analytics" active={activeView === 'analytics'} onClick={() => setActiveView('analytics')} />
           <NavItem icon={Users} label="Patient Leads" badge="Coming Soon" onClick={() => {}} />
           <NavItem icon={Calendar} label="Patient Count" badge="Coming Soon" onClick={() => {}} />
           <NavItem icon={MessageSquare} label="AI Conversations" badge="Coming Soon" onClick={() => {}} />
-          <NavItem icon={TrendingUp} label="Analytics" active={activeView === 'analytics'} onClick={() => setActiveView('analytics')} />
           <NavItem
             icon={CreditCard}
             label="Membership"
