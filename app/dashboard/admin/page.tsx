@@ -118,6 +118,111 @@ function StaffManagementSection({
     isLoading: false,
   });
 
+  const normalizePlanBadge = (listedUser: any) => {
+    const planId = String(listedUser?.planId || '').toLowerCase();
+    const plan = String(listedUser?.plan || '').toLowerCase();
+
+    if (planId === 'premium' || plan.includes('scale elite') || plan === 'premium') return 'Scale Elite';
+    if (planId === 'gold' || plan.includes('growth pro') || plan === 'gold') return 'Growth Pro';
+    if (planId === 'silver' || plan.includes('starter care') || plan === 'silver') return 'Starter Care';
+    return 'Free';
+  };
+
+  const isPremiumClient = (listedUser: any) => {
+    if (listedUser?.role !== 'client') return false;
+    const badge = normalizePlanBadge(listedUser);
+    return badge !== 'Free';
+  };
+
+  const premiumClients = users.filter((listedUser) => isPremiumClient(listedUser));
+  const adminUsers = users.filter((listedUser) => listedUser.role === 'admin' || listedUser.role === 'super_admin');
+  const freeUsers = users.filter((listedUser) => listedUser.role === 'client' && !isPremiumClient(listedUser));
+
+  const getPlanPillClasses = (label: string) => {
+    if (label === 'Scale Elite') return 'bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-400';
+    if (label === 'Growth Pro') return 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400';
+    if (label === 'Starter Care') return 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-400';
+    return 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300';
+  };
+
+  const renderUserTable = (sectionTitle: string, sectionUsers: any[]) => (
+    <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white/70 dark:bg-slate-900/40 overflow-hidden">
+      <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60">
+        <h4 className="font-bold text-slate-900 dark:text-slate-100">{sectionTitle}</h4>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-left">
+          <thead>
+            <tr className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-widest border-b border-slate-100 dark:border-slate-700">
+              <th className="px-4 py-4">Name</th>
+              <th className="px-4 py-4">Email</th>
+              <th className="px-4 py-4">Role</th>
+              <th className="px-4 py-4">Membership</th>
+              <th className="px-4 py-4">Status</th>
+              <th className="px-4 py-4">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
+            {sectionUsers.length === 0 ? (
+              <tr>
+                <td colSpan={6} className="px-4 py-8 text-center text-slate-500 dark:text-slate-400">
+                  No users in this section.
+                </td>
+              </tr>
+            ) : (
+              sectionUsers.map((listedUser) => {
+                const planBadge = normalizePlanBadge(listedUser);
+                return (
+                  <tr key={listedUser.id} className="hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                    <td className="px-4 py-4 font-bold">{listedUser.name}</td>
+                    <td className="px-4 py-4 text-sm text-slate-600 dark:text-slate-400">{listedUser.email}</td>
+                    <td className="px-4 py-4">
+                      <span className={`text-xs px-3 py-1 rounded-full font-bold ${
+                        listedUser.role === 'admin' || listedUser.role === 'super_admin'
+                          ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400'
+                          : 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400'
+                      }`}>
+                        {listedUser.role}
+                      </span>
+                    </td>
+                    <td className="px-4 py-4">
+                      <span className={`text-xs px-3 py-1 rounded-full font-bold ${getPlanPillClasses(planBadge)}`}>
+                        {planBadge}
+                      </span>
+                    </td>
+                    <td className="px-4 py-4">
+                      <span className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 px-3 py-1 rounded-full">
+                        {listedUser.subscriptionStatus || 'Active'}
+                      </span>
+                    </td>
+                    <td className="px-4 py-4">
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => openEditModal(listedUser)}
+                          className="p-2 text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg"
+                          aria-label={`Edit ${listedUser.name}`}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => requestDeleteUser(listedUser)}
+                          className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg"
+                          aria-label={`Delete ${listedUser.name}`}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
     setStatusMessage(null);
@@ -307,64 +412,10 @@ function StaffManagementSection({
         </form>
       </div>
 
-      <div className="overflow-x-auto">
-        <table className="w-full text-left">
-          <thead>
-            <tr className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-widest border-b border-slate-100 dark:border-slate-700">
-              <th className="px-4 py-4">Name</th>
-              <th className="px-4 py-4">Email</th>
-              <th className="px-4 py-4">Role</th>
-              <th className="px-4 py-4">Status</th>
-              <th className="px-4 py-4">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
-            {users.length === 0 ? (
-              <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-slate-500 dark:text-slate-400">
-                  No users found
-                </td>
-              </tr>
-            ) : (
-              users.map((listedUser) => (
-                <tr key={listedUser.id} className="hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-                  <td className="px-4 py-4 font-bold">{listedUser.name}</td>
-                  <td className="px-4 py-4 text-sm text-slate-600 dark:text-slate-400">{listedUser.email}</td>
-                  <td className="px-4 py-4">
-                    <span className={`text-xs px-3 py-1 rounded-full font-bold ${
-                      listedUser.role === 'admin'
-                        ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400'
-                        : 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400'
-                    }`}>
-                      {listedUser.role}
-                    </span>
-                  </td>
-                  <td className="px-4 py-4">
-                    <span className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 px-3 py-1 rounded-full">Active</span>
-                  </td>
-                  <td className="px-4 py-4">
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => openEditModal(listedUser)}
-                        className="p-2 text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg"
-                        aria-label={`Edit ${listedUser.name}`}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => requestDeleteUser(listedUser)}
-                        className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg"
-                        aria-label={`Delete ${listedUser.name}`}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+      <div className="space-y-6">
+        {renderUserTable('Premium Clients', premiumClients)}
+        {renderUserTable('Admin Users', adminUsers)}
+        {renderUserTable('Free Users', freeUsers)}
       </div>
 
       <Modal isOpen={showEditModal} onClose={() => setShowEditModal(false)} title="Edit User">

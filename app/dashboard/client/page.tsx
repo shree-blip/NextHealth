@@ -326,6 +326,17 @@ function ClientDashboard() {
   const currentPlanIdRaw = subStatus?.planId || null;
   const currentPlanId = currentPlanIdRaw === 'platinum' ? 'premium' : currentPlanIdRaw;
   const currentPlanTier = PLANS.find(p => p.id === currentPlanId)?.tier || 0;
+  const fallbackPlanId = String(user?.planId || '').toLowerCase();
+  const fallbackPlanLabel = (() => {
+    if (fallbackPlanId === 'premium') return 'Scale Elite';
+    if (fallbackPlanId === 'gold') return 'Growth Pro';
+    if (fallbackPlanId === 'silver') return 'Starter Care';
+    const planText = String(user?.plan || '').toLowerCase();
+    if (planText.includes('scale elite') || planText === 'premium') return 'Scale Elite';
+    if (planText.includes('growth pro') || planText === 'gold') return 'Growth Pro';
+    if (planText.includes('starter care') || planText === 'silver') return 'Starter Care';
+    return 'Free';
+  })();
 
   const dashboardTitle =
     activeView === 'overview'
@@ -378,7 +389,7 @@ function ClientDashboard() {
               currentPlanId === 'premium' ? 'Scale Elite' : 
               currentPlanId === 'gold' ? 'Growth Pro' : 
               'Starter Care'
-            ) : 'Free'}
+            ) : fallbackPlanLabel}
           />
           <NavItem icon={User} label="Profile" active={activeView === 'profile'} onClick={() => setActiveView('profile')} />
           <NavItem icon={Settings} label="Settings" active={activeView === 'settings'} onClick={() => setActiveView('settings')} />

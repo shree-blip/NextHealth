@@ -26,6 +26,9 @@ export async function GET(req: NextRequest) {
               name: dbUser.name,
               role: dbUser.role === 'super_admin' ? 'admin' : dbUser.role,
               avatar: dbUser.avatar || null,
+              plan: dbUser.plan || null,
+              planId: dbUser.planId || null,
+              subscriptionStatus: dbUser.subscriptionStatus || null,
             }, { status: 200, headers: noCacheHeaders });
           }
         } catch (jwtDbError) {
@@ -37,6 +40,9 @@ export async function GET(req: NextRequest) {
               name: decoded.name || decoded.email,
               role: decoded.role === 'super_admin' ? 'admin' : (decoded.role || 'client'),
               avatar: null,
+              plan: null,
+              planId: null,
+              subscriptionStatus: null,
             }, { status: 200, headers: noCacheHeaders });
           }
         }

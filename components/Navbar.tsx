@@ -104,6 +104,15 @@ export default function Navbar({ forceSolid = false }: NavbarProps) {
       : 'text-slate-600 hover:text-slate-900'
     : 'text-white/80 hover:text-white';
 
+  const membershipLabel = (() => {
+    const planId = String(user?.planId || '').toLowerCase();
+    const plan = String(user?.plan || '').toLowerCase();
+    if (planId === 'premium' || plan.includes('scale elite') || plan === 'premium') return 'Scale Elite';
+    if (planId === 'gold' || plan.includes('growth pro') || plan === 'gold') return 'Growth Pro';
+    if (planId === 'silver' || plan.includes('starter care') || plan === 'silver') return 'Starter Care';
+    return null;
+  })();
+
   useEffect(() => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 50);
@@ -226,26 +235,26 @@ export default function Navbar({ forceSolid = false }: NavbarProps) {
                     ) : (
                       user.name.substring(0, 2).toUpperCase()
                     )}
-                    {user.plan && user.plan !== 'free' && (
+                    {membershipLabel && (
                       <div className={`absolute -bottom-1 -right-1 h-3 w-3 rounded-full ring-1 ${
-                        user.plan === 'premium' 
+                        membershipLabel === 'Scale Elite' 
                           ? 'bg-amber-500 ring-white dark:ring-slate-900' 
-                          : user.plan === 'gold'
+                            : membershipLabel === 'Growth Pro'
                           ? 'bg-blue-500 ring-white dark:ring-slate-900'
                           : 'bg-emerald-500 ring-white dark:ring-slate-900'
                       }`} />
                     )}
                   </div>
                   <span className="hidden lg:inline truncate">{user.name.split(' ')[0]}</span>
-                  {user.plan && user.plan !== 'free' && (
+                    {membershipLabel && (
                     <span className={`hidden sm:inline text-[9px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap ${
-                      user.plan === 'premium' 
+                        membershipLabel === 'Scale Elite' 
                         ? 'bg-amber-500/20 text-amber-600 dark:text-amber-400' 
-                        : user.plan === 'gold'
+                          : membershipLabel === 'Growth Pro'
                         ? 'bg-blue-500/20 text-blue-600 dark:text-blue-400'
                         : 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400'
                     }`}>
-                      {user.plan === 'premium' ? 'Scale Elite' : user.plan === 'gold' ? 'Growth Pro' : 'Starter Care'}
+                        {membershipLabel}
                     </span>
                   )}
                   <ChevronDown className={`h-4 w-4 transition-transform duration-300 ${userMenuOpen ? 'rotate-180' : ''}`} />
