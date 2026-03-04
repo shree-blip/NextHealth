@@ -47,6 +47,7 @@ import AnalyticsForm from './analytics';
 import AdminAnalyticsView from '@/components/AdminAnalyticsView';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import DeleteConfirmationModal from '@/components/DeleteConfirmationModal';
 import { useSitePreferences } from '@/components/SitePreferencesProvider';
 import AdminSettings from '@/components/AdminSettings';
 import { useAdminTranslation } from '@/hooks/useAdminTranslation';
@@ -195,10 +196,10 @@ function StaffManagementSection({ users, onRoleUpdated }: { users: any[]; onRole
           <li>After role change, the user will need to log in again to see the changes</li>
         </ul>
       </div>
+
     </div>
   );
 }
-
 function AdminDashboardContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -297,6 +298,16 @@ function AdminDashboardContent() {
     locations: [] as any[],
     selectedAccount: '',
     selectedLocation: '',
+  });
+
+  // Delete confirmation modal state
+  const [deleteModal, setDeleteModal] = useState({
+    isOpen: false,
+    title: '',
+    description: '',
+    itemName: '',
+    isLoading: false,
+    onConfirm: () => {},
   });
 
   // Navigation functions
@@ -576,46 +587,74 @@ function AdminDashboardContent() {
   };
 
   const handleDeleteClinic = async (clinicId: string) => {
-    if (!confirm('Are you sure you want to delete this clinic? This action cannot be undone.')) return;
+    const clinic = clinics.find(c => c.id === clinicId);
+    
+    setDeleteModal({
+      isOpen: true,
+      title: 'Delete Clinic',
+      description: 'This will permanently delete the clinic and all associated data, including GMB connections and analytics. This action cannot be undone.',
+      itemName: clinic?.name || '',
+      isLoading: false,
+      onConfirm: async () => {
+        setDeleteModal(prev => ({ ...prev, isLoading: true }));
+        
+        try {
+          const res = await fetch(`/api/admin/clinics/${clinicId}`, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+          });
 
-    try {
-      const res = await fetch(`/api/admin/clinics/${clinicId}`, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-      });
+          const data = await res.json();
 
-      const data = await res.json();
+          if (!res.ok) {
+            throw new Error(data.error || 'Failed to delete clinic');
+          }
 
-      if (!res.ok) {
-        throw new Error(data.error || 'Failed to delete clinic');
-      }
-
-      alert('✅ Clinic deleted successfully');
-      fetchAdminData();
-    } catch (error) {
-      console.error('Error deleting clinic:', error);
-      alert(`❌ Failed to delete clinic: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    }
+          alert('✅ Clinic deleted successfully');
+          setDeleteModal({ ...deleteModal, isOpen: false });
+          fetchAdminData();
+        } catch (error) {
+          console.error('Error deleting clinic:', error);
+          alert(`❌ Failed to delete clinic: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          setDeleteModal({ isOpen: false, title: '', description: '', itemName: '', isLoading: false, onConfirm: () => {} });
+        }
+      },
+    });
   };
 
   const handleDeleteClient = async (clientId: string) => {
-    if (confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
-      try {
-        const res = await fetch(`/api/admin/users?id=${clientId}`, {
-          method: 'DELETE',
-        });
-        const data = await res.json();
-        if (!res.ok) {
-          alert(data.error || 'Failed to delete user');
-          return;
+    const client = users.find(u => u.id === clientId);
+    
+    setDeleteModal({
+      isOpen: true,
+      title: 'Delete User',
+      description: 'This will permanently delete the user account and all associated data. This action cannot be undone.',
+      itemName: client?.name || client?.email || '',
+      isLoading: false,
+      onConfirm: async () => {
+        setDeleteModal(prev => ({ ...prev, isLoading: true }));
+        
+        try {
+          const res = await fetch(`/api/admin/users?id=${clientId}`, {
+            method: 'DELETE',
+          });
+          const data = await res.json();
+          if (!res.ok) {
+            alert(data.error || 'Failed to delete user');
+            setDeleteModal({ isOpen: false, title: '', description: '', itemName: '', isLoading: false, onConfirm: () => {} });
+            return;
+          }
+          alert('✅ User deleted successfully');
+          setDeleteModal({ ...deleteModal, isOpen: false });
+          fetchAdminData();
+        } catch (err) {
+          console.error('Error deleting user:', err);
+          alert(`❌ Failed to delete user: ${err instanceof Error ? err.message : 'Unknown error'}`);
+          setDeleteModal({ isOpen: false, title: '', description: '', itemName: '', isLoading: false, onConfirm: () => {} });
         }
-        fetchAdminData();
-      } catch (err) {
-        console.error('Error deleting user:', err);
-        alert('Failed to delete user. Please try again.');
-      }
-    }
+      },
+    });
   };
 
   const fetchGmbConnection = async (clinicId: string) => {
@@ -1310,6 +1349,16 @@ function AdminDashboardContent() {
       </div>
     </Modal>
 
+      <DeleteConfirmationModal
+        isOpen={deleteModal.isOpen}
+        title={deleteModal.title}
+        description={deleteModal.description}
+        itemName={deleteModal.itemName}
+        isLoading={deleteModal.isLoading}
+        onConfirm={deleteModal.onConfirm}
+        onCancel={() => setDeleteModal({ isOpen: false, title: '', description: '', itemName: '', isLoading: false, onConfirm: () => {} })}
+      />
+
     <Footer />
     </>
   );
@@ -1486,10 +1535,10 @@ function AdminProfileView({ user }: { user: any }) {
           {isSubmitting ? 'Saving...' : 'Save Changes'}
         </button>
       </form>
+
     </div>
   );
 }
-
 function DashboardSettingsView({ role }: { role: 'admin' | 'client' }) {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -2244,6 +2293,13 @@ function BlogManagementSection() {
   const [posts, setPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const [deleteModal, setDeleteModal] = useState({
+    isOpen: false,
+    postId: 0,
+    postTitle: '',
+    isLoading: false,
+  });
+
   useEffect(() => {
     fetch('/api/posts')
       .then(res => res.json())
@@ -2252,9 +2308,26 @@ function BlogManagementSection() {
   }, []);
 
   const handleDelete = async (id: number) => {
-    if (!confirm('Are you sure you want to delete this post?')) return;
-    await fetch(`/api/admin/posts/${id}`, { method: 'DELETE' });
-    setPosts(posts.filter(p => p.id !== id));
+    const post = posts.find(p => p.id === id);
+    setDeleteModal({
+      isOpen: true,
+      postId: id,
+      postTitle: post?.title || '',
+      isLoading: false,
+    });
+  };
+
+  const confirmDelete = async () => {
+    setDeleteModal(prev => ({ ...prev, isLoading: true }));
+    try {
+      await fetch(`/api/admin/posts/${deleteModal.postId}`, { method: 'DELETE' });
+      setPosts(posts.filter(p => p.id !== deleteModal.postId));
+      setDeleteModal({ isOpen: false, postId: 0, postTitle: '', isLoading: false });
+    } catch (error) {
+      console.error('Error deleting post:', error);
+      alert(`❌ Failed to delete post: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setDeleteModal(prev => ({ ...prev, isLoading: false }));
+    }
   };
 
   return (
@@ -2331,6 +2404,15 @@ function BlogManagementSection() {
           </table>
         </div>
       )}
+      <DeleteConfirmationModal
+        isOpen={deleteModal.isOpen}
+        title="Delete Blog Post"
+        description="This will permanently delete the blog post. This action cannot be undone."
+        itemName={deleteModal.postTitle}
+        isLoading={deleteModal.isLoading}
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteModal({ isOpen: false, postId: 0, postTitle: '', isLoading: false })}
+      />
     </div>
   );
 }
@@ -2340,6 +2422,12 @@ function NewsManagementSection() {
   const router = useRouter();
   const [articles, setArticles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deleteModal, setDeleteModal] = useState({
+    isOpen: false,
+    articleId: 0,
+    articleTitle: '',
+    isLoading: false,
+  });
 
   useEffect(() => {
     fetch('/api/news')
@@ -2349,9 +2437,26 @@ function NewsManagementSection() {
   }, []);
 
   const handleDelete = async (id: number) => {
-    if (!confirm('Are you sure you want to delete this news article?')) return;
-    await fetch(`/api/admin/news/${id}`, { method: 'DELETE' });
-    setArticles(articles.filter(a => a.id !== id));
+    const article = articles.find(a => a.id === id);
+    setDeleteModal({
+      isOpen: true,
+      articleId: id,
+      articleTitle: article?.title || '',
+      isLoading: false,
+    });
+  };
+
+  const confirmDelete = async () => {
+    setDeleteModal(prev => ({ ...prev, isLoading: true }));
+    try {
+      await fetch(`/api/admin/news/${deleteModal.articleId}`, { method: 'DELETE' });
+      setArticles(articles.filter(a => a.id !== deleteModal.articleId));
+      setDeleteModal({ isOpen: false, articleId: 0, articleTitle: '', isLoading: false });
+    } catch (error) {
+      console.error('Error deleting article:', error);
+      alert(`❌ Failed to delete article: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setDeleteModal(prev => ({ ...prev, isLoading: false }));
+    }
   };
 
   return (
@@ -2434,6 +2539,15 @@ function NewsManagementSection() {
           </table>
         </div>
       )}
+      <DeleteConfirmationModal
+        isOpen={deleteModal.isOpen}
+        title="Delete News Article"
+        description="This will permanently delete the news article. This action cannot be undone."
+        itemName={deleteModal.articleTitle}
+        isLoading={deleteModal.isLoading}
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteModal({ isOpen: false, articleId: 0, articleTitle: '', isLoading: false })}
+      />
     </div>
   );
 }
