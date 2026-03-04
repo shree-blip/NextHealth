@@ -48,6 +48,7 @@ import AdminAnalyticsView from '@/components/AdminAnalyticsView';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import DeleteConfirmationModal from '@/components/DeleteConfirmationModal';
+import ActionFeedback from '@/components/ActionFeedback';
 import { useSitePreferences } from '@/components/SitePreferencesProvider';
 import AdminSettings from '@/components/AdminSettings';
 import { useAdminTranslation } from '@/hooks/useAdminTranslation';
@@ -310,6 +311,49 @@ function AdminDashboardContent() {
     onConfirm: () => {},
   });
 
+  const [actionFeedback, setActionFeedback] = useState({
+    loading: false,
+    loadingText: 'Saving changes...',
+    showSuccess: false,
+    successMessage: '',
+  });
+
+  const startActionFeedback = (loadingText: string) => {
+    setActionFeedback(prev => ({
+      ...prev,
+      loading: true,
+      loadingText,
+      showSuccess: false,
+    }));
+  };
+
+  const finishActionSuccess = (successMessage: string) => {
+    setActionFeedback({
+      loading: false,
+      loadingText: 'Saving changes...',
+      showSuccess: true,
+      successMessage,
+    });
+  };
+
+  const finishActionError = () => {
+    setActionFeedback(prev => ({
+      ...prev,
+      loading: false,
+    }));
+  };
+
+  const resetDeleteModal = () => {
+    setDeleteModal({
+      isOpen: false,
+      title: '',
+      description: '',
+      itemName: '',
+      isLoading: false,
+      onConfirm: () => {},
+    });
+  };
+
   // Navigation functions
   const navigateToSection = (newSection: string) => {
     const newHistory = [...sectionHistory.slice(0, historyIndex + 1), newSection];
@@ -389,6 +433,15 @@ function AdminDashboardContent() {
     window.history.replaceState({}, '', `${url.pathname}${url.search}`);
   }, [section]);
 
+  useEffect(() => {
+    if (!actionFeedback.showSuccess) return;
+    const timerId = window.setTimeout(() => {
+      setActionFeedback(prev => ({ ...prev, showSuccess: false }));
+    }, 2600);
+
+    return () => window.clearTimeout(timerId);
+  }, [actionFeedback.showSuccess]);
+
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' });
     router.push('/login');
@@ -401,6 +454,7 @@ function AdminDashboardContent() {
     }
 
     try {
+      startActionFeedback('Assigning clinic...');
       const res = await fetch('/api/admin/clinics/assign', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -414,12 +468,19 @@ function AdminDashboardContent() {
         throw new Error(data.error || 'Failed to assign clinic');
       }
 
-      alert('✅ Clinic assigned successfully');
+      setAssignments(prev => {
+        const exists = prev.some(a => a.userId === selectedUser && a.clinicId === selectedClinic);
+        if (exists) return prev;
+        return [...prev, { userId: selectedUser, clinicId: selectedClinic }];
+      });
+
+      finishActionSuccess('Clinic assigned successfully.');
       setSelectedUser('');
       setSelectedClinic('');
       fetchAdminData();
     } catch (error) {
       console.error('Error assigning clinic:', error);
+      finishActionError();
       alert(`❌ Failed to assign clinic: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
@@ -431,6 +492,7 @@ function AdminDashboardContent() {
     }
 
     try {
+      startActionFeedback('Assigning clinic...');
       const res = await fetch('/api/admin/clinics/assign', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -444,40 +506,60 @@ function AdminDashboardContent() {
         throw new Error(data.error || 'Failed to assign clinic');
       }
 
-      alert('✅ Clinic assigned successfully');
+      setAssignments(prev => {
+        const exists = prev.some(a => a.userId === userId && a.clinicId === quickAssignClinicId);
+        if (exists) return prev;
+        return [...prev, { userId, clinicId: quickAssignClinicId }];
+      });
+
+      finishActionSuccess('Clinic assigned successfully.');
       setShowQuickAssignModal(false);
       setQuickAssignClinicId('');
       setSelectedUser('');
       fetchAdminData();
     } catch (error) {
       console.error('Error assigning clinic:', error);
+      finishActionError();
       alert(`❌ Failed to assign clinic: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
   const handleRemoveAssignment = async (userId: string, clinicId: string) => {
-    if (!confirm('Are you sure you want to remove this assignment?')) return;
+    setDeleteModal({
+      isOpen: true,
+      title: 'Remove Assignment',
+      description: 'This will remove the current user-clinic assignment.',
+      itemName: 'User/Clinic Assignment',
+      isLoading: false,
+      onConfirm: async () => {
+        setDeleteModal(prev => ({ ...prev, isLoading: true }));
+        startActionFeedback('Removing assignment...');
 
-    try {
-      const res = await fetch('/api/admin/clinics/assign', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ userId, clinicId }),
-      });
+        try {
+          const res = await fetch('/api/admin/clinics/assign', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ userId, clinicId }),
+          });
 
-      const data = await res.json();
+          const data = await res.json();
 
-      if (!res.ok) {
-        throw new Error(data.error || 'Failed to remove assignment');
-      }
+          if (!res.ok) {
+            throw new Error(data.error || 'Failed to remove assignment');
+          }
 
-      alert('✅ Assignment removed successfully');
-      fetchAdminData();
-    } catch (error) {
-      console.error('Error removing assignment:', error);
-      alert(`❌ Failed to remove assignment: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    }
+          setAssignments(prev => prev.filter(a => !(a.userId === userId && a.clinicId === clinicId)));
+          resetDeleteModal();
+          finishActionSuccess('Assignment removed successfully.');
+        } catch (error) {
+          console.error('Error removing assignment:', error);
+          finishActionError();
+          resetDeleteModal();
+          alert(`❌ Failed to remove assignment: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
+      },
+    });
   };
 
   const handleUpdateStats = async (clinicId: string, leads: number, appointments: number) => {
@@ -488,6 +570,7 @@ function AdminDashboardContent() {
   const handleAddClient = async () => {
     if (newClientName && newClientEmail && newClientPassword) {
       try {
+        startActionFeedback('Creating user...');
         const res = await fetch('/api/admin/users', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -500,17 +583,23 @@ function AdminDashboardContent() {
         });
         const data = await res.json();
         if (!res.ok) {
+          finishActionError();
           alert(data.error || 'Failed to create user');
           return;
         }
+
+        setUsers(prev => [data, ...prev]);
+
         setNewClientName('');
         setNewClientEmail('');
         setNewClientPassword('');
         setNewClientRole('client');
         setShowAddClientModal(false);
+        finishActionSuccess('User added successfully.');
         fetchAdminData();
       } catch (err) {
         console.error('Error creating user:', err);
+        finishActionError();
         alert('Failed to create user. Please try again.');
       }
     }
@@ -523,6 +612,7 @@ function AdminDashboardContent() {
     }
 
     try {
+      startActionFeedback('Creating clinic...');
       const res = await fetch('/api/admin/clinics/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -541,7 +631,16 @@ function AdminDashboardContent() {
         throw new Error(data.error || 'Failed to create clinic');
       }
 
-      alert('✅ Clinic created successfully');
+      setClinics(prev => [data, ...prev]);
+      if (newClinicAssignedUser) {
+        setAssignments(prev => {
+          const exists = prev.some(a => a.userId === newClinicAssignedUser && a.clinicId === data.id);
+          if (exists) return prev;
+          return [...prev, { userId: newClinicAssignedUser, clinicId: data.id }];
+        });
+      }
+
+      finishActionSuccess('Clinic created successfully.');
       setNewClinicName('');
       setNewClinicType('');
       setNewClinicLocation('');
@@ -550,6 +649,7 @@ function AdminDashboardContent() {
       fetchAdminData();
     } catch (error) {
       console.error('Error creating clinic:', error);
+      finishActionError();
       alert(`❌ Failed to create clinic: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
@@ -597,6 +697,7 @@ function AdminDashboardContent() {
       isLoading: false,
       onConfirm: async () => {
         setDeleteModal(prev => ({ ...prev, isLoading: true }));
+        startActionFeedback('Deleting clinic...');
         
         try {
           const res = await fetch(`/api/admin/clinics/${clinicId}`, {
@@ -611,13 +712,16 @@ function AdminDashboardContent() {
             throw new Error(data.error || 'Failed to delete clinic');
           }
 
-          alert('✅ Clinic deleted successfully');
-          setDeleteModal({ ...deleteModal, isOpen: false });
+          setClinics(prev => prev.filter(c => c.id !== clinicId));
+          setAssignments(prev => prev.filter(a => a.clinicId !== clinicId));
+          resetDeleteModal();
+          finishActionSuccess('Clinic deleted successfully.');
           fetchAdminData();
         } catch (error) {
           console.error('Error deleting clinic:', error);
+          finishActionError();
           alert(`❌ Failed to delete clinic: ${error instanceof Error ? error.message : 'Unknown error'}`);
-          setDeleteModal({ isOpen: false, title: '', description: '', itemName: '', isLoading: false, onConfirm: () => {} });
+          resetDeleteModal();
         }
       },
     });
@@ -634,6 +738,7 @@ function AdminDashboardContent() {
       isLoading: false,
       onConfirm: async () => {
         setDeleteModal(prev => ({ ...prev, isLoading: true }));
+        startActionFeedback('Deleting user...');
         
         try {
           const res = await fetch(`/api/admin/users?id=${clientId}`, {
@@ -641,17 +746,22 @@ function AdminDashboardContent() {
           });
           const data = await res.json();
           if (!res.ok) {
+            finishActionError();
             alert(data.error || 'Failed to delete user');
-            setDeleteModal({ isOpen: false, title: '', description: '', itemName: '', isLoading: false, onConfirm: () => {} });
+            resetDeleteModal();
             return;
           }
-          alert('✅ User deleted successfully');
-          setDeleteModal({ ...deleteModal, isOpen: false });
+
+          setUsers(prev => prev.filter(u => u.id !== clientId));
+          setAssignments(prev => prev.filter(a => a.userId !== clientId));
+          resetDeleteModal();
+          finishActionSuccess('User deleted successfully.');
           fetchAdminData();
         } catch (err) {
           console.error('Error deleting user:', err);
+          finishActionError();
           alert(`❌ Failed to delete user: ${err instanceof Error ? err.message : 'Unknown error'}`);
-          setDeleteModal({ isOpen: false, title: '', description: '', itemName: '', isLoading: false, onConfirm: () => {} });
+          resetDeleteModal();
         }
       },
     });
@@ -1028,6 +1138,7 @@ function AdminDashboardContent() {
           onRoleUpdated={(updatedUser: any) => {
             setUsers(prev => prev.map(u => (u.id === updatedUser.id ? { ...u, role: updatedUser.role } : u)));
           }}
+          isActionLoading={actionFeedback.loading}
           t={t}
         />
         </div>
@@ -1083,13 +1194,14 @@ function AdminDashboardContent() {
         <div className="flex gap-3 pt-2">
           <button
             onClick={handleAddClient}
-            disabled={!newClientName || !newClientEmail || !newClientPassword}
+            disabled={!newClientName || !newClientEmail || !newClientPassword || actionFeedback.loading}
             className="flex-1 bg-emerald-500 text-black font-bold py-2 rounded-lg hover:bg-emerald-400 disabled:opacity-50"
           >
-            Add User
+            {actionFeedback.loading ? 'Adding...' : 'Add User'}
           </button>
           <button
             onClick={() => setShowAddClientModal(false)}
+            disabled={actionFeedback.loading}
             className="px-4 py-2 bg-slate-200 dark:bg-slate-700 rounded-lg"
           >
             Cancel
@@ -1331,16 +1443,17 @@ function AdminDashboardContent() {
         <div className="flex gap-3 pt-2">
           <button
             onClick={() => selectedUser && handleQuickAssign(selectedUser)}
-            disabled={!selectedUser}
+            disabled={!selectedUser || actionFeedback.loading}
             className="flex-1 bg-emerald-500 text-black font-bold py-2 rounded-lg hover:bg-emerald-400 disabled:opacity-50"
           >
-            Assign
+            {actionFeedback.loading ? 'Assigning...' : 'Assign'}
           </button>
           <button
             onClick={() => {
               setShowQuickAssignModal(false);
               setSelectedUser('');
             }}
+            disabled={actionFeedback.loading}
             className="px-4 py-2 bg-slate-200 dark:bg-slate-700 rounded-lg"
           >
             Cancel
@@ -1349,15 +1462,23 @@ function AdminDashboardContent() {
       </div>
     </Modal>
 
-      <DeleteConfirmationModal
-        isOpen={deleteModal.isOpen}
-        title={deleteModal.title}
-        description={deleteModal.description}
-        itemName={deleteModal.itemName}
-        isLoading={deleteModal.isLoading}
-        onConfirm={deleteModal.onConfirm}
-        onCancel={() => setDeleteModal({ isOpen: false, title: '', description: '', itemName: '', isLoading: false, onConfirm: () => {} })}
-      />
+    <DeleteConfirmationModal
+      isOpen={deleteModal.isOpen}
+      title={deleteModal.title}
+      description={deleteModal.description}
+      itemName={deleteModal.itemName}
+      isLoading={deleteModal.isLoading}
+      onConfirm={deleteModal.onConfirm}
+      onCancel={resetDeleteModal}
+    />
+
+    <ActionFeedback
+      loading={actionFeedback.loading}
+      loadingText={actionFeedback.loadingText}
+      showSuccess={actionFeedback.showSuccess}
+      successMessage={actionFeedback.successMessage}
+      onDismissSuccess={() => setActionFeedback(prev => ({ ...prev, showSuccess: false }))}
+    />
 
     <Footer />
     </>
@@ -1755,6 +1876,7 @@ function ContentForSection(props: {
   analyticsRefreshKey: number;
   setAnalyticsRefreshKey: React.Dispatch<React.SetStateAction<number>>;
   onRoleUpdated: (updatedUser: any) => void;
+  isActionLoading: boolean;
   t: (key: string) => string;
 }) {
   const {
@@ -1781,6 +1903,7 @@ function ContentForSection(props: {
     analyticsRefreshKey,
     setAnalyticsRefreshKey,
     onRoleUpdated,
+    isActionLoading,
     t,
   } = props;
 
@@ -1835,10 +1958,10 @@ function ContentForSection(props: {
               </select>
               <button 
                 onClick={handleAssign}
-                disabled={!selectedUser || !selectedClinic}
+                disabled={!selectedUser || !selectedClinic || isActionLoading}
                 className="bg-emerald-500 text-black px-6 py-3 rounded-xl font-bold hover:bg-emerald-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Assign
+                {isActionLoading ? 'Assigning...' : 'Assign'}
               </button>
             </div>
 
@@ -1871,7 +1994,13 @@ function ContentForSection(props: {
                             {assignedUsers.map((u: any) => (
                               <span key={u.id} className="text-xs bg-slate-200 dark:bg-slate-700 px-2 py-1 rounded-md flex items-center gap-2">
                                 {u.name}
-                                <button onClick={() => handleRemoveAssignment(u.id, clinic.id)} className="text-red-400 hover:text-red-300">×</button>
+                                <button
+                                  onClick={() => handleRemoveAssignment(u.id, clinic.id)}
+                                  disabled={isActionLoading}
+                                  className="text-red-400 hover:text-red-300 disabled:opacity-40 disabled:cursor-not-allowed"
+                                >
+                                  ×
+                                </button>
                               </span>
                             ))}
                             {assignedUsers.length === 0 && <span className="text-slate-400 text-xs">Unassigned</span>}
