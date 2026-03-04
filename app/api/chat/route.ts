@@ -4,7 +4,7 @@ import prisma from '@/lib/prisma';
 export const dynamic = 'force-dynamic';
 export const fetchCache = 'force-no-store';
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY!;
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
 
 const SYSTEM_PROMPT = `You are Alex, The NextGen Healthcare Marketing's friendly marketing assistant. You're helpful, human, and genuinely interested in helping healthcare providers grow their practices.
 
@@ -229,36 +229,55 @@ export async function POST(req: NextRequest) {
     let reply = '';
     let usedFallback = false;
 
-    if (!GEMINI_API_KEY) {
+    // Check if API key is properly configured
+    if (!GEMINI_API_KEY || GEMINI_API_KEY.trim() === '') {
+      console.error('[Chat API] GEMINI_API_KEY is not configured. Please set it in environment variables.');
       usedFallback = true;
       reply = fallbackReply(latestUserMessage, currentLanguage);
     } else {
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${GEMINI_API_KEY}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          cache: 'no-store',
-          body: JSON.stringify({
-            contents,
-            generationConfig: {
-              maxOutputTokens: 512,
-              temperature: 0.7,
-            },
-          }),
-        }
-      );
+      try {
+        console.log('[Chat API] Calling Gemini API with', recentMessages.length, 'messages');
+        
+        const response = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            cache: 'no-store',
+            body: JSON.stringify({
+              contents,
+              generationConfig: {
+                maxOutputTokens: 512,
+                temperature: 0.7,
+              },
+            }),
+          }
+        );
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Gemini API error:', response.status, errorText);
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('[Chat API] Gemini API error:', response.status, errorText);
+          usedFallback = true;
+          reply = fallbackReply(latestUserMessage, currentLanguage);
+        } else {
+          const data = await response.json();
+          console.log('[Chat API] Gemini API response received:', data.candidates?.[0]?.content?.parts?.[0]?.text?.substring(0, 100));
+          
+          const generatedText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+          
+          if (!generatedText || generatedText.trim() === '') {
+            console.warn('[Chat API] Gemini returned empty response, using fallback');
+            usedFallback = true;
+            reply = fallbackReply(latestUserMessage, currentLanguage);
+          } else {
+            reply = generatedText;
+            console.log('[Chat API] Using Gemini-generated response');
+          }
+        }
+      } catch (error) {
+        console.error('[Chat API] Gemini API call failed:', error);
         usedFallback = true;
         reply = fallbackReply(latestUserMessage, currentLanguage);
-      } else {
-        const data = await response.json();
-        reply =
-          data.candidates?.[0]?.content?.parts?.[0]?.text ||
-          fallbackReply(latestUserMessage, currentLanguage);
       }
     }
 
