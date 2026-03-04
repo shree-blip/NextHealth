@@ -469,6 +469,16 @@ export default function Navbar() {
               </AnimatePresence>
             </div>
 
+            <a href="tel:972-848-1153" className={`inline-flex items-center gap-2 font-semibold transition-colors ${
+              scrolled
+                ? theme === 'dark'
+                  ? 'text-slate-200 hover:text-emerald-400'
+                  : 'text-slate-600 hover:text-emerald-600'
+                : 'text-white/80 hover:text-white'
+            }`}>
+              📞 972-848-1153
+            </a>
+
             <Link href="/contact" className="rounded-full bg-emerald-500 px-6 py-2 font-semibold text-black hover:bg-emerald-400 transition-all hover:scale-105">
               {text.getStarted}
             </Link>
@@ -643,6 +653,14 @@ export default function Navbar() {
               </div>
             </div>
           </div>
+
+          <a href="tel:972-848-1153" className={`block w-full text-center rounded-full py-3 font-bold transition-all ${
+            theme === 'dark'
+              ? 'bg-slate-800 text-emerald-400 hover:bg-slate-700'
+              : 'bg-slate-100 text-emerald-600 hover:bg-slate-200'
+          }`}>
+            📞 972-848-1153
+          </a>
 
           <Link href="/contact" className="block w-full rounded-full bg-emerald-500 py-3 text-center font-bold text-black hover:bg-emerald-400">
             {text.getStarted}

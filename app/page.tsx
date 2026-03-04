@@ -36,7 +36,7 @@ const schema = {
     "postalCode": "75038",
     "addressCountry": "US"
   },
-  "telephone": "(214) 555-0123",
+  "telephone": "972-848-1153",
   "url": "https://thenextgenhealth.com",
   "areaServed": ["Dallas", "Houston", "Austin", "San Antonio", "Irving", "Texas"],
   "priceRange": "$$$"

@@ -117,6 +117,10 @@ export default function Footer() {
                 <Mail className="h-5 w-5 text-emerald-500 shrink-0" />
                 <span>hello@thenextgenhealth.com</span>
               </li>
+
+              <li className={`flex items-center gap-3 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+                <span>📞 972-848-1153</span>
+              </li>
             </ul>
           </div>
         </div>
