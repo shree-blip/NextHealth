@@ -422,20 +422,16 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false }:
 
   console.log('[Client Analytics] Filtered', filteredAnalytics.length, 'weeks, Totals:', totals);
 
-  // Determine spend label based on filter level
-  const getSpendLabel = () => {
-    if (selectedWeek !== 'all') {
-      return 'Weekly Spend';
-    } else if (selectedMonth !== 'all') {
-      return 'Monthly Spend';
-    } else if (selectedYear !== 'all') {
-      return 'Yearly Spend';
-    } else {
-      return 'Total Spend';
-    }
-  };
+  // Determine period prefix based on active filter level
+  const periodPrefix = selectedWeek !== 'all'
+    ? 'Weekly'
+    : selectedMonth !== 'all'
+      ? 'Monthly'
+      : selectedYear !== 'all'
+        ? 'Yearly'
+        : 'Total';
 
-  const spendLabel = getSpendLabel();
+  const totalAdSpend = totals.metaSpend + totals.googleSpend;
 
   // Prepare chart data
   const trafficData = filteredAnalytics.map(w => ({
@@ -634,7 +630,7 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false }:
             <ArrowUpRight className="h-5 w-5 text-emerald-500" />
           </div>
           <h3 className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{totals.traffic.toLocaleString()}</h3>
-          <p className={`text-sm font-semibold ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>Total Traffic</p>
+          <p className={`text-sm font-semibold ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{periodPrefix} Traffic</p>
         </motion.div>
 
         <motion.div
@@ -648,7 +644,7 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false }:
             <ArrowUpRight className="h-5 w-5 text-emerald-500" />
           </div>
           <h3 className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{totals.calls}</h3>
-          <p className={`text-sm font-semibold ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>GMB Calls</p>
+          <p className={`text-sm font-semibold ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{periodPrefix} GMB Calls</p>
         </motion.div>
 
         <motion.div
@@ -663,8 +659,8 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false }:
               Ad Spend
             </span>
           </div>
-          <h3 className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>${(totals.metaSpend + totals.googleSpend).toFixed(0)}</h3>
-          <p className={`text-sm font-semibold ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{spendLabel}</p>
+          <h3 className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>${totalAdSpend.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h3>
+          <p className={`text-sm font-semibold ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{periodPrefix} Ad Spend</p>
         </motion.div>
 
         <motion.div
@@ -680,7 +676,7 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false }:
             </span>
           </div>
           <h3 className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{totals.blogs}</h3>
-          <p className={`text-sm font-semibold ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>Blogs Published</p>
+          <p className={`text-sm font-semibold ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{periodPrefix} Blogs Published</p>
         </motion.div>
       </div>
 
