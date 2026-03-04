@@ -30,7 +30,15 @@ export async function GET(req: NextRequest) {
           }
         } catch (jwtDbError) {
           console.error('JWT DB lookup error:', jwtDbError);
-          // Fall through to 401
+          if (decoded?.id && decoded?.email) {
+            return NextResponse.json({
+              id: decoded.id,
+              email: decoded.email,
+              name: decoded.name || decoded.email,
+              role: decoded.role === 'super_admin' ? 'admin' : (decoded.role || 'client'),
+              avatar: null,
+            }, { status: 200, headers: noCacheHeaders });
+          }
         }
       } catch (jwtError) {
         // Invalid JWT, fall through to 401
