@@ -1,6 +1,7 @@
 'use client';
 import { motion } from 'framer-motion';
 import { useState } from 'react';
+import Image from 'next/image';
 import { useSitePreferences } from '@/components/SitePreferencesProvider';
 
 interface AudienceCard {
@@ -37,11 +38,12 @@ function FlipCard({ audience, index }: { audience: AudienceCard, index: number }
           className="absolute inset-0 rounded-2xl overflow-hidden shadow-xl"
           style={{ backfaceVisibility: 'hidden' }}
         >
-          <img
+          <Image
             src={audience.image}
             alt={audience.title}
+            fill
+            sizes="(min-width: 1024px) 30vw, (min-width: 768px) 45vw, 90vw"
             loading="lazy"
-            decoding="async"
             className="w-full h-full object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
