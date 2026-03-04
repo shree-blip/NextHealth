@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { requireAdmin } from '@/lib/auth';
 
 export async function POST(request: NextRequest) {
   try {
+    // Check auth
+    const auth = await requireAdmin(request);
+    if ('response' in auth) return auth.response;
+
     const { name, type, location, assignedUsers } = await request.json();
 
     // Validate input

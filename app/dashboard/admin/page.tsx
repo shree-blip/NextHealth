@@ -393,6 +393,7 @@ function AdminDashboardContent() {
       const res = await fetch('/api/admin/clinics/assign', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ userId: selectedUser, clinicId: selectedClinic }),
       });
 
@@ -422,6 +423,7 @@ function AdminDashboardContent() {
       const res = await fetch('/api/admin/clinics/assign', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ userId, clinicId: quickAssignClinicId }),
       });
 
@@ -449,6 +451,7 @@ function AdminDashboardContent() {
       const res = await fetch('/api/admin/clinics/assign', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ userId, clinicId }),
       });
 
@@ -512,6 +515,7 @@ function AdminDashboardContent() {
       const res = await fetch('/api/admin/clinics/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           name: newClinicName,
           type: newClinicType,
@@ -546,6 +550,7 @@ function AdminDashboardContent() {
       const res = await fetch(`/api/admin/clinics/${editingClinic.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           name: editingClinic.name,
           type: editingClinic.type,
@@ -577,6 +582,7 @@ function AdminDashboardContent() {
       const res = await fetch(`/api/admin/clinics/${clinicId}`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
       });
 
       const data = await res.json();

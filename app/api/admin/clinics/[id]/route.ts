@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { requireAdmin } from '@/lib/auth';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -10,6 +11,10 @@ export async function PATCH(
   context: RouteParams
 ) {
   try {
+    // Check auth
+    const auth = await requireAdmin(request);
+    if ('response' in auth) return auth.response;
+
     const { id: clinicId } = await context.params;
     const { name, type, location, assignedUsers } = await request.json();
 
@@ -95,6 +100,10 @@ export async function DELETE(
   context: RouteParams
 ) {
   try {
+    // Check auth
+    const auth = await requireAdmin(request);
+    if ('response' in auth) return auth.response;
+
     const { id: clinicId } = await context.params;
 
     // Check if clinic exists
