@@ -8,9 +8,14 @@ import { useState, useEffect, useRef } from 'react';
 import { useSitePreferences } from '@/components/SitePreferencesProvider';
 import { useAuth } from '@/components/AuthProvider';
 import { useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import Logo from '@/components/Logo';
 
-export default function Navbar() {
+interface NavbarProps {
+  forceSolid?: boolean;
+}
+
+export default function Navbar({ forceSolid = false }: NavbarProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -22,6 +27,8 @@ export default function Navbar() {
   const { language, setLanguage, theme, setTheme } = useSitePreferences();
   const { user, logout } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
+  const shouldUseSolidNav = forceSolid || pathname?.startsWith('/blog/') || pathname?.startsWith('/news/');
 
   // Close settings, user menu, and resources dropdowns when clicking outside
   useEffect(() => {
@@ -85,13 +92,13 @@ export default function Navbar() {
 
   const text = labels[language];
 
-  const navClass = scrolled
+  const navClass = (scrolled || shouldUseSolidNav)
     ? theme === 'dark'
       ? 'bg-slate-900/90 backdrop-blur-xl border-b border-slate-700 shadow-sm'
       : 'bg-white/90 backdrop-blur-xl border-b border-slate-200 shadow-sm'
     : 'bg-transparent';
 
-  const desktopLinkClass = scrolled
+  const desktopLinkClass = (scrolled || shouldUseSolidNav)
     ? theme === 'dark'
       ? 'text-slate-200 hover:text-white'
       : 'text-slate-600 hover:text-slate-900'

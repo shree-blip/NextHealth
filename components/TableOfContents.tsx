@@ -67,8 +67,8 @@ export default function TableOfContents({ html }: Props) {
   if (headings.length === 0) return null;
 
   return (
-    <nav className="toc rounded-2xl border border-slate-200 bg-white shadow-sm p-5 sm:p-6">
-      <h2 className="text-base font-bold text-slate-900">Table of Contents</h2>
+    <nav className="toc rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm p-5 sm:p-6">
+      <h2 className="text-base font-bold text-slate-900 dark:text-white">Table of Contents</h2>
       <ul className="mt-3 space-y-2">
         {headings.map((h) => (
           <li
@@ -78,7 +78,7 @@ export default function TableOfContents({ html }: Props) {
           >
             <a
               href={`#${h.id}`}
-              className="text-slate-600 hover:text-emerald-600 transition-colors"
+              className="text-slate-600 dark:text-slate-300 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
             >
               {h.text}
             </a>

@@ -22,7 +22,7 @@ export default function SinglePostLayout({
   children,
 }: SinglePostLayoutProps) {
   return (
-    <article className="mx-auto w-full max-w-5xl px-4 sm:px-6 lg:px-8 py-8 sm:py-10 lg:py-12">
+    <article className="mx-auto w-full max-w-5xl px-4 sm:px-6 lg:px-8 pt-24 sm:pt-28 lg:pt-32 pb-10 sm:pb-12">
       <header className="rounded-3xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm p-5 sm:p-8 lg:p-10">
         <div className="space-y-4 min-w-0">
           {headerTop && <div>{headerTop}</div>}
