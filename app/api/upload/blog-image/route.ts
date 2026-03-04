@@ -1,13 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { writeFile, mkdir } from 'fs/promises';
-import { join } from 'path';
-import { existsSync } from 'fs';
 
 export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData();
     const file = formData.get('file') as File;
-    const alt = formData.get('alt') as string || '';
+    const alt = (formData.get('alt') as string) || '';
 
     if (!file) {
       return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
@@ -18,39 +15,56 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'File must be an image' }, { status: 400 });
     }
 
-    // Validate file size (10MB max for blog images)
-    if (file.size > 10 * 1024 * 1024) {
-      return NextResponse.json({ error: 'File size must be less than 10MB' }, { status: 400 });
+    // Validate file size (5MB max for blog images)
+    const maxSize = 5 * 1024 * 1024;
+    if (file.size > maxSize) {
+      return NextResponse.json({ error: 'File size must be less than 5MB' }, { status: 400 });
     }
 
-    // Create uploads directory if it doesn't exist
-    const uploadsDir = join(process.cwd(), 'public', 'uploads', 'blog-images');
-    if (!existsSync(uploadsDir)) {
-      await mkdir(uploadsDir, { recursive: true });
+    try {
+      // Try Vercel Blob first (if BLOB_READ_WRITE_TOKEN is set)
+      if (process.env.BLOB_READ_WRITE_TOKEN) {
+        const { put } = await import('@vercel/blob');
+        
+        const buffer = await file.arrayBuffer();
+        const timestamp = Date.now();
+        const randomStr = Math.random().toString(36).substring(2, 8);
+        const extension = file.name.split('.').pop() || 'jpg';
+        const filename = `blog-${timestamp}-${randomStr}.${extension}`;
+        
+        const blob = await put(filename, buffer as BlobPart, {
+          contentType: file.type,
+          access: 'public',
+        });
+
+        return NextResponse.json({
+          url: blob.url,
+          alt: alt || file.name,
+          success: true,
+        });
+      }
+    } catch (blobError) {
+      console.warn('Vercel Blob not configured, falling back to data URL:', blobError);
     }
 
-    // Generate unique filename
-    const timestamp = Date.now();
-    const randomStr = Math.random().toString(36).substring(2, 8);
-    const extension = file.name.split('.').pop();
-    const filename = `blog-${timestamp}-${randomStr}.${extension}`;
-    const filepath = join(uploadsDir, filename);
-
-    // Convert file to buffer and save
+    // Fallback: Create data URL for temporary display
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
-    await writeFile(filepath, buffer);
+    const base64 = buffer.toString('base64');
+    const dataUrl = `data:${file.type};base64,${base64}`;
 
-    // Return public URL with alt text
-    const url = `/uploads/blog-images/${filename}`;
-
-    return NextResponse.json({ 
-      url, 
+    return NextResponse.json({
+      url: dataUrl,
       alt: alt || file.name,
-      success: true 
+      success: true,
+      warning: 'Image stored as data URL. For production, configure Vercel Blob storage.',
     });
   } catch (error) {
     console.error('Blog image upload error:', error);
-    return NextResponse.json({ error: 'Failed to upload image' }, { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    return NextResponse.json(
+      { error: `Failed to upload image: ${errorMessage}` },
+      { status: 500 }
+    );
   }
 }

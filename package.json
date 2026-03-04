@@ -22,6 +22,7 @@
     "@google/genai": "^1.17.0",
     "@hookform/resolvers": "^5.2.2",
     "@prisma/client": "^5.10.1",
+    "@vercel/blob": "^2.3.0",
     "adminjs": "^7.0.0",
     "autoprefixer": "^10.4.21",
     "class-variance-authority": "^0.7.1",
