@@ -26,13 +26,12 @@ export async function POST(req: NextRequest) {
       if (process.env.BLOB_READ_WRITE_TOKEN) {
         const { put } = await import('@vercel/blob');
         
-        const buffer = await file.arrayBuffer();
         const timestamp = Date.now();
         const randomStr = Math.random().toString(36).substring(2, 8);
         const extension = file.name.split('.').pop() || 'jpg';
         const filename = `blog-${timestamp}-${randomStr}.${extension}`;
         
-        const blob = await put(filename, buffer as BlobPart, {
+        const blob = await put(filename, file, {
           contentType: file.type,
           access: 'public',
         });
