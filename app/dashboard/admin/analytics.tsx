@@ -132,6 +132,8 @@ function parseMetricsForSave(source: FormMetrics): { values: Partial<Record<Metr
   // List of fields that should NOT be manually saved (they're auto-calculated)
   const autoCalculatedFields = new Set<MetricField>([
     'metaCTR',
+    'metaCPC',
+    'metaCostPerConversion',
     'googleCTR',
     'googleCPC',
     'googleCVR',
