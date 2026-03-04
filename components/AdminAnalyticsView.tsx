@@ -68,12 +68,13 @@ function addDays(date: Date, days: number): Date {
   return copy;
 }
 
-function getISOWeek(date: Date): number {
-  const tempDate = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-  const dayNum = tempDate.getUTCDay() || 7;
-  tempDate.setUTCDate(tempDate.getUTCDate() + 4 - dayNum);
-  const yearStart = new Date(Date.UTC(tempDate.getUTCFullYear(), 0, 1));
-  return Math.ceil((((tempDate.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+// Sequential week number matching generateWeeksForYear() in analytics.tsx
+// Counts from the first Monday of/on Jan 1, same as the DB-stored weekNumber.
+function getSequentialWeekNumber(date: Date): number {
+  const jan1 = new Date(date.getFullYear(), 0, 1);
+  const firstMonday = getMonday(jan1);
+  const daysDiff = Math.floor((date.getTime() - firstMonday.getTime()) / (1000 * 60 * 60 * 24));
+  return Math.floor(daysDiff / 7) + 1;
 }
 
 interface AdminAnalyticsViewProps {
@@ -149,13 +150,13 @@ export default function AdminAnalyticsView({ isDark, refreshTrigger }: AdminAnal
     const lastWeek = {
       year: lastWeekStart.getFullYear(),
       month: lastWeekStart.getMonth() + 1,
-      weekNumber: getISOWeek(lastWeekStart),
+      weekNumber: getSequentialWeekNumber(lastWeekStart),
     };
 
     const weekBefore = {
       year: weekBeforeStart.getFullYear(),
       month: weekBeforeStart.getMonth() + 1,
-      weekNumber: getISOWeek(weekBeforeStart),
+      weekNumber: getSequentialWeekNumber(weekBeforeStart),
     };
 
     const sortByDate = (items: WeeklyAnalytics[]) =>
