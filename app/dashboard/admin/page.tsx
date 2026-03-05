@@ -3165,17 +3165,37 @@ function BlogManagementSection({
       // Update local state
       setPosts(posts.map(p => p.id === postId ? { ...p, publishedAt: newStatus } : p));
       
-      // Trigger sitemap revalidation
-      if (newStatus) {
-        await fetch('/api/revalidate-sitemap', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ slug }),
-        });
-      }
+      // Revalidate sitemap + homepage whenever publish state changes
+      await fetch('/api/revalidate-sitemap', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slug, type: 'blog' }),
+      });
     } catch (error) {
       console.error('Toggle publish error:', error);
       alert('Failed to update post status');
+    }
+  };
+
+  // ── Change publish date ───────────────────────────────────────────
+  const handleChangePublishDate = async (postId: number, newDate: string, slug: string) => {
+    if (!newDate) return;
+    try {
+      const res = await fetch(`/api/admin/posts/${postId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ publishedAt: new Date(newDate).toISOString() }),
+      });
+      if (!res.ok) throw new Error('Failed to update date');
+      setPosts(posts.map(p => p.id === postId ? { ...p, publishedAt: new Date(newDate).toISOString() } : p));
+      await fetch('/api/revalidate-sitemap', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slug, type: 'blog' }),
+      });
+    } catch (error) {
+      console.error('Change publish date error:', error);
+      alert('Failed to update publish date');
     }
   };
 
@@ -3342,13 +3362,25 @@ function BlogManagementSection({
                         {post.publishedAt ? (
                           <span className="inline-flex items-center gap-1.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 px-2.5 py-1 rounded-full font-medium">
                             <span className="w-1.5 h-1.5 bg-emerald-500 dark:bg-emerald-400 rounded-full"></span>
-                            Published {new Date(post.publishedAt).toLocaleDateString()}
+                            Published
                           </span>
                         ) : (
                           <span className="inline-flex items-center gap-1.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 px-2.5 py-1 rounded-full font-medium">
                             <span className="w-1.5 h-1.5 bg-amber-500 dark:bg-amber-400 rounded-full"></span>
                             Draft
                           </span>
+                        )}
+                        {/* Publish date picker — visible when published */}
+                        {post.publishedAt && (
+                          <label className="inline-flex items-center gap-1.5 text-slate-500 dark:text-slate-400 cursor-pointer" title="Change publish date">
+                            <Calendar className="h-3.5 w-3.5" />
+                            <input
+                              type="date"
+                              defaultValue={post.publishedAt.substring(0, 10)}
+                              onChange={(e) => handleChangePublishDate(post.id, e.target.value, post.slug)}
+                              className="bg-transparent text-xs text-slate-600 dark:text-slate-400 border-0 outline-none cursor-pointer w-28"
+                            />
+                          </label>
                         )}
                       </div>
                     </div>
@@ -3466,17 +3498,38 @@ function NewsManagementSection({
       if (!res.ok) throw new Error('Failed to update status');
       
       setArticles(articles.map(a => a.id === articleId ? { ...a, publishedAt: newStatus } : a));
-      
-      if (newStatus) {
-        await fetch('/api/revalidate-sitemap', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ slug }),
-        });
-      }
+
+      // Revalidate sitemap + homepage whenever publish state changes
+      await fetch('/api/revalidate-sitemap', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slug, type: 'news' }),
+      });
     } catch (error) {
       console.error('Toggle publish error:', error);
       alert('Failed to update article status');
+    }
+  };
+
+  // ── Change publish date ───────────────────────────────────────────
+  const handleChangePublishDate = async (articleId: number, newDate: string, slug: string) => {
+    if (!newDate) return;
+    try {
+      const res = await fetch(`/api/admin/news/${articleId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ publishedAt: new Date(newDate).toISOString() }),
+      });
+      if (!res.ok) throw new Error('Failed to update date');
+      setArticles(articles.map(a => a.id === articleId ? { ...a, publishedAt: new Date(newDate).toISOString() } : a));
+      await fetch('/api/revalidate-sitemap', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slug, type: 'news' }),
+      });
+    } catch (error) {
+      console.error('Change publish date error:', error);
+      alert('Failed to update publish date');
     }
   };
 
@@ -3648,13 +3701,25 @@ function NewsManagementSection({
                         {article.publishedAt ? (
                           <span className="inline-flex items-center gap-1.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 px-2.5 py-1 rounded-full font-medium">
                             <span className="w-1.5 h-1.5 bg-emerald-500 dark:bg-emerald-400 rounded-full"></span>
-                            Published {new Date(article.publishedAt).toLocaleDateString()}
+                            Published
                           </span>
                         ) : (
                           <span className="inline-flex items-center gap-1.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 px-2.5 py-1 rounded-full font-medium">
                             <span className="w-1.5 h-1.5 bg-amber-500 dark:bg-amber-400 rounded-full"></span>
                             Draft
                           </span>
+                        )}
+                        {/* Publish date picker — visible when published */}
+                        {article.publishedAt && (
+                          <label className="inline-flex items-center gap-1.5 text-slate-500 dark:text-slate-400 cursor-pointer" title="Change publish date">
+                            <Calendar className="h-3.5 w-3.5" />
+                            <input
+                              type="date"
+                              defaultValue={article.publishedAt.substring(0, 10)}
+                              onChange={(e) => handleChangePublishDate(article.id, e.target.value, article.slug)}
+                              className="bg-transparent text-xs text-slate-600 dark:text-slate-400 border-0 outline-none cursor-pointer w-28"
+                            />
+                          </label>
                         )}
                       </div>
                     </div>

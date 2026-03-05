@@ -88,17 +88,27 @@ export default function EditBlogPost() {
       if (!response.ok) throw new Error('Upload failed');
 
       const data = await response.json();
-      setForm({ 
-        ...form, 
-        coverImage: data.url,
-        coverImageAlt: data.alt || generateAltText(form.title, 'Cover Image')
-      });
+      const newUrl = data.url as string;
+      const newAlt = (data.alt as string) || generateAltText(form.title, 'Cover Image');
+
+      // Update local state
+      setForm(prev => ({ ...prev, coverImage: newUrl, coverImageAlt: newAlt }));
       setShowCoverUpload(false);
+
+      // Auto-save the new cover image to the database immediately
+      const saveRes = await fetch(`/api/admin/posts/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ coverImage: newUrl, coverImageAlt: newAlt }),
+      });
+      if (!saveRes.ok) throw new Error('Failed to save cover image to database');
     } catch (error) {
       console.error('Cover image upload failed:', error);
       alert('Failed to upload cover image. Please try again.');
     } finally {
       setUploadingCover(false);
+      // Reset the file input so the same file can be re-selected if needed
+      if (coverFileInputRef.current) coverFileInputRef.current.value = '';
     }
   };
 

@@ -1,6 +1,10 @@
 import { MetadataRoute } from 'next';
 import prisma from '@/lib/prisma';
 
+// Never cache the sitemap at the CDN level — revalidatePath('/sitemap.xml') will
+// flush it whenever a post is published or unpublished.
+export const dynamic = 'force-dynamic';
+
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://thenextgenhealth.com';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {

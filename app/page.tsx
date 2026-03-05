@@ -12,8 +12,12 @@ import BlogInsights from '@/components/landing/BlogInsights';
 import NewsInsights from '@/components/landing/NewsInsights';
 import FAQ from '@/components/FAQ';
 import MapSection from '@/components/MapSection';
+import prisma from '@/lib/prisma';
 
 import { Metadata } from 'next';
+
+// Revalidate homepage every 60 s so new posts appear quickly without a full rebuild
+export const revalidate = 60;
 
 export const metadata: Metadata = {
   title: 'Healthcare Marketing in Irving, TX | The NextGen Healthcare Marketing',
@@ -45,7 +49,41 @@ const schema = {
 
 
 
-export default function Home() {
+export default async function Home() {
+  // Fetch the 3 latest published blog posts and news articles at SSR time.
+  // This means the homepage always shows live DB data and re-renders whenever
+  // revalidatePath('/') is called (e.g. after AI generation or publish toggle).
+  let latestPosts: { title: string; slug: string; excerpt: string | null; coverImage: string | null; publishedAt: Date | null }[] = [];
+  let latestNews: { id: number; title: string; slug: string; excerpt: string | null; coverImage: string | null; source: string | null; publishedAt: Date | null }[] = [];
+
+  try {
+    [latestPosts, latestNews] = await Promise.all([
+      prisma.post.findMany({
+        where: { publishedAt: { not: null } },
+        orderBy: { publishedAt: 'desc' },
+        take: 3,
+        select: { title: true, slug: true, excerpt: true, coverImage: true, publishedAt: true },
+      }),
+      (prisma.newsArticle as any).findMany({
+        where: { publishedAt: { not: null } },
+        orderBy: { publishedAt: 'desc' },
+        take: 3,
+        select: { id: true, title: true, slug: true, excerpt: true, coverImage: true, source: true, publishedAt: true },
+      }),
+    ]);
+  } catch {
+    // DB unavailable — sections will fall back to their empty-state UI
+  }
+
+  // Serialize dates so they're safe to pass as props to client components
+  const serializedPosts = latestPosts.map((p) => ({
+    ...p,
+    publishedAt: p.publishedAt ? p.publishedAt.toISOString() : null,
+  }));
+  const serializedNews = latestNews.map((a: any) => ({
+    ...a,
+    publishedAt: a.publishedAt ? a.publishedAt.toISOString() : null,
+  }));
   return (
     <main className="min-h-screen bg-slate-50 text-slate-900">
       <script type="application/ld+json" dangerouslySetInnerHTML={{__html: JSON.stringify(schema)}} />
@@ -73,10 +111,10 @@ export default function Home() {
       <PricingPlans />
       
       {/* Blog Insights */}
-      <BlogInsights />
+      <BlogInsights posts={serializedPosts} />
       
       {/* News Insights */}
-      <NewsInsights />
+      <NewsInsights articles={serializedNews} />
       
       {/* FAQ */}
       <section className="py-20 bg-white">

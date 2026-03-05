@@ -5,8 +5,8 @@ import { getAuthenticatedDbUser } from '@/lib/auth';
 export const dynamic = 'force-dynamic';
 
 /**
- * Revalidate the sitemap after blog post changes
- * Triggered when posts are published/unpublished
+ * Revalidate the sitemap and relevant pages after blog/news post changes.
+ * Triggered when posts are published, unpublished, or their publish date is changed.
  */
 export async function POST(request: NextRequest) {
   const user = await getAuthenticatedDbUser(request);
@@ -17,21 +17,25 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json().catch(() => ({}));
     const slug = typeof body?.slug === 'string' ? body.slug : null;
+    const type = typeof body?.type === 'string' ? body.type : 'blog'; // 'blog' | 'news'
 
-    // Revalidate sitemap and blog pages
+    // Always revalidate sitemap and the relevant list page
     revalidatePath('/sitemap.xml');
+    revalidatePath('/');
     revalidatePath('/blog');
     revalidatePath('/news');
+
+    // Revalidate the specific post/article page if a slug was provided
     if (slug) {
-      revalidatePath(`/blog/${slug}`);
-      revalidatePath(`/news/${slug}`);
+      revalidatePath(`/${type}/${slug}`);
     }
-    
-    return NextResponse.json({ 
-      success: true, 
+
+    return NextResponse.json({
+      success: true,
       revalidated: true,
       slug: slug || null,
-      timestamp: new Date().toISOString()
+      type,
+      timestamp: new Date().toISOString(),
     });
   } catch (error) {
     console.error('Sitemap revalidation error:', error);

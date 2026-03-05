@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Image as ImageIcon, LayoutDashboard, Upload } from 'lucide-react';
+import { ArrowLeft, Image as ImageIcon, LayoutDashboard, Upload, X } from 'lucide-react';
 import RichTextEditor from '@/components/RichTextEditor';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -27,7 +27,8 @@ export default function EditNewsArticle() {
     publishedAt: '',
   });
   const [loading, setLoading] = useState(true);
-  const [showImageUpload, setShowImageUpload] = useState(false);
+  const [uploadingCover, setUploadingCover] = useState(false);
+  const coverFileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (id) {
@@ -57,6 +58,46 @@ export default function EditNewsArticle() {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setForm({ ...form, [name]: value });
+  };
+
+  const handleCoverUpload = async (file: File) => {
+    setUploadingCover(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('alt', form.title || file.name);
+
+      const response = await fetch('/api/upload/blog-image', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.error || 'Upload failed');
+      }
+
+      const data = await response.json();
+      const newUrl = data.url as string;
+
+      // Update local state
+      setForm(prev => ({ ...prev, coverImage: newUrl }));
+
+      // Auto-save the new cover image to the database immediately
+      const saveRes = await fetch(`/api/admin/news/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ coverImage: newUrl }),
+      });
+      if (!saveRes.ok) throw new Error('Failed to save cover image to database');
+    } catch (error) {
+      console.error('Cover image upload failed:', error);
+      alert(`Failed to upload cover image: ${error instanceof Error ? error.message : 'Please try again.'}`);
+    } finally {
+      setUploadingCover(false);
+      // Reset file input so the same file can be re-selected
+      if (coverFileInputRef.current) coverFileInputRef.current.value = '';
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -141,35 +182,63 @@ export default function EditNewsArticle() {
             {/* Cover Image */}
             <div>
               <label className="block font-medium mb-1 text-slate-700 dark:text-slate-300">Cover Image</label>
-              <div className="flex gap-3">
-                <input 
-                  name="coverImage" 
-                  value={form.coverImage} 
-                  onChange={handleChange} 
-                  className="flex-1 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-emerald-500 dark:focus:border-emerald-500 transition-colors" 
-                  placeholder="Enter image URL or upload"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowImageUpload(!showImageUpload)}
-                  className="px-4 py-2 bg-emerald-500 text-black font-bold rounded-lg hover:bg-emerald-400 transition-colors flex items-center gap-2"
-                >
-                  <Upload className="h-5 w-5" />
-                  Upload
-                </button>
+              <div className="space-y-3">
+                <div className="flex gap-3">
+                  <input 
+                    name="coverImage" 
+                    value={form.coverImage} 
+                    onChange={handleChange} 
+                    className="flex-1 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-emerald-500 dark:focus:border-emerald-500 transition-colors" 
+                    placeholder="Paste image URL or upload a file"
+                  />
+                  {/* Hidden file input */}
+                  <input
+                    ref={coverFileInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleCoverUpload(file);
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => coverFileInputRef.current?.click()}
+                    disabled={uploadingCover}
+                    className="px-4 py-2 bg-emerald-500 text-black font-bold rounded-lg hover:bg-emerald-400 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                  >
+                    <Upload className="h-5 w-5" />
+                    {uploadingCover ? 'Uploading…' : 'Upload'}
+                  </button>
+                </div>
+
+                {/* Preview */}
+                {form.coverImage && (
+                  <div className="relative group">
+                    <img
+                      src={form.coverImage}
+                      alt="Cover preview"
+                      className="w-full max-h-56 rounded-lg object-cover border border-slate-200 dark:border-slate-700"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setForm(prev => ({ ...prev, coverImage: '' }))}
+                      className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                      title="Remove cover image"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                )}
+
+                {uploadingCover && (
+                  <div className="flex items-center gap-2 text-sm text-emerald-600 dark:text-emerald-400">
+                    <div className="h-4 w-4 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+                    Uploading and saving…
+                  </div>
+                )}
               </div>
-              {showImageUpload && (
-                <div className="mt-3 p-4 border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-lg text-center bg-slate-50 dark:bg-slate-800/50">
-                  <ImageIcon className="h-8 w-8 mx-auto text-slate-400 dark:text-slate-500 mb-2" />
-                  <p className="text-sm text-slate-500 dark:text-slate-400">Drag and drop an image here, or enter URL above</p>
-                  <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">Recommended: 1200x630px for social sharing</p>
-                </div>
-              )}
-              {form.coverImage && (
-                <div className="mt-3">
-                  <img src={form.coverImage} alt="Cover preview" className="max-h-48 rounded-lg object-cover" />
-                </div>
-              )}
             </div>
 
             {/* Publisher & Source */}

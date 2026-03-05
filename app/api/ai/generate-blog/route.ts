@@ -382,6 +382,19 @@ export async function POST(request: NextRequest) {
       console.error('Failed to save AI history (non-critical):', historyError);
     }
 
+    // Revalidate sitemap + homepage so the new post appears immediately
+    if (autoPublish) {
+      try {
+        const { revalidatePath } = await import('next/cache');
+        revalidatePath('/sitemap.xml');
+        revalidatePath('/');
+        revalidatePath('/blog');
+        revalidatePath(`/blog/${post.slug}`);
+      } catch (revalError) {
+        console.error('Revalidation failed (non-critical):', revalError);
+      }
+    }
+
     return NextResponse.json({
       success: true,
       post: {

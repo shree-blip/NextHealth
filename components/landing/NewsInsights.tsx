@@ -4,7 +4,6 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Calendar, ExternalLink, TrendingUp } from 'lucide-react';
 import { useSitePreferences } from '@/components/SitePreferencesProvider';
-import { useEffect, useState } from 'react';
 
 interface NewsArticle {
   id: number;
@@ -16,22 +15,14 @@ interface NewsArticle {
   publishedAt: string | null;
 }
 
-export default function NewsInsights() {
+interface NewsInsightsProps {
+  articles: NewsArticle[];
+}
+
+export default function NewsInsights({ articles }: NewsInsightsProps) {
   const { t, theme, language } = useSitePreferences();
   const isDark = theme === 'dark';
   const dateLocale = language === 'es' ? 'es-US' : 'en-US';
-  const [articles, setArticles] = useState<NewsArticle[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetch('/api/news')
-      .then(res => res.json())
-      .then(data => {
-        setArticles(data.filter((a: NewsArticle) => a.publishedAt).slice(0, 3));
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
-  }, []);
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return '';
@@ -65,24 +56,7 @@ export default function NewsInsights() {
           </p>
         </motion.div>
 
-        {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {[...Array(3)].map((_, idx) => (
-              <div
-                key={idx}
-                className={`rounded-2xl overflow-hidden animate-pulse ${
-                  isDark ? 'bg-slate-700' : 'bg-slate-200'
-                }`}
-              >
-                <div className="h-56 bg-slate-300 dark:bg-slate-600" />
-                <div className="p-6 space-y-3">
-                  <div className={`h-4 rounded ${isDark ? 'bg-slate-600' : 'bg-slate-300'}`} />
-                  <div className={`h-6 rounded ${isDark ? 'bg-slate-600' : 'bg-slate-300'}`} />
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : articles.length > 0 ? (
+        {articles.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {articles.map((article, idx) => (
               <motion.div
