@@ -19,7 +19,7 @@ export default function ContactPage() {
     name: '',
     email: '',
   });
-  const { theme } = useSitePreferences();
+  const { theme, t } = useSitePreferences();
   const isDark = theme === 'dark';
 
   const handleObjectiveToggle = (obj: string) => {
@@ -83,19 +83,28 @@ export default function ContactPage() {
             >
               <div className={`inline-flex items-center gap-2 rounded-full border ${isDark ? 'border-emerald-500/30 bg-emerald-500/10' : 'border-emerald-500/40 bg-emerald-500/10'} px-4 py-1.5 text-sm font-semibold text-emerald-500 mb-8 backdrop-blur-sm`}>
                 <Zap className="h-4 w-4 fill-emerald-500" /> 
-                <span className="tracking-wide uppercase text-[10px]">Qualification Process</span>
+                <span className="tracking-wide uppercase text-[10px]">{t('Qualification Process')}</span>
               </div>
               <h1 className={`text-[40px] md:text-[56px] font-black tracking-tight mb-6 leading-[0.9] ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                High Conversion <span className="text-emerald-500">Qualification</span>
+                {t('High Conversion')} <span className="text-emerald-500">{t('Qualification')}</span>
               </h1>
               <p className={`text-xl max-w-2xl mx-auto leading-relaxed ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
-                We partner exclusively with highly vetted, financially viable medical practices ready to scale. 
-                Complete the qualification matrix to receive your clinical growth plan.
+                {t('We partner exclusively with highly vetted, financially viable medical practices ready to scale.')}
+                {' '}
+                {t('Complete the qualification matrix to receive your clinical growth plan.')}
               </p>
+              <a
+                href="#qualification-form"
+                className="mt-8 inline-flex items-center gap-2 bg-emerald-500 text-black px-8 py-4 rounded-full font-bold hover:bg-emerald-400 transition-all"
+              >
+                {t('Start Qualification')}
+                <ArrowRight className="h-5 w-5" />
+              </a>
             </motion.div>
           </div>
 
           <motion.div 
+            id="qualification-form"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
@@ -108,8 +117,8 @@ export default function ContactPage() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
                 </div>
-                <h3 className="text-3xl font-bold mb-4">Thank You!</h3>
-                <p className="text-xl text-slate-600">We'll review your qualification and be in touch within 24 hours.</p>
+                <h3 className="text-3xl font-bold mb-4">{t('Thank you!')}</h3>
+                <p className="text-xl text-slate-600">{t("We'll review your qualification and be in touch within 24 hours.")}</p>
               </div>
             ) : (
               <>
@@ -133,7 +142,7 @@ export default function ContactPage() {
                 <form className="space-y-8" onSubmit={handleSubmit}>
                   {step === 1 && (
                     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
-                      <h3 className="text-2xl font-bold mb-6 flex items-center gap-3"><Building2 className="text-emerald-500" /> Facility Type</h3>
+                      <h3 className="text-2xl font-bold mb-6 flex items-center gap-3"><Building2 className="text-emerald-500" /> {t('Facility Type')}</h3>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {['Freestanding ER', 'Urgent Care', 'Wellness Clinic', 'Multi-Specialty'].map((type) => (
                           <label key={type} className="flex items-center p-6 border border-slate-200 rounded-2xl cursor-pointer hover:bg-slate-100 transition-colors">
@@ -154,20 +163,20 @@ export default function ContactPage() {
 
                   {step === 2 && (
                     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
-                      <h3 className="text-2xl font-bold mb-6 flex items-center gap-3"><Activity className="text-emerald-500" /> Scale Metric</h3>
+                      <h3 className="text-2xl font-bold mb-6 flex items-center gap-3"><Activity className="text-emerald-500" /> {t('Scale Metric')}</h3>
                       <div className="space-y-4">
-                        <label htmlFor="locations" className="block text-sm font-bold uppercase tracking-widest text-slate-500 mb-2">Number of Current Physical Locations</label>
+                        <label htmlFor="locations" className="block text-sm font-bold uppercase tracking-widest text-slate-500 mb-2">{t('Number of Current Physical Locations')}</label>
                         <select 
                           id="locations"
                           value={formData.locations}
                           onChange={(e) => setFormData({...formData, locations: e.target.value})}
-                          className="w-full bg-slate-100 border border-slate-200 rounded-2xl py-4 px-6 text-lg focus:outline-none focus:border-emerald-500 transition-colors appearance-none"
+                          className="w-full bg-slate-100 border border-slate-200 rounded-2xl py-4 px-6 text-lg text-slate-900 focus:outline-none focus:border-emerald-500 transition-colors appearance-none"
                         >
-                          <option value="">Select...</option>
-                          <option value="1">1 Location</option>
-                          <option value="2-5">2 - 5 Locations</option>
-                          <option value="6-10">6 - 10 Locations</option>
-                          <option value="10+">10+ Locations</option>
+                          <option value="">{t('Select...')}</option>
+                          <option value="1">{t('1 Location')}</option>
+                          <option value="2-5">{t('2 - 5 Locations')}</option>
+                          <option value="6-10">{t('6 - 10 Locations')}</option>
+                          <option value="10+">{t('10+ Locations')}</option>
                         </select>
                       </div>
                     </motion.div>
@@ -175,20 +184,20 @@ export default function ContactPage() {
 
                   {step === 3 && (
                     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
-                      <h3 className="text-2xl font-bold mb-6 flex items-center gap-3"><DollarSign className="text-emerald-500" /> Financial Qualifier</h3>
+                      <h3 className="text-2xl font-bold mb-6 flex items-center gap-3"><DollarSign className="text-emerald-500" /> {t('Financial Qualifier')}</h3>
                       <div className="space-y-4">
-                        <label htmlFor="adSpend" className="block text-sm font-bold uppercase tracking-widest text-slate-500 mb-2">Current or Projected Monthly Ad Spend</label>
+                        <label htmlFor="adSpend" className="block text-sm font-bold uppercase tracking-widest text-slate-500 mb-2">{t('Current or Projected Monthly Ad Spend')}</label>
                         <select 
                           id="adSpend"
                           value={formData.adSpend}
                           onChange={(e) => setFormData({...formData, adSpend: e.target.value})}
-                          className="w-full bg-slate-100 border border-slate-200 rounded-2xl py-4 px-6 text-lg focus:outline-none focus:border-emerald-500 transition-colors appearance-none"
+                          className="w-full bg-slate-100 border border-slate-200 rounded-2xl py-4 px-6 text-lg text-slate-900 focus:outline-none focus:border-emerald-500 transition-colors appearance-none"
                         >
-                          <option value="">Select...</option>
-                          <option value="<5k">Under $5,000</option>
-                          <option value="5k-15k">$5,000 - $15,000</option>
-                          <option value="15k-50k">$15,000 - $50,000</option>
-                          <option value="50k+">$50,000+</option>
+                          <option value="">{t('Select...')}</option>
+                          <option value="<5k">{t('Under $5,000')}</option>
+                          <option value="5k-15k">{t('$5,000 - $15,000')}</option>
+                          <option value="15k-50k">{t('$15,000 - $50,000')}</option>
+                          <option value="50k+">{t('$50,000+')}</option>
                         </select>
                       </div>
                     </motion.div>
@@ -196,7 +205,7 @@ export default function ContactPage() {
 
                   {step === 4 && (
                     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
-                      <h3 className="text-2xl font-bold mb-6 flex items-center gap-3"><Target className="text-emerald-500" /> Primary Objectives</h3>
+                      <h3 className="text-2xl font-bold mb-6 flex items-center gap-3"><Target className="text-emerald-500" /> {t('Primary Objectives')}</h3>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {[
                           'Increase Call Volume', 
@@ -221,7 +230,7 @@ export default function ContactPage() {
                       <div className="mt-8 space-y-4">
                         <input 
                           type="text" 
-                          placeholder="Full Name" 
+                          placeholder={t('Full Name')} 
                           value={formData.name}
                           onChange={(e) => setFormData({...formData, name: e.target.value})}
                           required
@@ -229,7 +238,7 @@ export default function ContactPage() {
                         />
                         <input 
                           type="email" 
-                          placeholder="Work Email" 
+                          placeholder={t('Work Email')} 
                           value={formData.email}
                           onChange={(e) => setFormData({...formData, email: e.target.value})}
                           required
@@ -246,7 +255,7 @@ export default function ContactPage() {
                         onClick={() => setStep(step - 1)}
                         className="px-8 py-4 rounded-full font-bold text-slate-600 hover:text-slate-900 transition-colors"
                       >
-                        Back
+                        {t('Back')}
                       </button>
                     ) : <div />}
                     
@@ -256,7 +265,7 @@ export default function ContactPage() {
                         onClick={() => setStep(step + 1)}
                         className="flex items-center gap-2 bg-emerald-500 text-black px-8 py-4 rounded-full font-bold hover:bg-emerald-400 transition-all"
                       >
-                        Next Step <ArrowRight className="h-5 w-5" />
+                        {t('Next Step')} <ArrowRight className="h-5 w-5" />
                       </button>
                     ) : (
                       <button 
@@ -264,7 +273,7 @@ export default function ContactPage() {
                         disabled={loading}
                         className="flex items-center gap-2 bg-emerald-500 text-black px-8 py-4 rounded-full font-bold hover:bg-emerald-400 transition-all disabled:opacity-50"
                       >
-                        {loading ? 'Submitting...' : 'Submit Qualification'} <ArrowRight className="h-5 w-5" />
+                        {loading ? t('Submitting...') : t('Submit Qualification')} <ArrowRight className="h-5 w-5" />
                       </button>
                     )}
                   </div>

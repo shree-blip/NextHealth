@@ -41,6 +41,12 @@ body.loaded::before {
   border-color: rgb(71 85 105); /* slate-600 */
 }
 
+.dark select option,
+.theme-dark select option {
+  background-color: rgb(15 23 42); /* slate-900 */
+  color: rgb(226 232 240); /* slate-200 */
+}
+
 .dark input::placeholder,
 .dark textarea::placeholder {
   color: rgb(148 163 184); /* slate-400 */
@@ -269,6 +275,20 @@ html.theme-dark select {
   background-color: #0f172a;
   color: #e2e8f0;
   border-color: #334155;
+}
+
+html.theme-light select option,
+html.theme-light datalist option {
+  background-color: #ffffff;
+  color: #0f172a;
+}
+
+html.theme-dark select option,
+html.theme-dark datalist option,
+html.dark select option,
+html.dark datalist option {
+  background-color: #0f172a;
+  color: #e2e8f0;
 }
 
 html.theme-dark input::placeholder,

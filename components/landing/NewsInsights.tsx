@@ -1,7 +1,7 @@
 'use client';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import Image from 'next/image';
+import { useState } from 'react';
 import { Calendar, ExternalLink, TrendingUp } from 'lucide-react';
 import { useSitePreferences } from '@/components/SitePreferencesProvider';
 
@@ -22,7 +22,9 @@ interface NewsInsightsProps {
 export default function NewsInsights({ articles }: NewsInsightsProps) {
   const { t, theme, language } = useSitePreferences();
   const isDark = theme === 'dark';
+  const [brokenImages, setBrokenImages] = useState<Record<string, boolean>>({});
   const dateLocale = language === 'es' ? 'es-US' : 'en-US';
+  const fallbackImages = ['/2.png', '/3.png', '/4.png'];
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return '';
@@ -71,14 +73,20 @@ export default function NewsInsights({ articles }: NewsInsightsProps) {
               >
                 {/* Image Container */}
                 <div className="relative h-56 overflow-hidden bg-slate-300">
-                  {article.coverImage ? (
-                    <Image
+                  {article.coverImage && !brokenImages[article.slug] ? (
+                    <img
                       src={article.coverImage}
                       alt={article.title}
-                      fill
-                      sizes="(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw"
                       loading="lazy"
-                      className="object-cover group-hover:scale-110 transition-transform duration-300"
+                      onError={() => setBrokenImages(prev => ({ ...prev, [article.slug]: true }))}
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                    />
+                  ) : article.coverImage || brokenImages[article.slug] ? (
+                    <img
+                      src={fallbackImages[idx % fallbackImages.length]}
+                      alt={article.title}
+                      loading="lazy"
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                     />
                   ) : (
                     <div className={`w-full h-full flex items-center justify-center ${isDark ? 'bg-slate-600' : 'bg-slate-300'}`}>

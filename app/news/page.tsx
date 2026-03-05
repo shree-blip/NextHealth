@@ -41,6 +41,7 @@ export default function NewsPage() {
   const dateLocale = language === 'es' ? 'es-US' : 'en-US';
   const [articles, setArticles] = useState<NewsArticle[]>([]);
   const [loading, setLoading] = useState(true);
+  const [brokenImages, setBrokenImages] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     fetch('/api/news')
@@ -135,8 +136,9 @@ export default function NewsPage() {
                       <div className="grid grid-cols-1 lg:grid-cols-2">
                         <div className="relative h-64 lg:h-96 overflow-hidden">
                           <img
-                            src={featured.coverImage || '/1.png'}
+                            src={!brokenImages[featured.slug] && featured.coverImage ? featured.coverImage : '/1.png'}
                             alt={featured.title}
+                            onError={() => setBrokenImages(prev => ({ ...prev, [featured.slug]: true }))}
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                           />
                           <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent lg:hidden" />
@@ -209,7 +211,9 @@ export default function NewsPage() {
                 >
                   {rest.map((article, idx) => {
                     const fallbackImages = ['/2.png', '/3.png', '/4.png', '/5.png'];
-                    const image = article.coverImage || fallbackImages[idx % fallbackImages.length];
+                    const image = !brokenImages[article.slug] && article.coverImage
+                      ? article.coverImage
+                      : fallbackImages[idx % fallbackImages.length];
                     return (
                       <motion.article
                         key={article.id}
@@ -222,6 +226,7 @@ export default function NewsPage() {
                             <img
                               src={image}
                               alt={article.title}
+                              onError={() => setBrokenImages(prev => ({ ...prev, [article.slug]: true }))}
                               className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                             />
                             <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />

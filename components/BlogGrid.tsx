@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { Clock, ArrowRight, BookOpen, TrendingUp } from 'lucide-react';
 import { useSitePreferences } from '@/components/SitePreferencesProvider';
+import { useState } from 'react';
 
 interface Post {
   id: number;
@@ -38,6 +39,7 @@ export default function BlogGrid({ posts }: { posts: Post[] }) {
   const featured = posts[0];
   const rest = posts.slice(1);
   const fallbackImages = ['/1.png', '/2.png', '/3.png', '/4.png', '/5.png'];
+    const [brokenImages, setBrokenImages] = useState<Record<string, boolean>>({});
 
   return (
     <>
@@ -112,8 +114,9 @@ export default function BlogGrid({ posts }: { posts: Post[] }) {
                       <div className="grid grid-cols-1 lg:grid-cols-2">
                         <div className="relative h-64 lg:h-96 overflow-hidden">
                           <img
-                            src={featured.coverImage || fallbackImages[0]}
+                             src={!brokenImages[featured.slug] && featured.coverImage ? featured.coverImage : fallbackImages[0]}
                             alt={featured.title}
+                            onError={() => setBrokenImages((prev: Record<string, boolean>) => ({ ...prev, [featured.slug]: true }))}
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                           />
                           <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent lg:hidden" />
@@ -155,7 +158,9 @@ export default function BlogGrid({ posts }: { posts: Post[] }) {
                   className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
                 >
                   {rest.map((post, idx) => {
-                    const image = post.coverImage || fallbackImages[(idx + 1) % fallbackImages.length];
+                    const image = !brokenImages[post.slug] && post.coverImage
+                        ? post.coverImage
+                        : fallbackImages[(idx + 1) % fallbackImages.length];
                     return (
                       <motion.article
                         key={post.id}
@@ -168,6 +173,7 @@ export default function BlogGrid({ posts }: { posts: Post[] }) {
                             <img
                               src={image}
                               alt={post.title}
+                              onError={() => setBrokenImages((prev: Record<string, boolean>) => ({ ...prev, [post.slug]: true }))}
                               className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                             />
                             <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />

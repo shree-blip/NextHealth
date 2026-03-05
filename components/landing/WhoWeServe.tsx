@@ -2,6 +2,7 @@
 import { motion } from 'framer-motion';
 import { useState } from 'react';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import { useSitePreferences } from '@/components/SitePreferencesProvider';
 
 interface AudienceCard {
@@ -9,10 +10,13 @@ interface AudienceCard {
   pain: string;
   image: string;
   icon: string;
+  href?: string;
 }
 
 function FlipCard({ audience, index }: { audience: AudienceCard, index: number }) {
   const [isFlipped, setIsFlipped] = useState(false);
+  const router = useRouter();
+  const isClickable = Boolean(audience.href);
 
   return (
     <motion.div
@@ -20,9 +24,20 @@ function FlipCard({ audience, index }: { audience: AudienceCard, index: number }
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       transition={{ delay: index * 0.15 }}
-      className="perspective-1000 h-80"
+      className={`perspective-1000 h-80 ${isClickable ? 'cursor-pointer' : ''}`}
       onMouseEnter={() => setIsFlipped(true)}
       onMouseLeave={() => setIsFlipped(false)}
+      onClick={() => {
+        if (audience.href) router.push(audience.href);
+      }}
+      role={isClickable ? 'button' : undefined}
+      tabIndex={isClickable ? 0 : -1}
+      onKeyDown={(e) => {
+        if (audience.href && (e.key === 'Enter' || e.key === ' ')) {
+          e.preventDefault();
+          router.push(audience.href);
+        }
+      }}
     >
       <div
         className={`relative w-full h-full transition-transform duration-500 transform-style-preserve-3d ${
@@ -67,7 +82,7 @@ function FlipCard({ audience, index }: { audience: AudienceCard, index: number }
   );
 }
 
-export default function WhoWeServe() {
+export default function WhoWeServe({ categoryLinks = false }: { categoryLinks?: boolean }) {
   const { t, theme } = useSitePreferences();
   const isDark = theme === 'dark';
 
@@ -77,18 +92,21 @@ export default function WhoWeServe() {
       pain: t("Struggling with low patient volume and poor online visibility? We'll fill your beds."),
       image: '/Facility-image/Emergency Room.png',
       icon: '🏥',
+      href: categoryLinks ? '/case-studies?category=ER' : undefined,
     },
     {
       title: t('MedSpas'),
       pain: t('Tired of inconsistent bookings? Our campaigns keep your calendar filled.'),
       image: '/Facility-image/Med Spa.png',
       icon: '✨',
+      href: categoryLinks ? '/case-studies?category=MedSpa' : undefined,
     },
     {
       title: t('Urgent Care Centers'),
       pain: t('When patient flow slows down, so does revenue. We bring a steady stream through your doors.'),
       image: '/Facility-image/Urgent care.png',
       icon: '⚕️',
+      href: categoryLinks ? '/case-studies?category=UrgentCare' : undefined,
     },
   ];
 

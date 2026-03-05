@@ -15,9 +15,14 @@ export const metadata: Metadata = {
   }
 };
 
-export default function CaseStudiesPage() {
+type CaseStudyCategory = 'ER' | 'MedSpa' | 'UrgentCare';
+
+export default async function CaseStudiesPage({ searchParams }: { searchParams?: Promise<{ category?: string }> }) {
+  const resolvedSearchParams = searchParams ? await searchParams : undefined;
+  const category = resolvedSearchParams?.category;
   const caseStudies = [
     {
+      category: 'ER' as CaseStudyCategory,
       title: 'Emergency Room - 45% Patient Increase',
       description: 'Freestanding ER in Dallas Metro',
       challenge: 'Limited local visibility competing against large hospital systems',
@@ -26,6 +31,7 @@ export default function CaseStudiesPage() {
       icon: '🏥'
     },
     {
+      category: 'UrgentCare' as CaseStudyCategory,
       title: 'Urgent Care - 3x Patient Acquisition',
       description: 'Multi-location urgent care in Houston',
       challenge: 'Brand not recognized, losing patients to competitors',
@@ -34,6 +40,7 @@ export default function CaseStudiesPage() {
       icon: '⚡'
     },
     {
+      category: 'MedSpa' as CaseStudyCategory,
       title: 'Cosmetic Surgery - 120% Lead Growth',
       description: 'Aesthetic clinic in Austin',
       challenge: 'Competing on price, needed premium positioning',
@@ -42,6 +49,7 @@ export default function CaseStudiesPage() {
       icon: '✨'
     },
     {
+      category: 'UrgentCare' as CaseStudyCategory,
       title: 'Primary Care - 500% ROI from SEO',
       description: 'Family medicine practice in San Antonio',
       challenge: 'Invisible in search results for "doctor near me"',
@@ -50,6 +58,7 @@ export default function CaseStudiesPage() {
       icon: '👨‍⚕️'
     },
     {
+      category: 'MedSpa' as CaseStudyCategory,
       title: 'Mental Health Clinic - 2x Patient Retention',
       description: 'Therapy practice in Dallas',
       challenge: 'High patient acquisition costs, poor retention',
@@ -58,6 +67,7 @@ export default function CaseStudiesPage() {
       icon: '🧠'
     },
     {
+      category: 'ER' as CaseStudyCategory,
       title: 'Dental Practice - Local Pack #1',
       description: 'General dentistry in Irving',
       challenge: 'Not appearing in local search top 3',
@@ -66,6 +76,11 @@ export default function CaseStudiesPage() {
       icon: '😁'
     }
   ];
+
+  const activeCategory = category === 'ER' || category === 'MedSpa' || category === 'UrgentCare' ? category : null;
+  const filteredCaseStudies = activeCategory
+    ? caseStudies.filter((study) => study.category === activeCategory)
+    : caseStudies;
 
   return (
     <main className="min-h-screen bg-slate-50">
@@ -80,13 +95,23 @@ export default function CaseStudiesPage() {
       />
 
       <DashboardImages />
-      <WhoWeServe />
+      <WhoWeServe categoryLinks={true} />
 
       {/* Case Studies Grid */}
       <section id="cases" className="py-24 border-b border-slate-200">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          {activeCategory && (
+            <div className="mb-8 flex items-center justify-between gap-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3">
+              <p className="text-sm font-semibold text-emerald-800">
+                Showing {activeCategory === 'ER' ? 'Emergency Room' : activeCategory === 'MedSpa' ? 'MedSpa' : 'Urgent Care'} case studies
+              </p>
+              <a href="/case-studies#cases" className="text-sm font-bold text-emerald-700 hover:text-emerald-900">
+                Clear Filter
+              </a>
+            </div>
+          )}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {caseStudies.map((study, idx) => (
+            {filteredCaseStudies.map((study, idx) => (
               <FadeIn key={idx} delay={idx * 0.1}>
                 <div className="bg-white rounded-3xl border border-slate-200 p-8 hover:shadow-xl transition-all hover:-translate-y-1 h-full">
                   <div className="text-5xl mb-4">{study.icon}</div>

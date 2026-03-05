@@ -1,7 +1,7 @@
 'use client';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import Image from 'next/image';
+import { useState } from 'react';
 import { Calendar, ArrowUpRight, BookOpen } from 'lucide-react';
 import { useSitePreferences } from '@/components/SitePreferencesProvider';
 
@@ -20,7 +20,9 @@ interface BlogInsightsProps {
 export default function BlogInsights({ posts }: BlogInsightsProps) {
   const { t, theme, language } = useSitePreferences();
   const isDark = theme === 'dark';
+  const [brokenImages, setBrokenImages] = useState<Record<string, boolean>>({});
   const dateLocale = language === 'es' ? 'es-US' : 'en-US';
+  const fallbackImages = ['/1.png', '/2.png', '/3.png'];
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return '';
@@ -69,14 +71,20 @@ export default function BlogInsights({ posts }: BlogInsightsProps) {
               >
                 {/* Image Container */}
                 <div className="relative h-56 overflow-hidden bg-slate-200">
-                  {p.coverImage ? (
-                    <Image
+                  {p.coverImage && !brokenImages[p.slug] ? (
+                    <img
                       src={p.coverImage}
                       alt={p.title}
-                      fill
-                      sizes="(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw"
                       loading="lazy"
-                      className="object-cover group-hover:scale-110 transition-transform duration-300"
+                      onError={() => setBrokenImages(prev => ({ ...prev, [p.slug]: true }))}
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                    />
+                  ) : p.coverImage || brokenImages[p.slug] ? (
+                    <img
+                      src={fallbackImages[idx % fallbackImages.length]}
+                      alt={p.title}
+                      loading="lazy"
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                     />
                   ) : (
                     <div className={`w-full h-full flex items-center justify-center ${isDark ? 'bg-slate-700' : 'bg-slate-200'}`}>

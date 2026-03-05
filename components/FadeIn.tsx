@@ -16,11 +16,11 @@ export default function FadeIn({
 }) {
   const getInitial = () => {
     switch(direction) {
-      case "up": return { opacity: 0, y: 30 };
-      case "down": return { opacity: 0, y: -30 };
-      case "left": return { opacity: 0, x: 30 };
-      case "right": return { opacity: 0, x: -30 };
-      case "none": return { opacity: 0 };
+      case "up": return { opacity: 0.7, y: 22 };
+      case "down": return { opacity: 0.7, y: -22 };
+      case "left": return { opacity: 0.7, x: 22 };
+      case "right": return { opacity: 0.7, x: -22 };
+      case "none": return { opacity: 0.82 };
     }
   };
 
