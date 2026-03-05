@@ -3077,6 +3077,13 @@ function BlogManagementSection() {
   const [posts, setPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // AI Auto-Blog state
+  const [aiGenerating, setAiGenerating] = useState(false);
+  const [aiCustomTopic, setAiCustomTopic] = useState('');
+  const [aiResult, setAiResult] = useState<any>(null);
+  const [aiError, setAiError] = useState('');
+  const [aiShowPanel, setAiShowPanel] = useState(false);
+
   const [deleteModal, setDeleteModal] = useState({
     isOpen: false,
     postId: 0,
@@ -3114,6 +3121,35 @@ function BlogManagementSection() {
     }
   };
 
+  // ── AI Blog generation handler ────────────────────────────────────
+  const handleAiGenerate = async (autoPublish: boolean) => {
+    setAiGenerating(true);
+    setAiResult(null);
+    setAiError('');
+    try {
+      const res = await fetch('/api/ai/generate-blog', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          topic: aiCustomTopic.trim() || undefined,
+          autoPublish,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error || 'Generation failed');
+      setAiResult(data.post);
+      setAiCustomTopic('');
+      // Refresh post list
+      const postsRes = await fetch('/api/posts');
+      const postsData = await postsRes.json();
+      setPosts(postsData);
+    } catch (err) {
+      setAiError(err instanceof Error ? err.message : 'Generation failed');
+    } finally {
+      setAiGenerating(false);
+    }
+  };
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
@@ -3121,13 +3157,130 @@ function BlogManagementSection() {
           <h2 className="text-2xl font-bold">Blog Management</h2>
           <p className="text-slate-600 dark:text-slate-400">Create and manage blog posts for your website.</p>
         </div>
-        <Link
-          href="/dashboard/admin/blog/new"
-          className="flex items-center gap-2 bg-emerald-500 text-black px-5 py-3 rounded-xl font-bold hover:bg-emerald-400 transition-all"
-        >
-          <Plus className="h-5 w-5" /> New Post
-        </Link>
+        <div className="flex gap-3">
+          <button
+            onClick={() => setAiShowPanel(!aiShowPanel)}
+            className="flex items-center gap-2 bg-violet-500 text-white px-5 py-3 rounded-xl font-bold hover:bg-violet-400 transition-all"
+          >
+            <Sparkles className="h-5 w-5" /> AI Auto-Blog
+          </button>
+          <Link
+            href="/dashboard/admin/blog/new"
+            className="flex items-center gap-2 bg-emerald-500 text-black px-5 py-3 rounded-xl font-bold hover:bg-emerald-400 transition-all"
+          >
+            <Plus className="h-5 w-5" /> New Post
+          </Link>
+        </div>
       </div>
+
+      {/* ── AI Auto-Blog Panel ────────────────────────────────────────── */}
+      <AnimatePresence>
+        {aiShowPanel && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="mb-8 overflow-hidden"
+          >
+            <div className="glass rounded-2xl border border-violet-200 dark:border-violet-800 p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 bg-violet-100 dark:bg-violet-900/30 rounded-xl">
+                  <Sparkles className="h-5 w-5 text-violet-600 dark:text-violet-400" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-lg">AI Blog Generator</h3>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">
+                    Auto-generates SEO-optimized posts with images, internal & external links. Runs daily at 8 AM CST.
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2 text-slate-700 dark:text-slate-300">Custom Topic (optional)</label>
+                  <input
+                    type="text"
+                    value={aiCustomTopic}
+                    onChange={(e) => setAiCustomTopic(e.target.value)}
+                    placeholder="Leave blank for auto-selected healthcare marketing topic..."
+                    className="w-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-sm focus:outline-none focus:border-violet-500"
+                    disabled={aiGenerating}
+                  />
+                </div>
+
+                <div className="flex flex-wrap gap-3">
+                  <button
+                    onClick={() => handleAiGenerate(false)}
+                    disabled={aiGenerating}
+                    className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm border-2 border-violet-500 text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {aiGenerating ? (
+                      <><RefreshCw className="h-4 w-4 animate-spin" /> Generating...</>
+                    ) : (
+                      <><Sparkles className="h-4 w-4" /> Generate Draft</>
+                    )}
+                  </button>
+                  <button
+                    onClick={() => handleAiGenerate(true)}
+                    disabled={aiGenerating}
+                    className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm bg-violet-500 text-white hover:bg-violet-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {aiGenerating ? (
+                      <><RefreshCw className="h-4 w-4 animate-spin" /> Publishing...</>
+                    ) : (
+                      <><Zap className="h-4 w-4" /> Generate &amp; Publish</>
+                    )}
+                  </button>
+                </div>
+
+                {/* Generation result */}
+                {aiResult && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-xl p-4"
+                  >
+                    <p className="text-sm font-bold text-emerald-700 dark:text-emerald-400 mb-2">✅ Blog post generated successfully!</p>
+                    <div className="space-y-1 text-sm text-slate-600 dark:text-slate-400">
+                      <p><strong>Title:</strong> {aiResult.title}</p>
+                      <p><strong>SEO Title:</strong> {aiResult.seoTitle}</p>
+                      <p><strong>Keyword:</strong> {aiResult.focusKeyword}</p>
+                      <p><strong>Slug:</strong> /{aiResult.slug}</p>
+                      <p><strong>Status:</strong> <span className={aiResult.status === 'published' ? 'text-emerald-600 dark:text-emerald-400 font-bold' : 'text-amber-600 dark:text-amber-400 font-bold'}>{aiResult.status === 'published' ? '🟢 Published' : '🟡 Draft'}</span></p>
+                    </div>
+                    <div className="flex gap-2 mt-3">
+                      <Link href={`/dashboard/admin/blog/edit/${aiResult.id}`} className="text-xs bg-blue-500 text-white px-3 py-1.5 rounded-lg font-bold hover:bg-blue-400 transition-all">Edit Post</Link>
+                      {aiResult.status === 'published' && (
+                        <Link href={`/blog/${aiResult.slug}`} target="_blank" className="text-xs bg-emerald-500 text-black px-3 py-1.5 rounded-lg font-bold hover:bg-emerald-400 transition-all">View Live →</Link>
+                      )}
+                    </div>
+                  </motion.div>
+                )}
+
+                {/* Error */}
+                {aiError && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4"
+                  >
+                    <p className="text-sm text-red-700 dark:text-red-400">❌ {aiError}</p>
+                  </motion.div>
+                )}
+
+                {/* Info about daily automation */}
+                <div className="flex items-start gap-3 bg-slate-100 dark:bg-slate-800 rounded-xl p-4 text-sm text-slate-600 dark:text-slate-400">
+                  <Calendar className="h-5 w-5 mt-0.5 flex-shrink-0 text-violet-500" />
+                  <div>
+                    <p className="font-medium text-slate-700 dark:text-slate-300">Daily Auto-Publish Active</p>
+                    <p>A new blog post is automatically generated and published every day at <strong>8:00 AM CST</strong>. Each post includes SEO fields, a DALL-E cover image, internal links to your services, and external citations from credible healthcare sources.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {loading ? (
         <div className="flex items-center justify-center py-12">

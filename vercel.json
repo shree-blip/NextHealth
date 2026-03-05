@@ -1,5 +1,11 @@
 {
   "buildCommand": "npx prisma generate && npm run build",
+  "crons": [
+    {
+      "path": "/api/cron/daily-blog",
+      "schedule": "0 14 * * *"
+    }
+  ],
   "env": {
     "NODE_ENV": "production"
   },
