@@ -96,13 +96,17 @@ export default function Navbar({ forceSolid = false }: NavbarProps) {
     ? theme === 'dark'
       ? 'bg-slate-900/90 backdrop-blur-xl border-b border-slate-700 shadow-sm'
       : 'bg-white/90 backdrop-blur-xl border-b border-slate-200 shadow-sm'
-    : 'bg-transparent';
+    : theme === 'dark'
+      ? 'bg-transparent'
+      : 'bg-white/70 backdrop-blur-md border-b border-slate-200/50';
 
   const desktopLinkClass = (scrolled || shouldUseSolidNav)
     ? theme === 'dark'
       ? 'text-slate-200 hover:text-white'
       : 'text-slate-600 hover:text-slate-900'
-    : 'text-white/80 hover:text-white';
+    : theme === 'dark'
+      ? 'text-white/80 hover:text-white'
+      : 'text-slate-700 hover:text-slate-900';
 
   const membershipLabel = (() => {
     const planId = String(user?.planId || '').toLowerCase();
@@ -222,13 +226,17 @@ export default function Navbar({ forceSolid = false }: NavbarProps) {
                       ? theme === 'dark'
                         ? 'border border-slate-600 text-slate-200 hover:border-emerald-500 hover:text-emerald-400 bg-slate-800/40 hover:bg-slate-800/80'
                         : 'border border-slate-300 text-slate-700 hover:border-emerald-500 hover:text-emerald-600 bg-white/40 hover:bg-white/80'
-                      : 'border border-white/30 text-white/90 hover:text-white hover:border-white/60 bg-white/10 hover:bg-white/20'
-                  } ${userMenuOpen ? (scrolled ? (theme === 'dark' ? 'border-emerald-500 text-emerald-400 bg-emerald-500/10' : 'border-emerald-500 text-emerald-600 bg-emerald-500/10') : 'border-white/60 text-white bg-white/20') : ''}`}
+                      : theme === 'dark'
+                        ? 'border border-white/30 text-white/90 hover:text-white hover:border-white/60 bg-white/10 hover:bg-white/20'
+                        : 'border border-slate-300 text-slate-700 hover:border-emerald-500 hover:text-emerald-600 bg-white/60 hover:bg-white/80'
+                  } ${userMenuOpen ? (scrolled ? (theme === 'dark' ? 'border-emerald-500 text-emerald-400 bg-emerald-500/10' : 'border-emerald-500 text-emerald-600 bg-emerald-500/10') : theme === 'dark' ? 'border-white/60 text-white bg-white/20' : 'border-emerald-500 text-emerald-600 bg-emerald-500/10') : ''}`}
                 >
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ring-2 transition-all ${
                     scrolled
                       ? theme === 'dark' ? 'bg-gradient-to-br from-emerald-400 to-emerald-600 ring-emerald-500/30' : 'bg-gradient-to-br from-emerald-400 to-emerald-500 ring-emerald-400/30'
-                      : 'bg-white/30 ring-white/40'
+                      : theme === 'dark'
+                        ? 'bg-white/30 ring-white/40'
+                        : 'bg-emerald-500 ring-emerald-400/30'
                   } text-white relative`}>
                     {user.avatar ? (
                       <Image src={user.avatar} alt={user.name} width={32} height={32} className="rounded-full" />
@@ -391,8 +399,10 @@ export default function Navbar({ forceSolid = false }: NavbarProps) {
                     ? theme === 'dark'
                       ? 'border-slate-700 text-slate-200 hover:border-emerald-500 hover:text-emerald-400 bg-slate-800/50'
                       : 'border-slate-200 text-slate-600 hover:border-emerald-500 hover:text-emerald-600 bg-white/50'
-                    : 'border-white/20 text-white/80 hover:text-white hover:border-white/40 bg-white/10'
-                } ${settingsOpen ? (scrolled ? (theme === 'dark' ? 'border-emerald-500 text-emerald-400' : 'border-emerald-500 text-emerald-600') : 'border-white/40 text-white') : ''}`}
+                    : theme === 'dark'
+                      ? 'border-white/20 text-white/80 hover:text-white hover:border-white/40 bg-white/10'
+                      : 'border-slate-300 text-slate-700 hover:border-emerald-500 hover:text-emerald-600 bg-white/60'
+                } ${settingsOpen ? (scrolled ? (theme === 'dark' ? 'border-emerald-500 text-emerald-400' : 'border-emerald-500 text-emerald-600') : theme === 'dark' ? 'border-white/40 text-white' : 'border-emerald-500 text-emerald-600') : ''}`}
                 aria-label="Settings"
               >
                 <Settings className="h-4 w-4" />
@@ -492,7 +502,7 @@ export default function Navbar({ forceSolid = false }: NavbarProps) {
 
           {/* Mobile Menu Button */}
           <div className="md:hidden">
-            <button onClick={() => setIsOpen(!isOpen)} aria-label={isOpen ? 'Close menu' : 'Open menu'} className={scrolled ? (theme === 'dark' ? 'text-slate-200 hover:text-white' : 'text-slate-600 hover:text-slate-900') : 'text-white hover:text-white/80'}>
+            <button onClick={() => setIsOpen(!isOpen)} aria-label={isOpen ? 'Close menu' : 'Open menu'} className={scrolled ? (theme === 'dark' ? 'text-slate-200 hover:text-white' : 'text-slate-600 hover:text-slate-900') : theme === 'dark' ? 'text-white hover:text-white/80' : 'text-slate-700 hover:text-slate-900'}>
               {isOpen ? <X /> : <Menu />}
             </button>
           </div>
