@@ -495,6 +495,7 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false }:
                 setSelectedYear(e.target.value);
                 setSelectedMonth('all');
                 setSelectedWeek('all');
+                setHasDateRangeFilter(false);
               }}
               className={`px-4 py-3 rounded-xl border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-100' : 'bg-white border-slate-200 text-slate-900'}`}
             >
@@ -508,6 +509,7 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false }:
               onChange={(e) => {
                 setSelectedMonth(e.target.value);
                 setSelectedWeek('all');
+                setHasDateRangeFilter(false);
               }}
               className={`px-4 py-3 rounded-xl border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-100' : 'bg-white border-slate-200 text-slate-900'}`}
             >
@@ -518,7 +520,10 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false }:
             </select>
             <select
               value={selectedWeek}
-              onChange={(e) => setSelectedWeek(e.target.value)}
+              onChange={(e) => {
+                setSelectedWeek(e.target.value);
+                setHasDateRangeFilter(false);
+              }}
               className={`px-4 py-3 rounded-xl border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-100' : 'bg-white border-slate-200 text-slate-900'}`}
             >
               <option value="all">All Weeks</option>
@@ -782,6 +787,7 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false }:
                 setSelectedYear(e.target.value);
                 setSelectedMonth('all');
                 setSelectedWeek('all');
+                setHasDateRangeFilter(false);
               }}
               className={`px-4 py-3 rounded-xl border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-100' : 'bg-white border-slate-200 text-slate-900'}`}
             >
@@ -796,6 +802,7 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false }:
               onChange={(e) => {
                 setSelectedMonth(e.target.value);
                 setSelectedWeek('all');
+                setHasDateRangeFilter(false);
               }}
               className={`px-4 py-3 rounded-xl border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-100' : 'bg-white border-slate-200 text-slate-900'}`}
             >
@@ -807,7 +814,10 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false }:
 
             <select
               value={selectedWeek}
-              onChange={(e) => setSelectedWeek(e.target.value)}
+              onChange={(e) => {
+                setSelectedWeek(e.target.value);
+                setHasDateRangeFilter(false);
+              }}
               className={`px-4 py-3 rounded-xl border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-100' : 'bg-white border-slate-200 text-slate-900'}`}
             >
               <option value="all">All Weeks</option>
