@@ -127,13 +127,7 @@ export default function EditBlogPost() {
         body: JSON.stringify(payload),
       });
       if (!res.ok) throw new Error('Save failed');
-      if (publish || form.publishedAt) {
-        await fetch('/api/revalidate-sitemap', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ slug: form.slug }),
-        });
-      }
+      // Sitemap automatically revalidated by API route
       router.push('/dashboard/admin?view=blog-management');
     } catch {
       alert('Failed to save post');
