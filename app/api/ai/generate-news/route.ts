@@ -4,9 +4,10 @@ import { openai } from '@ai-sdk/openai';
 import Replicate from 'replicate';
 import prisma from '@/lib/prisma';
 import { persistImage } from '@/lib/persist-image';
+import { runSeoChecks, buildFixPrompt, generateSocialMeta, type SeoCheckResult } from '@/lib/seo-validation';
 
 export const dynamic = 'force-dynamic';
-export const maxDuration = 120;
+export const maxDuration = 300; // Extra time for SEO validation retry loop
 
 // ── Internal pages for linking ──────────────────────────────────────
 const INTERNAL_PAGES = [
@@ -82,6 +83,9 @@ KEYWORD RESEARCH RULES:
   • healthcare industry regulations and policy changes
 - Create a short list of 10 keyword options internally, then select the best 1.
 - Pick 1 primary keyword and 4-6 supporting keywords.
+- The focus keyword MUST be exactly 2-5 words. It must NOT be a full sentence or question.
+  Good examples: "healthcare marketing automation", "telehealth policy update"
+  Bad examples: "how healthcare providers can adapt to new telehealth regulations"
 
 DUPLICATE CHECK:
 The following titles already exist on our site. Do NOT propose a topic that overlaps with any of them. If a similar topic exists, propose a fresh angle that is clearly different.
@@ -197,7 +201,7 @@ Return this exact JSON structure:
 {
   "focusKeyword": "${focusKeyword}",
   "supportingKeywords": ${JSON.stringify(supportingKeywords)},
-  "seoTitle": "SEO title following these rules: START with the focus keyword, include a NUMBER, include one strong POWER word (e.g., Breaking, Critical, Major, Urgent) and one SENTIMENT word. MUST be under 70 characters.",
+  "seoTitle": "SEO title: START with focus keyword, include a NUMBER, a POWER word (Breaking, Critical, Major, Urgent), and a SENTIMENT word. MUST be 30-60 characters total.",
   "metaDescription": "Meta description: include the focus keyword, 140-160 characters, newsworthy and compelling",
   "slug": "short-url-slug-with-focus-keyword",
   "headline": "engaging news headline that includes the focus keyword",
@@ -209,7 +213,7 @@ STRICT RULES:
 - seoTitle MUST start with the focus keyword
 - seoTitle MUST contain a number
 - seoTitle MUST contain a power word AND a sentiment word
-- seoTitle MUST be under 70 characters
+- seoTitle MUST be 30-60 characters (count carefully — this is strict)
 - metaDescription MUST be 140-160 characters
 - slug MUST be short, lowercase with hyphens, contain the focus keyword
 - focusKeyword MUST appear in seoTitle, metaDescription, and slug
@@ -266,7 +270,7 @@ Your writing style: Journalistic, factual, authoritative — similar to articles
 YOU MUST follow ALL of these SEO rules to hit a 100/100 Rank Math score:
 
 CONTENT RULES:
-1. Write EXACTLY 900-1,200 words of body content.
+1. Write EXACTLY 500-900 words of body content.
 2. Output clean HTML only. No markdown. No code blocks.
 3. Use semantic HTML: <h2>, <h3>, <p>, <ul>, <li>, <strong>, <em>, <blockquote>.
 4. Do NOT wrap output in a container tag. Start directly with the first <p>.
@@ -275,10 +279,17 @@ CONTENT RULES:
    - In at least ONE <h2> heading
    - In at least ONE <h3> heading
    - In the closing paragraph
-   - At about 1% keyword density across the post (NO keyword stuffing)
+   - At exactly 0.8%-1.2% keyword density (for 700 words, use the exact phrase 5-8 times distributed evenly — NO keyword stuffing)
 6. Supporting keywords to weave in naturally: ${supportingKeywords.join(', ')}
 7. Include a TABLE OF CONTENTS after the lead paragraph using an <ul> with anchor links to each H2 section.
 8. Use SHORT paragraphs (2-3 sentences max) and bullet lists for scannability.
+
+READABILITY RULES (critical for passing SEO validation):
+- Average sentence length MUST be 20 words or fewer. Write short, direct sentences.
+- Start at least 30% of sentences with TRANSITION WORDS: However, Also, Furthermore, For example, Additionally, Therefore, Meanwhile, Specifically, Moreover, In addition, Consequently, As a result, Next, Finally, Similarly, Notably.
+- Use ACTIVE voice in at least 85% of sentences. Avoid passive constructions.
+- Target a Flesch Reading Ease score between 50 and 70. Write clearly and professionally — avoid jargon-heavy or overly academic language.
+
 9. Write in a news reporting tone — use quotes, statistics, and industry data.
 10. Include attributed quotes from realistic industry experts.
 
@@ -305,7 +316,7 @@ EXTERNAL LINKS (use at least 2, cite as credible sources):
 Additional reference: ${tertiarySource.name} (${tertiarySource.url})
 
 REMEMBER:
-- 900-1,200 words
+- 500-900 words
 - Focus keyword in first sentence, at least 1 H2, at least 1 H3, closing paragraph
 - Table of Contents after lead paragraph
 - Short paragraphs and bullet lists
@@ -321,6 +332,69 @@ REMEMBER:
     .replace(/^[\s\n]*/, '')
     .trim();
 
+  // ── SEO Validation Loop (auto-rewrite until checks pass, max 3 retries) ──
+  let seoCheck: SeoCheckResult = runSeoChecks({
+    focusKeyword: seo.focusKeyword,
+    title: seo.headline,
+    seoTitle: seo.seoTitle,
+    metaDesc: seo.metaDescription,
+    htmlContent: cleanedContent,
+    type: 'news',
+  });
+
+  for (let attempt = 1; attempt <= 3 && !seoCheck.passed; attempt++) {
+    console.log(`[News SEO] Retry ${attempt}/3 — failures:`, seoCheck.failures);
+    const fixInstructions = buildFixPrompt(seoCheck.failures, seoCheck.metrics);
+
+    // Fix meta fields if needed
+    const hasMetaIssues = seoCheck.failures.some(
+      (f) => f.toLowerCase().includes('meta title') || f.toLowerCase().includes('meta description')
+    );
+    if (hasMetaIssues) {
+      const { text: fixedSeo } = await generateText({
+        model: openai('gpt-4o-mini'),
+        system: 'Fix SEO meta fields. Return ONLY valid JSON with "seoTitle" and "metaDescription" keys. No markdown.',
+        prompt: `Fix these meta fields for focus keyword "${seo.focusKeyword}":\nCurrent seoTitle: "${seo.seoTitle}" (${seo.seoTitle.length} chars)\nCurrent metaDescription: "${seo.metaDescription}" (${seo.metaDescription.length} chars)\n\n${fixInstructions}\n\nRULES:\n- seoTitle MUST be 30-60 characters, start with focus keyword, include a number\n- metaDescription MUST be 140-160 characters, include focus keyword\n\nReturn: { "seoTitle": "...", "metaDescription": "..." }`,
+        temperature: 0.5,
+      });
+      try {
+        const fixed = JSON.parse(fixedSeo.replace(/```json\n?|\n?```/g, '').trim());
+        if (fixed.seoTitle) seo.seoTitle = fixed.seoTitle;
+        if (fixed.metaDescription) seo.metaDescription = fixed.metaDescription;
+      } catch { /* keep existing if parse fails */ }
+    }
+
+    // Fix content if needed
+    const contentIssues = seoCheck.failures.filter(
+      (f) => !f.toLowerCase().includes('meta title') && !f.toLowerCase().includes('meta description')
+    );
+    if (contentIssues.length > 0) {
+      const { text: fixedHtml } = await generateText({
+        model: openai('gpt-4o-mini'),
+        system: 'Rewrite this news article to fix the listed SEO issues. Output clean HTML only — no markdown, no code fences. Keep the same topic and heading structure. Start directly with a <p> tag.',
+        prompt: `Rewrite to fix SEO issues. Focus Keyword: "${seo.focusKeyword}"\nSupporting Keywords: ${supportingKeywords.join(', ')}\n\n${fixInstructions}\n\nCurrent content:\n${cleanedContent}\n\nIMPORTANT:\n- Fix ALL listed issues\n- Focus keyword in first paragraph, at least 1 H2, closing paragraph\n- Short sentences (max 20 words avg)\n- Use transition words in 30%+ of sentences\n- 0.8%-1.2% keyword density\n- 500-900 words\n- Journalistic news reporting style\n- Clean HTML only`,
+        temperature: 0.6,
+      });
+      cleanedContent = fixedHtml.replace(/```html\n?|\n?```/g, '').replace(/^[\s\n]*/, '').trim();
+    }
+
+    // Re-check after fixes
+    seoCheck = runSeoChecks({
+      focusKeyword: seo.focusKeyword,
+      title: seo.headline,
+      seoTitle: seo.seoTitle,
+      metaDesc: seo.metaDescription,
+      htmlContent: cleanedContent,
+      type: 'news',
+    });
+  }
+
+  if (!seoCheck.passed) {
+    console.warn('[News SEO] Final validation has remaining issues:', seoCheck.failures);
+  } else {
+    console.log('[News SEO] All checks passed ✓', seoCheck.metrics);
+  }
+
   // ── STEP 5: Generate the cover image (real photo, no cartoons) ──────
   const imageUrl = await generateNewsImage(seo.focusKeyword, seo.headline);
 
@@ -334,6 +408,16 @@ REMEMBER:
     system: 'Generate a 1-2 sentence news excerpt. Plain text only, no HTML. Include the focus keyword naturally. Summarize the key news point.',
     prompt: `Write a short news excerpt for an article titled "${seo.headline}" with focus keyword "${seo.focusKeyword}". Max 200 characters.`,
     temperature: 0.6,
+  });
+
+  // ── Generate social metadata ──────────────────────────────────────
+  const socialMeta = generateSocialMeta({
+    title: seo.seoTitle,
+    description: seo.metaDescription,
+    image: imageUrl,
+    slug: seo.slug,
+    siteUrl: SITE_URL,
+    section: 'news',
   });
 
   return {
@@ -351,6 +435,9 @@ REMEMBER:
     source: seo.source,
     sourceUrl: primarySource.url,
     topic,
+    socialMeta,
+    seoMetrics: seoCheck.metrics,
+    seoValidationPassed: seoCheck.passed,
   };
 }
 
@@ -407,6 +494,9 @@ export async function POST(request: NextRequest) {
             publisher: newsData.publisher,
             source: newsData.source,
             autoPublish,
+            seoValidationPassed: newsData.seoValidationPassed,
+            seoMetrics: newsData.seoMetrics,
+            socialMeta: newsData.socialMeta,
           },
           output: `Article ID: ${article.id} | Slug: ${article.slug}`,
         },
@@ -442,6 +532,8 @@ export async function POST(request: NextRequest) {
         source: article.source,
         publishedAt: article.publishedAt,
         status: article.publishedAt ? 'published' : 'draft',
+        seoValidationPassed: newsData.seoValidationPassed,
+        seoMetrics: newsData.seoMetrics,
       },
     });
   } catch (error) {

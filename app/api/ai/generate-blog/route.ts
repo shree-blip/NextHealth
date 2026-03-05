@@ -4,9 +4,10 @@ import { openai } from '@ai-sdk/openai';
 import Replicate from 'replicate';
 import prisma from '@/lib/prisma';
 import { persistImage } from '@/lib/persist-image';
+import { runSeoChecks, buildFixPrompt, generateSocialMeta, type SeoCheckResult } from '@/lib/seo-validation';
 
 export const dynamic = 'force-dynamic';
-export const maxDuration = 120; // Blog + image generation can take time
+export const maxDuration = 300; // Extra time for SEO validation retry loop
 
 // ── Internal pages for linking ──────────────────────────────────────
 const INTERNAL_PAGES = [
@@ -79,6 +80,9 @@ KEYWORD RESEARCH RULES:
   • custom software for healthcare marketing, reporting, dashboards, and workflow systems
 - Create a short list of 10 keyword options internally, then select the best 1 for the post.
 - Pick 1 primary keyword and 4-6 supporting keywords.
+- The focus keyword MUST be exactly 2-5 words. It must NOT be a full sentence or question.
+  Good examples: "healthcare marketing automation", "dental clinic SEO strategy"
+  Bad examples: "how to improve your healthcare marketing strategy with automation"
 
 DUPLICATE CHECK:
 The following titles already exist on our site. Do NOT propose a topic that overlaps with any of them. If a similar topic exists, propose a fresh angle that is clearly different.
@@ -192,7 +196,7 @@ Return this exact JSON structure:
 {
   "focusKeyword": "${focusKeyword}",
   "supportingKeywords": ${JSON.stringify(supportingKeywords)},
-  "seoTitle": "SEO title following these rules: START with the focus keyword, include a NUMBER, include one strong POWER word (e.g., Proven, Essential, Ultimate, Critical) and one SENTIMENT word (positive or negative, e.g., Boost, Devastating, Skyrocket). MUST be under 70 characters.",
+  "seoTitle": "SEO title: START with focus keyword, include a NUMBER, a POWER word (Proven, Essential, Ultimate, Critical), and a SENTIMENT word (Boost, Devastating, Skyrocket). MUST be 30-60 characters total.",
   "metaDescription": "Meta description: include the focus keyword, 140-160 characters, compelling and click-worthy",
   "slug": "short-url-slug-with-focus-keyword",
   "blogTitle": "engaging blog post title that includes the focus keyword, a number, and a power word"
@@ -202,7 +206,7 @@ STRICT RULES:
 - seoTitle MUST start with the focus keyword
 - seoTitle MUST contain a number
 - seoTitle MUST contain a power word AND a sentiment word
-- seoTitle MUST be under 70 characters
+- seoTitle MUST be 30-60 characters (count carefully — this is strict)
 - metaDescription MUST be 140-160 characters
 - slug MUST be short, lowercase with hyphens, contain the focus keyword
 - focusKeyword MUST appear in seoTitle, metaDescription, and slug`,
@@ -253,10 +257,16 @@ CONTENT RULES:
    - In at least ONE <h2> heading
    - In at least ONE <h3> heading
    - In the closing paragraph
-   - At about 1% keyword density across the post (NO keyword stuffing)
+   - At exactly 0.8%-1.2% keyword density (for 1000 words, use the exact phrase 8-12 times distributed evenly — NO keyword stuffing)
 6. Supporting keywords to weave in naturally: ${supportingKeywords.join(', ')}
 7. Include a TABLE OF CONTENTS after the intro paragraph using an <ul> with anchor links to each H2 section.
 8. Use SHORT paragraphs (2-3 sentences max) and bullet lists for scannability.
+
+READABILITY RULES (critical for passing SEO validation):
+- Average sentence length MUST be 20 words or fewer. Write short, direct sentences.
+- Start at least 30% of sentences with TRANSITION WORDS: However, Also, Furthermore, For example, Additionally, Therefore, Meanwhile, Specifically, Moreover, In addition, Consequently, As a result, Next, Finally, Similarly, Notably.
+- Use ACTIVE voice in at least 85% of sentences. Avoid passive constructions.
+- Target a Flesch Reading Ease score between 50 and 70. Write clearly and professionally — avoid jargon-heavy or overly academic language.
 
 LINK RULES:
 9. Include at least 2 INTERNAL links to thenextgenhealth.com service pages. Place them naturally in relevant sections.
@@ -296,6 +306,69 @@ REMEMBER:
     .replace(/^[\s\n]*/, '')
     .trim();
 
+  // ── SEO Validation Loop (auto-rewrite until checks pass, max 3 retries) ──
+  let seoCheck: SeoCheckResult = runSeoChecks({
+    focusKeyword: seo.focusKeyword,
+    title: seo.blogTitle,
+    seoTitle: seo.seoTitle,
+    metaDesc: seo.metaDescription,
+    htmlContent: cleanedContent,
+    type: 'blog',
+  });
+
+  for (let attempt = 1; attempt <= 3 && !seoCheck.passed; attempt++) {
+    console.log(`[Blog SEO] Retry ${attempt}/3 — failures:`, seoCheck.failures);
+    const fixInstructions = buildFixPrompt(seoCheck.failures, seoCheck.metrics);
+
+    // Fix meta fields if needed
+    const hasMetaIssues = seoCheck.failures.some(
+      (f) => f.toLowerCase().includes('meta title') || f.toLowerCase().includes('meta description')
+    );
+    if (hasMetaIssues) {
+      const { text: fixedSeo } = await generateText({
+        model: openai('gpt-4o-mini'),
+        system: 'Fix SEO meta fields. Return ONLY valid JSON with "seoTitle" and "metaDescription" keys. No markdown.',
+        prompt: `Fix these meta fields for focus keyword "${seo.focusKeyword}":\nCurrent seoTitle: "${seo.seoTitle}" (${seo.seoTitle.length} chars)\nCurrent metaDescription: "${seo.metaDescription}" (${seo.metaDescription.length} chars)\n\n${fixInstructions}\n\nRULES:\n- seoTitle MUST be 30-60 characters, start with focus keyword, include a number\n- metaDescription MUST be 140-160 characters, include focus keyword\n\nReturn: { "seoTitle": "...", "metaDescription": "..." }`,
+        temperature: 0.5,
+      });
+      try {
+        const fixed = JSON.parse(fixedSeo.replace(/```json\n?|\n?```/g, '').trim());
+        if (fixed.seoTitle) seo.seoTitle = fixed.seoTitle;
+        if (fixed.metaDescription) seo.metaDescription = fixed.metaDescription;
+      } catch { /* keep existing if parse fails */ }
+    }
+
+    // Fix content if needed
+    const contentIssues = seoCheck.failures.filter(
+      (f) => !f.toLowerCase().includes('meta title') && !f.toLowerCase().includes('meta description')
+    );
+    if (contentIssues.length > 0) {
+      const { text: fixedHtml } = await generateText({
+        model: openai('gpt-4o-mini'),
+        system: 'Rewrite this blog post to fix the listed SEO issues. Output clean HTML only — no markdown, no code fences. Keep the same topic and heading structure. Start directly with a <p> tag.',
+        prompt: `Rewrite to fix SEO issues. Focus Keyword: "${seo.focusKeyword}"\nSupporting Keywords: ${supportingKeywords.join(', ')}\n\n${fixInstructions}\n\nCurrent content:\n${cleanedContent}\n\nIMPORTANT:\n- Fix ALL listed issues\n- Focus keyword in first paragraph, at least 1 H2, closing paragraph\n- Short sentences (max 20 words avg)\n- Use transition words in 30%+ of sentences\n- 0.8%-1.2% keyword density\n- 900-1200 words\n- Clean HTML only`,
+        temperature: 0.6,
+      });
+      cleanedContent = fixedHtml.replace(/```html\n?|\n?```/g, '').replace(/^[\s\n]*/, '').trim();
+    }
+
+    // Re-check after fixes
+    seoCheck = runSeoChecks({
+      focusKeyword: seo.focusKeyword,
+      title: seo.blogTitle,
+      seoTitle: seo.seoTitle,
+      metaDesc: seo.metaDescription,
+      htmlContent: cleanedContent,
+      type: 'blog',
+    });
+  }
+
+  if (!seoCheck.passed) {
+    console.warn('[Blog SEO] Final validation has remaining issues:', seoCheck.failures);
+  } else {
+    console.log('[Blog SEO] All checks passed ✓', seoCheck.metrics);
+  }
+
   // ── STEP 5: Generate the cover image (real photo, no cartoons) ──────
   const imageUrl = await generateBlogImage(seo.focusKeyword, seo.blogTitle);
 
@@ -311,6 +384,16 @@ REMEMBER:
     temperature: 0.6,
   });
 
+  // ── Generate social metadata ──────────────────────────────────────
+  const socialMeta = generateSocialMeta({
+    title: seo.seoTitle,
+    description: seo.metaDescription,
+    image: imageUrl,
+    slug: seo.slug,
+    siteUrl: SITE_URL,
+    section: 'blog',
+  });
+
   return {
     title: seo.blogTitle,
     slug: seo.slug,
@@ -323,6 +406,9 @@ REMEMBER:
     focusKeyword: seo.focusKeyword,
     supportingKeywords: supportingKeywords,
     topic,
+    socialMeta,
+    seoMetrics: seoCheck.metrics,
+    seoValidationPassed: seoCheck.passed,
   };
 }
 
@@ -374,6 +460,9 @@ export async function POST(request: NextRequest) {
             seoTitle: blogData.seoTitle,
             metaDesc: blogData.metaDesc,
             autoPublish,
+            seoValidationPassed: blogData.seoValidationPassed,
+            seoMetrics: blogData.seoMetrics,
+            socialMeta: blogData.socialMeta,
           },
           output: `Post ID: ${post.id} | Slug: ${post.slug}`,
         },
@@ -407,6 +496,8 @@ export async function POST(request: NextRequest) {
         coverImage: post.coverImage,
         publishedAt: post.publishedAt,
         status: post.publishedAt ? 'published' : 'draft',
+        seoValidationPassed: blogData.seoValidationPassed,
+        seoMetrics: blogData.seoMetrics,
       },
     });
   } catch (error) {
