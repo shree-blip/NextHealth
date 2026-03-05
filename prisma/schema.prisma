@@ -55,8 +55,18 @@ model Comment {
   content     String
   publishedAt DateTime @default(now())
   approved    Boolean  @default(false)
-  post        Post     @relation("PostComments", fields: [postId], references: [id])
+  post        Post     @relation("PostComments", fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([postId])
+  @@index([publishedAt])
 }
+
+// Future enhancement: Add these fields when running migrations
+// userId      String?
+// email       String?
+// status      String   @default("published")
+// updatedAt   DateTime @updatedAt
+// user        User?    @relation("PostComments", fields: [userId], references: [id], onDelete: SetNull)
 
 model NewsArticle {
   id            Int       @id @default(autoincrement())
@@ -172,6 +182,10 @@ model User {
   @@index([email])
   @@index([role])
 }
+
+// Future enhancement: Add comment relations
+// postComments         Comment[]      @relation("PostComments")
+// newsComments         NewsComment[]  @relation("NewsComments")
 
 model Clinic {
   id                String            @id @default(cuid())
