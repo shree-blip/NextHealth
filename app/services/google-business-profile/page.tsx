@@ -16,13 +16,13 @@ export default function GoogleBusinessProfilePage() {
   const content = (
     <div className="space-y-6 text-gray-700 leading-relaxed">
       <p>
-        Google Business Profile (formerly Google My Business) is foundational to local search success. When patients search "emergency room near me," Google shows a map with the Local Pack—three businesses ranked by relevance, distance, and 15+ ranking factors. Your profile optimization is mission-critical.
+        Google Business Profile (formerly Google My Business) is foundational to local search success. When patients search &ldquo;emergency room near me,&rdquo; Google shows a map with the Local Pack&mdash;three businesses ranked by relevance, distance, and 15+ ranking factors. Combined with a strong <a href="/services/seo-local-search" className="text-emerald-600 underline hover:text-emerald-700">local SEO strategy</a>, your profile optimization is mission-critical.
       </p>
       <p>
         Many clinics underestimate Google Business Profile. An abandoned profile with poor information ranks poorly. A well-optimized profile with fresh content, quality reviews, and regular updates dominates the Local Pack consistently.
       </p>
       <p>
-        Our Google Business Profile service includes complete optimization, weekly content management, review management, and performance monitoring. We ensure your clinic is the first choice patients find in local search.
+        Our Google Business Profile service includes complete optimization, weekly content management, review management, and performance monitoring through our <a href="/services/analytics-reporting" className="text-emerald-600 underline hover:text-emerald-700">analytics dashboards</a>. We also ensure your <a href="/services/website-design-dev" className="text-emerald-600 underline hover:text-emerald-700">website</a> aligns with your profile so patients find a seamless experience from search to appointment.
       </p>
     </div>
   );
@@ -154,7 +154,7 @@ export default function GoogleBusinessProfilePage() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{"__html": JSON.stringify({"@context":"https://schema.org","@type":"Service","name":"Google Business Profile"})}} />
       <Navbar />
       <ServicePageTemplate
-        title="Google Business Profile"
+        title="Google Business Profile Optimization"
         excerpt="Optimize your Google Business Profile to be the top choice in your local area. Dominate Google Maps and drive local patient traffic."
         image="/10.png"
         overview={content}

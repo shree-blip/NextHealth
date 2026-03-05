@@ -10,8 +10,8 @@ import Link from 'next/link';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Texas Healthcare Marketing Locations | NexHealth Healthcare Marketing',
-  description: 'We provide hyper-local SEO and patient acquisition strategies for medical clinics across Texas, including Dallas, Houston, Austin, and high-growth suburbs.',
+  title: 'Healthcare Marketing Locations in Texas | Dallas, Houston & Austin',
+  description: 'Hyper-local healthcare marketing across Texas including Dallas, Houston, Austin, San Antonio, and Irving. Location-specific SEO and patient acquisition strategies for medical clinics.',
   alternates: {
     canonical: 'https://thenextgenhealth.com/locations',
   }
@@ -86,11 +86,11 @@ export default function LocationsPage() {
       
       {/* Hero Section */}
       <Hero
-        heading={<>The Texas <span className="text-blue-500">Expansion Engine</span></>}
-        subheading="Texas represents one of the most lucrative healthcare markets globally. We deploy a programmatic, location-page rollout strategy targeting the fastest-growing micro-markets in the state to establish localized monopolies."
-        primaryCTA={{ label: 'View Locations', href: '/locations' }}
-        secondaryCTA={{ label: 'Get Started', href: '/contact' }}
-        imageAlt="Map of Texas with expansion highlights"
+        heading={<>Healthcare Marketing <span className="text-blue-500">Locations in Texas</span></>}
+        subheading="We deploy hyper-local patient acquisition strategies across Texas, targeting the fastest-growing healthcare markets in Dallas, Houston, Austin, San Antonio, and beyond."
+        primaryCTA={{ label: 'Find Your Market', href: '/contact' }}
+        secondaryCTA={{ label: 'View Our Services', href: '/services' }}
+        imageAlt="Healthcare marketing locations across Texas"
       />
 
       {/* Deep Dive: The Suburban Sprawl */}

@@ -23,13 +23,13 @@ export default function StrategyPlanningPage() {
   const content = (
     <div className="space-y-6 text-gray-700 leading-relaxed">
       <p>
-        Without strategy, marketing becomes random—ads running everywhere, no clear goals, disappointing results, and wasted budget. Healthcare practices have unique business models, regulatory constraints, and growth objectives that demand customized strategic planning.
+        Without strategy, marketing becomes random&mdash;ads running everywhere, no clear goals, disappointing results, and wasted budget. Healthcare practices have unique business models, regulatory constraints, and growth objectives that demand customized strategic planning.
       </p>
       <p>
-        Our Strategy & Planning service starts with deep discovery: understanding your clinic, competitive landscape, patient demographics, growth ambitions, and budget realities. We conduct market research, competitor analysis, and patient behavior studies to build a comprehensive picture.
+        Our Strategy &amp; Planning service starts with deep discovery: understanding your clinic, competitive landscape, patient demographics, growth ambitions, and budget realities. We conduct market research, competitor analysis, and patient behavior studies to build a comprehensive picture.
       </p>
       <p>
-        From this foundation, we develop a detailed 12-month marketing roadmap with clear objectives, channel allocation, budget recommendations, and success metrics. This roadmap guides all other marketing investments, ensuring every dollar works toward unified business goals.
+        From this foundation, we develop a detailed 12-month marketing roadmap with clear objectives, channel allocation, budget recommendations, and success metrics. We tie every recommendation to measurable <a href="/services/analytics-reporting" className="text-emerald-600 underline hover:text-emerald-700">analytics KPIs</a>, explore all available <a href="/services" className="text-emerald-600 underline hover:text-emerald-700">marketing services</a>, and align spend with your <a href="/pricing" className="text-emerald-600 underline hover:text-emerald-700">pricing tier</a> so every dollar works toward unified business goals.
       </p>
     </div>
   );
@@ -160,7 +160,7 @@ export default function StrategyPlanningPage() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{__html: JSON.stringify(schema)}} />
       <Navbar />
       <ServicePageTemplate
-        title="Strategy & Planning"
+        title="Healthcare Strategy & Planning"
         excerpt="Custom healthcare marketing roadmaps aligned with your practice growth goals. Data-driven strategic planning for sustainable, predictable patient acquisition."
         image="/6.png"
         overview={content}

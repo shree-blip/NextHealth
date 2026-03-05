@@ -10,8 +10,8 @@ import { HeartPulse, Stethoscope, Activity, ShieldPlus, Target, TrendingUp, User
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Healthcare Industry Marketing Solutions',
-  description: 'Specialized marketing strategies for Freestanding ERs, Urgent Care centers, and Wellness & Longevity clinics across Texas. Dominate local search and acquire high-acuity patients.',
+  title: 'Healthcare Industries We Serve | ERs, Urgent Care & Wellness Clinics',
+  description: 'Specialized healthcare marketing for freestanding ERs, urgent care centers, dental clinics, and wellness facilities across Texas. Industry-specific strategies that drive qualified patient acquisition.',
   alternates: {
     canonical: 'https://thenextgenhealth.com/industries',
   }
@@ -67,11 +67,11 @@ export default function IndustriesPage() {
       
       {/* Hero Section */}
       <Hero
-        heading={<>Acuity-Driven <span className="text-purple-500">Marketing</span></>}
-        subheading="We don't use generic templates. We engineer bespoke acquisition systems tailored to the specific patient journey of Freestanding ERs, Urgent Cares, and Wellness Clinics."
-        primaryCTA={{ label: 'Explore Industries', href: '/industries' }}
-        secondaryCTA={{ label: 'Contact Us', href: '/contact' }}
-        imageAlt="Graphic representing various healthcare industries"
+        heading={<>Healthcare Industries <span className="text-emerald-500">We Serve</span></>}
+        subheading="We engineer bespoke patient acquisition systems tailored to the specific patient journey of freestanding ERs, urgent cares, dental clinics, and wellness facilities across Texas."
+        primaryCTA={{ label: 'Get a Custom Strategy', href: '/contact' }}
+        secondaryCTA={{ label: 'View Our Services', href: '/services' }}
+        imageAlt="Healthcare industries including ERs urgent care and wellness clinics"
       />
 
       <WhoWeServe />

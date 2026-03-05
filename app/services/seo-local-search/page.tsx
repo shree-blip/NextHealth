@@ -35,13 +35,13 @@ export default function SEOLocalSearchPage() {
   const content = (
     <div className="space-y-6 text-gray-700 leading-relaxed">
       <p>
-        In the healthcare industry, being found at the right moment is everything. When a patient searches "emergency room near me" or "urgent care 75038," they're ready to take action. If your clinic isn't in the top 3 results (the Local Pack), you're losing patients to competitors—even those geographically farther away.
+        In the healthcare industry, being found at the right moment is everything. When a patient searches &ldquo;emergency room near me&rdquo; or &ldquo;urgent care 75038,&rdquo; they are ready to take action. If your clinic is not in the top 3 results (the Local Pack), you are losing patients to competitors—even those geographically farther away.
       </p>
       <p>
-        Our SEO & Local Search service is engineered to dominate your local market. We combine technical SEO excellence with hyperlocal optimization strategies specifically designed for healthcare providers. From optimizing your Google Business Profile to building authority through healthcare directory citations, we ensure your clinic becomes the default choice in your service area.
+        Our SEO & Local Search service is engineered to dominate your local market. We combine technical SEO excellence with hyperlocal optimization strategies specifically designed for healthcare providers. From optimizing your <a href="/services/google-business-profile" className="text-emerald-600 underline hover:text-emerald-700">Google Business Profile</a> to building authority through healthcare directory citations, we ensure your clinic becomes the default choice in your service area.
       </p>
       <p>
-        Unlike generic SEO agencies, we specialize in medical markets and understand the unique challenges: HIPAA compliance, managing multiple locations, and competing against large health systems with massive marketing budgets.
+        Unlike generic SEO agencies, we specialize in medical markets and understand the unique challenges: HIPAA compliance, managing multiple locations, and competing against large health systems with massive marketing budgets. Our SEO strategies pair perfectly with <a href="/services/content-copywriting" className="text-emerald-600 underline hover:text-emerald-700">healthcare content writing</a> and <a href="/services/analytics-reporting" className="text-emerald-600 underline hover:text-emerald-700">analytics dashboards</a> to deliver measurable organic growth.
       </p>
     </div>
   );

@@ -10,8 +10,8 @@ import { Check, BarChart, Clock, Users, ShieldCheck } from 'lucide-react';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Healthcare Marketing Pricing & Retainers',
-  description: 'Transparent pricing for healthcare marketing and clinical automation. View our retainer models for Wellness Clinics, Urgent Cares, and ERs in Texas.',
+  title: 'Healthcare Marketing Pricing | Transparent Plans & Retainers',
+  description: 'View transparent pricing and retainer plans for healthcare marketing services. Predictable monthly plans for wellness clinics, urgent cares, and ERs in Texas with no hidden fees or long-term contracts.',
   alternates: {
     canonical: 'https://thenextgenhealth.com/pricing',
   }
@@ -126,11 +126,11 @@ export default function PricingPage() {
       
       {/* Hero Section */}
       <Hero
-        heading={<>Transparent <span className="text-emerald-500">Retainers</span></>}
-        subheading="No hidden fees. No complex contracts. Just predictable growth systems engineered for the medical sector. We transition your marketing from a discretionary expense to a critical operational asset."
-        primaryCTA={{ label: 'See Plans', href: '/pricing' }}
-        secondaryCTA={{ label: 'Contact Sales', href: '/contact' }}
-        imageAlt="Pricing and contracts illustration"
+        heading={<>Healthcare Marketing <span className="text-emerald-500">Pricing</span></>}
+        subheading="No hidden fees. No complex contracts. Predictable growth systems engineered for healthcare providers. We transition your marketing from a discretionary expense to a critical operational asset."
+        primaryCTA={{ label: 'Schedule a Consultation', href: '/contact' }}
+        secondaryCTA={{ label: 'View Our Services', href: '/services' }}
+        imageAlt="Transparent healthcare marketing pricing and plans"
       />
 
       {/* Pricing Cards */}

@@ -9,8 +9,8 @@ import { Search, Megaphone, ShieldCheck, Globe, MessageSquare, Activity, MapPin,
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Healthcare Marketing Services & Solutions',
-  description: 'Comprehensive healthcare marketing services including Local SEO, Google Ads, Reputation Management, and HIPAA-compliant web design for Texas clinics.',
+  title: 'Healthcare Marketing Services | SEO, Ads & Automation for Clinics',
+  description: 'Explore our full suite of healthcare marketing services including local SEO, Google Ads, Meta Ads, website design, content marketing, and AI-powered automation for ERs, urgent cares, and clinics in Texas.',
   alternates: {
     canonical: 'https://thenextgenhealth.com/services',
   }
@@ -112,13 +112,13 @@ export default function ServicesPage() {
 
       {/* Hero Section */}
       <Hero
-        heading={<>Clinical Growth <span className="text-emerald-500">Engineered</span></>}
+        heading={<>Healthcare Marketing <span className="text-emerald-500">Services</span></>}
         subheading={
-          "We don't just run ads. We deploy a comprehensive, HIPAA-compliant marketing ecosystem designed to dominate local search, acquire high-acuity patients, and automate your front desk."
+          "We deploy a comprehensive, HIPAA-compliant marketing ecosystem designed to dominate local search, acquire high-acuity patients, and automate your front desk operations across Texas."
         }
         primaryCTA={{ label: 'Get Your Growth Plan', href: '/contact' }}
         secondaryCTA={{ label: 'View Case Studies', href: '/case-studies' }}
-        imageAlt="Illustration of digital marketing services"
+        imageAlt="Healthcare marketing services for clinics and ERs"
       />
 
       {/* Services Section with Images */}

@@ -16,13 +16,13 @@ export default function BrochurePrintDesignPage() {
   const content = (
     <div className="space-y-6 text-gray-700 leading-relaxed">
       <p>
-        In an increasingly digital world, physical print materials remain powerful touchpoints. A well-designed brochure in the waiting room educates patients about services. A premium business card leaves lasting impression. Patient education materials reinforce treatment information. Print materials extend your brand beyond the screen.
+        In an increasingly digital world, physical print materials remain powerful touchpoints. A well-designed brochure in the waiting room educates patients about services. A premium business card leaves a lasting impression. Patient education materials reinforce treatment information. Print materials extend your <a href="/services/brand-identity-design" className="text-emerald-600 underline hover:text-emerald-700">brand identity</a> beyond the screen.
       </p>
       <p>
-        However, print design needs different thinking than digital. Physical materials must work without internet, be read at various distances, and often serve multiple purposes. Healthcare print must be accessible, credible, and professionally executed—cheap-looking materials undermine clinic credibility.
+        However, print design needs different thinking than digital. Physical materials must work without internet, be read at various distances, and often serve multiple purposes. Healthcare print must be accessible, credible, and professionally executed&mdash;cheap-looking materials undermine clinic credibility.
       </p>
       <p>
-        Our Brochure & Print Design service creates comprehensive print collateral aligned with your brand identity and marketing goals. From waiting room brochures to patient education handouts to promotional flyers, we design materials that inform, engage, and reinforce your brand.
+        Our Brochure &amp; Print Design service creates comprehensive print collateral aligned with your brand and marketing goals. From waiting room brochures backed by expert <a href="/services/content-copywriting" className="text-emerald-600 underline hover:text-emerald-700">healthcare copywriting</a> to patient education handouts, we design materials that inform, engage, and reinforce the same visual identity patients see on your <a href="/services/website-design-dev" className="text-emerald-600 underline hover:text-emerald-700">website</a>.
       </p>
     </div>
   );
@@ -153,7 +153,7 @@ export default function BrochurePrintDesignPage() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{"__html": JSON.stringify({"@context":"https://schema.org","@type":"Service","name":"Brochure & Print Design"})}} />
       <Navbar />
       <ServicePageTemplate
-        title="Brochure & Print Design"
+        title="Healthcare Brochure & Print Design"
         excerpt="Premium print materials that elevate your practice. Professional brochures and patient education materials that extend your brand into physical spaces."
         image="/8.png"
         overview={content}

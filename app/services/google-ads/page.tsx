@@ -23,13 +23,13 @@ export default function GoogleAdsPage() {
   const content = (
     <div className="space-y-6 text-gray-700 leading-relaxed">
       <p>
-        When a patient searches "emergency room near me" or "how much does an x-ray cost," they're ready to act. This moment of intent is the most valuable real estate in digital marketing. Google Ads puts your practice in front of these high-intent patients at the exact moment they need you.
+        When a patient searches &ldquo;emergency room near me&rdquo; or &ldquo;how much does an x-ray cost,&rdquo; they are ready to act. This moment of intent is the most valuable real estate in digital marketing. Google Ads puts your practice in front of these high-intent patients at the exact moment they need you.
       </p>
       <p>
-        However, most healthcare practices either ignore paid search or mismanage it—burning budgets on irrelevant clicks while missing high-value appointments. Our Google Ads service is built specifically for medical markets. We understand healthcare cost-per-acquisition challenges, compliance requirements, and the nuanced keyword strategies that separate winners from budget-wasters.
+        However, most healthcare practices either ignore paid search or mismanage it—burning budgets on irrelevant clicks while missing high-value appointments. Our Google Ads service is built specifically for medical markets. We understand healthcare cost-per-acquisition challenges, compliance requirements, and the nuanced keyword strategies that separate winners from budget-wasters. For maximum reach, we often pair Google Ads with <a href="/services/meta-ads" className="text-emerald-600 underline hover:text-emerald-700">Meta Ads campaigns</a> to cover both search and social channels.
       </p>
       <p>
-        We don't optimize for clicks. We optimize for qualified appointments booked at sustainable cost-per-acquisition (CPA) rates.
+        We do not optimize for clicks. We optimize for qualified appointments booked at sustainable cost-per-acquisition rates. Every campaign is tracked through our <a href="/services/analytics-reporting" className="text-emerald-600 underline hover:text-emerald-700">real-time analytics dashboards</a> so you can see exactly which ads drive revenue.
       </p>
     </div>
   );

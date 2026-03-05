@@ -16,13 +16,13 @@ export default function AnalyticsReportingPage() {
   const content = (
     <div className="space-y-6 text-gray-700 leading-relaxed">
       <p>
-        "We're spending how much on marketing? Where does it go? How many appointments does it generate?" These questions plague clinic managers overwhelmed with marketing data. Too many clinics operate on faith—hoping marketing works but unable to prove it.
+        &ldquo;We&rsquo;re spending how much on marketing? Where does it go? How many appointments does it generate?&rdquo; These questions plague clinic managers overwhelmed with marketing data. Too many clinics operate on faith&mdash;hoping marketing works but unable to prove it.
       </p>
       <p>
-        Our Analytics & Reporting service transforms marketing mystery into measurable science. We implement comprehensive tracking from click to appointment booked, created real-time dashboards showing performance, and generate monthly reports translating data into actionable insights.
+        Our Analytics &amp; Reporting service transforms marketing mystery into measurable science. We implement comprehensive tracking from click to appointment booked, create real-time dashboards showing performance, and generate monthly reports translating data into actionable insights.
       </p>
       <p>
-        You'll know exactly how much each marketing channel costs, how many appointments it generates, and what your cost-per-acquisition is. This data drives optimization decisions and budget allocation for maximum ROI.
+        You&rsquo;ll know exactly how much each channel&mdash;from <a href="/services/google-ads" className="text-emerald-600 underline hover:text-emerald-700">Google Ads</a> to <a href="/services/seo-local-search" className="text-emerald-600 underline hover:text-emerald-700">local SEO</a>&mdash;costs and how many appointments it generates. This data drives the optimization decisions behind your <a href="/services/strategy-planning" className="text-emerald-600 underline hover:text-emerald-700">strategic marketing roadmap</a> for maximum ROI.
       </p>
     </div>
   );
@@ -154,7 +154,7 @@ export default function AnalyticsReportingPage() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{"__html": JSON.stringify({"@context":"https://schema.org","@type":"Service","name":"Analytics & Reporting"})}} />
       <Navbar />
       <ServicePageTemplate
-        title="Analytics & Reporting"
+        title="Healthcare Analytics & Reporting"
         excerpt="Real-time dashboards showing exactly what's working. Know your cost-per-appointment and optimize marketing for maximum ROI."
         image="/11.png"
         overview={content}

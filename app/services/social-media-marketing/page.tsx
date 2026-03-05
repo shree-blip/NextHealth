@@ -30,10 +30,10 @@ export default function SocialMediaMarketingPage() {
         Social media has become the primary communication channel for healthcare consumers. Patients research clinics, read reviews, learn about services, and make healthcare decisions on social platforms before ever picking up the phone.
       </p>
       <p>
-        Our social media marketing service goes far beyond posting pretty pictures. We develop comprehensive social strategies across Instagram, TikTok, Facebook, and LinkedIn that build community, establish authority, and drive patient acquisition. Each platform has a distinct algorithm, audience demographic, and content format—we optimize for each.
+        Our social media marketing service goes far beyond posting pretty pictures. We develop comprehensive social strategies across Instagram, TikTok, Facebook, and LinkedIn that build community, establish authority, and drive patient acquisition. For paid reach, we integrate with <a href="/services/meta-ads" className="text-emerald-600 underline hover:text-emerald-700">Meta Ads campaigns</a> to amplify your top-performing organic posts.
       </p>
       <p>
-        From patient education content to behind-the-scenes clinic culture, to targeted lead generation campaigns, we create a social presence that converts followers into patients and patients into loyal advocates.
+        From patient education <a href="/services/content-copywriting" className="text-emerald-600 underline hover:text-emerald-700">content</a> to behind-the-scenes clinic culture, to targeted lead generation campaigns, we create a social presence that converts followers into patients. A cohesive <a href="/services/brand-identity-design" className="text-emerald-600 underline hover:text-emerald-700">brand identity</a> ensures every post reinforces your clinic&rsquo;s credibility and turns patients into loyal advocates.
       </p>
     </div>
   );
@@ -161,7 +161,7 @@ export default function SocialMediaMarketingPage() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{__html: JSON.stringify(schema)}} />
       <Navbar />
       <ServicePageTemplate
-        title="Social Media Marketing"
+        title="Social Media Marketing for Healthcare"
         excerpt="Own every social platform—Instagram, TikTok, Facebook, LinkedIn. Build a thriving community of engaged patients while establishing your clinic as a trusted medical authority."
         image="/2.png"
         overview={content}

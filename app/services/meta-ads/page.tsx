@@ -23,13 +23,13 @@ export default function MetaAdsPage() {
   const content = (
     <div className="space-y-6 text-gray-700 leading-relaxed">
       <p>
-        While Google Ads capture high-intent patients actively searching, Meta (Facebook and Instagram) ads are equally powerful for reaching patients in discovery and research phases. Patients spend hours daily on social platforms, often researching health conditions, reading experiences, and deciding between provider options.
+        While <a href="/services/google-ads" className="text-emerald-600 underline hover:text-emerald-700">Google Ads</a> capture high-intent patients actively searching, Meta (Facebook and Instagram) ads are equally powerful for reaching patients in discovery and research phases. Patients spend hours daily on social platforms, often researching health conditions, reading experiences, and deciding between provider options.
       </p>
       <p>
-        Meta's targeting capabilities are unmatched. We can reach people by age, location, interests, behaviors, life events, and engagement patterns. For healthcare, this means reaching patients with specific health interests, recent medical milestones, or demographic profiles matching your ideal patient.
+        Meta&rsquo;s targeting capabilities are unmatched. We can reach people by age, location, interests, behaviors, life events, and engagement patterns. For healthcare, this means reaching patients with specific health interests, recent medical milestones, or demographic profiles matching your ideal patient.
       </p>
       <p>
-        Meta ads excel at building desire for elective services (cosmetic procedures, wellness, mental health), generating leads through educational content, and retargeting website visitors who didn't convert. Combined with Google Ads, Meta provides a complete patient acquisition ecosystem.
+        Meta ads excel at building desire for elective services (cosmetic procedures, wellness, mental health), generating leads through educational content, and retargeting website visitors who didn&rsquo;t convert. Pair Meta campaigns with <a href="/services/social-media-marketing" className="text-emerald-600 underline hover:text-emerald-700">organic social media marketing</a> and track every dollar through our <a href="/services/analytics-reporting" className="text-emerald-600 underline hover:text-emerald-700">analytics dashboards</a> for a complete patient acquisition ecosystem.
       </p>
     </div>
   );
@@ -160,7 +160,7 @@ export default function MetaAdsPage() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{__html: JSON.stringify(schema)}} />
       <Navbar />
       <ServicePageTemplate
-        title="Meta Ads"
+        title="Meta Ads for Healthcare"
         excerpt="Facebook & Instagram ads that convert scrollers into patients. Strategic social advertising designed to reach, engage, and convert your ideal patients."
         image="/4.png"
         overview={content}

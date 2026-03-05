@@ -16,13 +16,13 @@ export default function WebsiteDesignDevPage() {
   const content = (
     <div className="space-y-6 text-gray-700 leading-relaxed">
       <p>
-        Your website is your clinic's digital front door. When patients search for you online—and they do before calling—your website is their first impression. It must be professional, fast, mobile-friendly, and clearly communicate why they should choose your clinic.
+        Your website is your clinic&rsquo;s digital front door. When patients search for you online&mdash;and they do before calling&mdash;your website is their first impression. It must be professional, fast, mobile-friendly, and clearly communicate why they should choose your clinic.
       </p>
       <p>
-        Healthcare websites have unique challenges: HIPAA compliance is mandatory, patients need specific information to make decisions, security must be bulletproof, and every element should drive appointment bookings. Many healthcare websites fail on all counts—slow, outdated, confusing, non-compliant.
+        Healthcare websites have unique challenges: HIPAA compliance is mandatory, patients need specific information to make decisions, security must be bulletproof, and every element should drive appointment bookings. Many healthcare websites fail on all counts&mdash;slow, outdated, confusing, non-compliant.
       </p>
       <p>
-        Our Website Design & Development service builds beautiful, fast, secure, conversion-optimized healthcare websites. We combine stunning design with healthcare-specific functionality, compliance, and SEO optimization. Every page is built to inform patients and drive them toward appointment booking.
+        Our Website Design &amp; Development service builds beautiful, fast, secure, conversion-optimized healthcare websites. We pair stunning <a href="/services/brand-identity-design" className="text-emerald-600 underline hover:text-emerald-700">brand design</a> with healthcare-specific functionality, compliance, and <a href="/services/seo-local-search" className="text-emerald-600 underline hover:text-emerald-700">SEO optimization</a>. Every page is built to inform patients and drive them toward appointment booking, with results tracked in our <a href="/services/analytics-reporting" className="text-emerald-600 underline hover:text-emerald-700">analytics dashboards</a>.
       </p>
     </div>
   );
@@ -155,7 +155,7 @@ export default function WebsiteDesignDevPage() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{"__html": JSON.stringify({"@context":"https://schema.org","@type":"Service","name":"Website Design & Development"})}} />
       <Navbar />
       <ServicePageTemplate
-        title="Website Design & Dev"
+        title="Healthcare Website Design & Development"
         excerpt="Fast, beautiful, conversion-optimized healthcare websites. HIPAA-compliant web design that turns visitors into booked appointments."
         image="/9.png"
         overview={content}

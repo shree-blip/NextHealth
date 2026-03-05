@@ -5,7 +5,10 @@ import { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'Terms of Service | The NextGen Healthcare Marketing',
-  description: 'Terms of Service for The NextGen Healthcare Marketing.',
+  description: 'Review the terms of service for The NextGen Healthcare Marketing. These terms govern your use of our healthcare marketing platform, website, and professional services.',
+  alternates: {
+    canonical: 'https://thenextgenhealth.com/terms',
+  },
 };
 
 export default function TermsOfService() {
@@ -32,7 +35,7 @@ export default function TermsOfService() {
 
             <h2 className="text-2xl font-bold mt-10 mb-4 text-slate-900">2. Description of Service</h2>
             <p className="text-slate-600 mb-6">
-              NexHealth Healthcare Marketing provides healthcare marketing and automation services, including but not limited to local SEO, paid advertising management, and AI-driven patient intake automation. We reserve the right to modify, suspend, or discontinue any aspect of our services at any time.
+              NexHealth Healthcare Marketing provides <a href="/services" className="text-emerald-600 underline hover:text-emerald-700">healthcare marketing and automation services</a>, including but not limited to <a href="/services/seo-local-search" className="text-emerald-600 underline hover:text-emerald-700">local SEO</a>, paid advertising management, and AI-driven patient intake <a href="/automation" className="text-emerald-600 underline hover:text-emerald-700">automation</a>. We reserve the right to modify, suspend, or discontinue any aspect of our services at any time.
             </p>
 
             <h2 className="text-2xl font-bold mt-10 mb-4 text-slate-900">3. User Conduct</h2>

@@ -10,8 +10,8 @@ import { ShieldCheck, Target, Zap, CheckCircle2, Building, Users, Lock, Award } 
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'About Us - Healthcare Marketing Experts',
-  description: 'Learn about NexHealth Healthcare Marketing, the premier healthcare marketing and automation firm in Irving, TX. We specialize in HIPAA-compliant growth systems for medical practices.',
+  title: 'About Us | Healthcare Marketing Experts in Irving, TX',
+  description: 'The NextGen Healthcare Marketing is a healthcare-only growth and automation agency in Irving, TX. We build HIPAA-compliant patient acquisition systems for ERs, urgent cares, and wellness clinics.',
   alternates: {
     canonical: 'https://thenextgenhealth.com/about',
   }
@@ -66,11 +66,11 @@ export default function AboutPage() {
       
       {/* Hero Section */}
       <Hero
-        heading={<>Mission: Healthcare-Only <br/><span className="text-emerald-500">Growth + Automation</span></>}
-        subheading="We are not a standard boutique firm. We are a clinical growth operating system. We bridge the gap between digital patient acquisition and front-desk operational capacity."
-        primaryCTA={{ label: 'Our Philosophy', href: '/about' }}
+        heading={<>About Our Healthcare <br/><span className="text-emerald-500">Marketing Agency</span></>}
+        subheading="We are not a standard boutique firm. We are a clinical growth operating system bridging digital patient acquisition and front-desk operational capacity for healthcare providers across Texas."
+        primaryCTA={{ label: 'Our Services', href: '/services' }}
         secondaryCTA={{ label: 'Get in Touch', href: '/contact' }}
-        imageAlt="Team collaborating on healthcare marketing"
+        imageAlt="The NextGen Healthcare Marketing team in Irving TX"
       />
 
       {/* Deep Dive: The Agency Philosophy */}

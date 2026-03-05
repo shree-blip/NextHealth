@@ -8,8 +8,8 @@ import WhoWeServe from '@/components/landing/WhoWeServe';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Case Studies | Healthcare Marketing | The NextGen Healthcare Marketing',
-  description: 'See real case studies of healthcare practices we have helped grow. Results from clinics, urgent cares, and ERs across Texas.',
+  title: 'Healthcare Marketing Case Studies | Real Client Results',
+  description: 'Explore real case studies from healthcare practices we have helped grow across Texas. See measurable results in patient acquisition, revenue growth, and local search rankings for ERs and clinics.',
   alternates: {
     canonical: 'https://thenextgenhealth.com/case-studies',
   }
@@ -88,10 +88,10 @@ export default async function CaseStudiesPage({ searchParams }: { searchParams?:
 
       {/* Hero Section */}
       <Hero
-        heading={<>Proven <span className="text-emerald-500">Results</span></>}
-        subheading="Real case studies showing how we've helped clinics grow patient acquisition and revenue across Texas."
+        heading={<>Healthcare Marketing <span className="text-emerald-500">Case Studies</span></>}
+        subheading="Real results from real healthcare practices. See how our marketing strategies have driven measurable growth in patient acquisition and revenue across Texas."
         primaryCTA={{ label: 'Get Similar Results', href: '/contact' }}
-        secondaryCTA={{ label: 'View Case Studies', href: '#cases' }}
+        secondaryCTA={{ label: 'Browse Case Studies', href: '#cases' }}
       />
 
       <DashboardImages />

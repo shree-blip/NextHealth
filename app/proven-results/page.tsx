@@ -4,8 +4,8 @@ import ProvenResultsContent from '@/components/proven-results/ProvenResultsConte
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Proven Results | Healthcare Marketing | The NextGen Healthcare Marketing',
-  description: 'See real results from The NextGen Healthcare Marketing. Our healthcare clients achieve 100-300% growth in leads, revenue, and patient volume.',
+  title: 'Proven Results | Healthcare Marketing Growth Data',
+  description: 'See proven results from The NextGen Healthcare Marketing. Our healthcare clients achieve 100-300% growth in qualified leads, revenue, and patient volume through data-driven strategies.',
   alternates: {
     canonical: 'https://thenextgenhealth.com/proven-results',
   }

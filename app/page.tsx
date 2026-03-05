@@ -20,8 +20,8 @@ import { Metadata } from 'next';
 export const revalidate = 60;
 
 export const metadata: Metadata = {
-  title: 'Healthcare Marketing in Irving, TX | The NextGen Healthcare Marketing',
-  description: 'Top-rated healthcare healthcare marketing firm based in Irving, TX. We specialize in local SEO, paid ads, and AI automation for ERs, Urgent Cares, and Wellness clinics across Texas.',
+  title: 'Healthcare Marketing Agency in Irving, TX | The NextGen Healthcare Marketing',
+  description: 'The NextGen Healthcare Marketing is a top-rated healthcare marketing agency in Irving, TX specializing in local SEO, Google Ads, AI automation, and custom software for ERs, urgent cares, and clinics.',
   alternates: {
     canonical: 'https://thenextgenhealth.com',
   }

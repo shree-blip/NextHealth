@@ -16,13 +16,13 @@ export default function ContentCopywritingPage() {
   const content = (
     <div className="space-y-6 text-gray-700 leading-relaxed">
       <p>
-        Content is how you answer patient questions, establish authority, build trust, and drive search engine rankings. Patients research healthcare decisions online—they're reading about conditions, comparing providers, looking for reassurance before appointments.
+        Content is how you answer patient questions, establish authority, build trust, and drive search engine rankings. Patients research healthcare decisions online&mdash;they&rsquo;re reading about conditions, comparing providers, looking for reassurance before appointments.
       </p>
       <p>
-        However, healthcare content has unique challenges: medical accuracy is non-negotiable, regulatory compliance (FDA, FTC) applies, E-E-A-T signals (Expertise, Experience, Authoritativeness, Trustworthiness) are critical for Google rankings, and tone must balance professionalism with empathy.
+        However, healthcare content has unique challenges: medical accuracy is non-negotiable, regulatory compliance (FDA, FTC) applies, E-E-A-T signals (Expertise, Experience, Authoritativeness, Trustworthiness) are critical for Google rankings, and tone must balance professionalism with empathy. A solid <a href="/services/strategy-planning" className="text-emerald-600 underline hover:text-emerald-700">marketing strategy</a> ensures every article serves a clear business objective.
       </p>
       <p>
-        Our Content & Copywriting service combines medical accuracy with compelling, conversion-focused writing. Every piece of content is optimized for search engines, written for patient understanding (avoiding jargon), and designed to convert readers into patients.
+        Our Content &amp; Copywriting service combines medical accuracy with compelling, conversion-focused writing. Every piece of content is optimized for <a href="/services/seo-local-search" className="text-emerald-600 underline hover:text-emerald-700">local SEO</a>, written for patient understanding (avoiding jargon), and designed to convert readers into patients. We also craft sequences for <a href="/services/email-drip-campaigns" className="text-emerald-600 underline hover:text-emerald-700">email drip campaigns</a> that keep your practice top-of-mind.
       </p>
     </div>
   );
@@ -153,7 +153,7 @@ export default function ContentCopywritingPage() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{"__html": JSON.stringify({"@context":"https://schema.org","@type":"Service","name":"Content & Copywriting"})}} />
       <Navbar />
       <ServicePageTemplate
-        title="Content & Copywriting"
+        title="Healthcare Content & Copywriting"
         excerpt="Healthcare content that educates, engages, and converts. E-E-A-T optimized medical content that ranks in Google and builds patient trust."
         image="/12.png"
         overview={content}

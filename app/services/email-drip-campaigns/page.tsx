@@ -23,13 +23,13 @@ export default function EmailDripCampaignsPage() {
   const content = (
     <div className="space-y-6 text-gray-700 leading-relaxed">
       <p>
-        Email remains the highest-ROI marketing channel, returning $36-42 for every dollar spent. For healthcare practices, email is the perfect tool for patient retention, appointment reminders, educational nurturing, and staying top-of-mind.
+        Email remains the highest-ROI marketing channel, returning $36&ndash;42 for every dollar spent. For healthcare practices, email is the perfect tool for patient retention, appointment reminders, educational nurturing, and staying top-of-mind.
       </p>
       <p>
-        However, generic email marketing doesn't work in healthcare. HIPAA compliance is mandatory. Patients expect personalized, relevant communication—not mass blasts. And email must be integrated with your clinic workflow to feel natural and valuable rather than intrusive.
+        However, generic email marketing doesn&rsquo;t work in healthcare. HIPAA compliance is mandatory. Patients expect personalized, relevant communication&mdash;not mass blasts. And email must be integrated with your clinic workflow to feel natural and valuable rather than intrusive.
       </p>
       <p>
-        Our Email & Drip Campaign service creates automated, HIPAA-compliant sequences that nurture leads into patients, keep existing patients engaged, encourage repeat visits, and ultimately increase patient lifetime value.
+        Our Email &amp; Drip Campaign service creates automated, HIPAA-compliant sequences that nurture leads into patients, keep existing patients engaged, and increase patient lifetime value. Pair drip sequences with engaging <a href="/services/content-copywriting" className="text-emerald-600 underline hover:text-emerald-700">healthcare copywriting</a>, track opens and conversions through our <a href="/services/analytics-reporting" className="text-emerald-600 underline hover:text-emerald-700">analytics dashboards</a>, and streamline delivery with <a href="/automation" className="text-emerald-600 underline hover:text-emerald-700">workflow automation</a>.
       </p>
     </div>
   );
@@ -160,7 +160,7 @@ export default function EmailDripCampaignsPage() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{__html: JSON.stringify(schema)}} />
       <Navbar />
       <ServicePageTemplate
-        title="Email & Drip Campaigns"
+        title="Email & Drip Campaigns for Healthcare"
         excerpt="Automate patient nurturing and retention with HIPAA-compliant email marketing. Keep patients engaged, reduce no-shows, and drive repeat visits."
         image="/5.png"
         overview={content}

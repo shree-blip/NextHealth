@@ -23,13 +23,13 @@ export default function BrandIdentityDesignPage() {
   const content = (
     <div className="space-y-6 text-gray-700 leading-relaxed">
       <p>
-        When a patient enters your clinic or sees your logo online, they form immediate impressions of competence, trustworthiness, and professionalism based on visual branding. A weak, generic, or outdated brand says "we don't invest in quality." A strong, cohesive brand says "you're in good hands."
+        When a patient enters your clinic or sees your logo online, they form immediate impressions of competence, trustworthiness, and professionalism based on visual branding. A weak, generic, or outdated brand says &ldquo;we don&rsquo;t invest in quality.&rdquo; A strong, cohesive brand says &ldquo;you&rsquo;re in good hands.&rdquo;
       </p>
       <p>
-        Brand identity is far more than a logo. It's color psychology, typography choices, visual consistency, tone of voice, and the entire patient experience. Healthcare patients are making vulnerable, important health decisions. Your brand must project competence, empathy, professionalism, and trust.
+        Brand identity is far more than a logo. It&rsquo;s color psychology, typography choices, visual consistency, tone of voice, and the entire patient experience. Healthcare patients are making vulnerable, important health decisions. Your brand must project competence, empathy, professionalism, and trust.
       </p>
       <p>
-        Our Brand Identity Design service develops comprehensive brand systems for healthcare practices: custom logos, color palettes, typography, imagery style, and brand guidelines ensuring visual consistency across all touchpoints from website to business cards to signage to social media.
+        Our Brand Identity Design service develops comprehensive brand systems for healthcare practices: custom logos, color palettes, typography, imagery style, and brand guidelines ensuring visual consistency across all touchpoints&mdash;from your <a href="/services/website-design-dev" className="text-emerald-600 underline hover:text-emerald-700">website</a> and <a href="/services/social-media-marketing" className="text-emerald-600 underline hover:text-emerald-700">social media</a> to <a href="/services/brochure-print-design" className="text-emerald-600 underline hover:text-emerald-700">printed brochures</a> and signage.
       </p>
     </div>
   );
@@ -160,7 +160,7 @@ export default function BrandIdentityDesignPage() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{__html: JSON.stringify(schema)}} />
       <Navbar />
       <ServicePageTemplate
-        title="Brand Identity Design"
+        title="Healthcare Brand Identity Design"
         excerpt="Logos and brands that make patients trust you instantly. Comprehensive brand identity design creating visual consistency across all clinic touchpoints."
         image="/7.png"
         overview={content}

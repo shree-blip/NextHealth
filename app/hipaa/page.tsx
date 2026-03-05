@@ -4,8 +4,11 @@ import Footer from '@/components/Footer';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'HIPAA Compliance | NexHealth Healthcare Marketing',
-  description: 'HIPAA Compliance Statement for NexHealth Healthcare Marketing.',
+  title: 'HIPAA Compliance | The NextGen Healthcare Marketing',
+  description: 'Learn how The NextGen Healthcare Marketing maintains strict HIPAA compliance across all marketing campaigns, patient data handling, automation workflows, and digital advertising for healthcare providers.',
+  alternates: {
+    canonical: 'https://thenextgenhealth.com/hipaa',
+  },
 };
 
 export default function HIPAACompliance() {
@@ -31,7 +34,7 @@ export default function HIPAACompliance() {
 
             <h2 className="text-2xl font-bold mt-10 mb-4 text-slate-900">Business Associate Agreements (BAA)</h2>
             <p className="text-slate-600 mb-6">
-              As a marketing and automation partner for healthcare facilities, NexHealth Healthcare Marketing acts as a Business Associate. We execute comprehensive Business Associate Agreements (BAAs) with all our covered entity clients before handling any Protected Health Information (PHI).
+              As a <a href="/services" className="text-emerald-600 underline hover:text-emerald-700">marketing and automation partner</a> for healthcare facilities, NexHealth Healthcare Marketing acts as a Business Associate. We execute comprehensive Business Associate Agreements (BAAs) with all our covered entity clients before handling any Protected Health Information (PHI).
             </p>
 
             <h2 className="text-2xl font-bold mt-10 mb-4 text-slate-900">Technical Safeguards</h2>
@@ -56,7 +59,7 @@ export default function HIPAACompliance() {
 
             <h2 className="text-2xl font-bold mt-10 mb-4 text-slate-900">Contact Our Privacy Officer</h2>
             <p className="text-slate-600 mb-6">
-              If you have any questions about our HIPAA compliance program or need to report a security concern, please contact our Privacy Officer at:<br />
+              If you have any questions about our HIPAA compliance program or need to report a security concern, please <a href="/contact" className="text-emerald-600 underline hover:text-emerald-700">contact our Privacy Officer</a> at:<br />
               privacy@thenextgenhealth.com<br />
               3001 Skyway Cir N, Irving, TX 75038
             </p>

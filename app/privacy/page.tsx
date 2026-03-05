@@ -5,7 +5,10 @@ import { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'Privacy Policy | The NextGen Healthcare Marketing',
-  description: 'Privacy Policy for The NextGen Healthcare Marketing.',
+  description: 'Read the privacy policy for The NextGen Healthcare Marketing. Learn how we collect, use, store, and protect your personal information across our healthcare marketing platform and services.',
+  alternates: {
+    canonical: 'https://thenextgenhealth.com/privacy',
+  },
 };
 
 export default function PrivacyPolicy() {
@@ -64,12 +67,12 @@ export default function PrivacyPolicy() {
 
             <h2 className="text-2xl font-bold mt-10 mb-4 text-slate-900">5. Data Security</h2>
             <p className="text-slate-600 mb-6">
-              We have implemented measures designed to secure your personal information from accidental loss and from unauthorized access, use, alteration, and disclosure. All information you provide to us is stored on our secure servers behind firewalls.
+              We have implemented measures designed to secure your personal information from accidental loss and from unauthorized access, use, alteration, and disclosure. All information you provide to us is stored on our secure servers behind firewalls. For details on our healthcare-specific data protections, see our <a href="/hipaa" className="text-emerald-600 underline hover:text-emerald-700">HIPAA compliance page</a>.
             </p>
 
             <h2 className="text-2xl font-bold mt-10 mb-4 text-slate-900">6. Contact Information</h2>
             <p className="text-slate-600 mb-6">
-              To ask questions or comment about this privacy policy and our privacy practices, contact us at:<br />
+              To ask questions or comment about this privacy policy and our privacy practices, <a href="/contact" className="text-emerald-600 underline hover:text-emerald-700">contact us</a> at:<br />
               hello@thenextgenhealth.com<br />
               3001 Skyway Cir N, Irving, TX 75038
             </p>
