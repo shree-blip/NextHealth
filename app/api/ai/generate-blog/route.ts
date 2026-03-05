@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { generateText } from 'ai';
 import { openai } from '@ai-sdk/openai';
-import OpenAI from 'openai';
+import Replicate from 'replicate';
 import prisma from '@/lib/prisma';
 import { persistImage } from '@/lib/persist-image';
 
@@ -116,46 +116,36 @@ Return this exact JSON structure:
 }
 
 /**
- * STEP 5: Generate a DALL-E image for the blog post.
+ * STEP 5: Generate a cover image for the blog post using Replicate (flux-schnell).
  *
- * IMAGE RULES (from agent prompt):
+ * IMAGE RULES:
  * - No cartoons. No illustrated art. No "AI-looking" faces.
- * - Use only real-looking photos: professional editorial photography style.
+ * - Professional editorial photography style.
  * - Alt text must include the focus keyword.
  */
 async function generateBlogImage(focusKeyword: string, title: string): Promise<string | null> {
-  if (!process.env.OPENAI_API_KEY) return null;
+  if (!process.env.REPLICATE_API_TOKEN) return null;
 
   try {
-    const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-    const response = await client.images.generate({
-      model: 'dall-e-3',
-      prompt: `STRICT RULES: This image must look like a REAL photograph taken by a professional photographer. Absolutely NO cartoons, NO illustrated art, NO AI-looking faces, NO digital art style, NO vector graphics, NO 3D renders.
+    const replicate = new Replicate({ auth: process.env.REPLICATE_API_TOKEN });
+    const output = (await replicate.run('black-forest-labs/flux-schnell', {
+      input: {
+        prompt: `Professional photorealistic editorial photograph for a healthcare marketing blog article about "${title}". Modern healthcare clinic interior or hospital corridor, realistic medical professionals in lab coats or scrubs, natural window light, shallow depth of field, authentic medical equipment visible. High-end editorial photography style similar to Harvard Business Review or JAMA. No cartoons, no digital art, no illustrated style, no text overlays, no logos.`,
+        aspect_ratio: '16:9',
+        num_outputs: 1,
+        output_format: 'webp',
+        output_quality: 85,
+      },
+    })) as string[];
 
-Create a professional, photorealistic editorial photograph for a healthcare marketing blog article about "${title}".
-
-Scene requirements:
-- Show a REAL modern healthcare environment: actual clinic interior, hospital corridor, medical office, or professional meeting room
-- Include realistic healthcare professionals (doctors, nurses, administrators) OR patients in authentic medical settings
-- Natural lighting (window light or soft clinical lighting), realistic skin tones and textures
-- Shallow depth of field, editorial photography composition
-- Authentic medical equipment, furniture, and decor visible
-- Professional attire: lab coats, scrubs, or business professional clothing
-
-Style: High-end editorial photography, similar to what you would see in Harvard Business Review, JAMA, or Becker's Hospital Review. Shot on a Canon EOS R5 with an 85mm lens. No text overlays, no watermarks, no logos.`,
-      n: 1,
-      size: '1792x1024',
-      quality: 'standard',
-    });
-
-    const tempUrl = response.data?.[0]?.url;
+    const tempUrl = Array.isArray(output) ? output[0] : null;
     if (!tempUrl) return null;
 
-    // Persist the image to permanent storage (DALL-E URLs expire after ~1 hour)
+    // Persist to permanent storage (Replicate output URLs expire after ~1 hour)
     const permanentUrl = await persistImage(tempUrl, 'blog');
     return permanentUrl;
   } catch (error) {
-    console.error('Image generation failed:', error);
+    console.error('Blog image generation failed:', error);
     return null;
   }
 }
@@ -309,11 +299,9 @@ REMEMBER:
   // ── STEP 5: Generate the cover image (real photo, no cartoons) ──────
   const imageUrl = await generateBlogImage(seo.focusKeyword, seo.blogTitle);
 
-  // If we have an image, prepend it as a figure with keyword-rich alt text
-  if (imageUrl) {
-    const imageHtml = `<figure style="margin: 0 0 2rem 0;"><img src="${imageUrl}" alt="${seo.focusKeyword} - ${seo.blogTitle}" style="width: 100%; height: auto; border-radius: 12px;" /><figcaption style="text-align: center; font-size: 0.875rem; color: #64748b; margin-top: 0.5rem;">${seo.blogTitle}</figcaption></figure>`;
-    cleanedContent = imageHtml + cleanedContent;
-  }
+  // The cover image is saved to the post's coverImage field and rendered by
+  // SinglePostLayout as a hero image above the article — do NOT embed it again
+  // inside the HTML content to avoid displaying it twice.
 
   // ── Generate excerpt ────────────────────────────────────────────────
   const { text: excerpt } = await generateText({

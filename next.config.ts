@@ -46,6 +46,26 @@ const nextConfig: NextConfig = {
         port: '',
         pathname: '/**',
       },
+      // Replicate CDN — covers flux-schnell and other Replicate model outputs
+      {
+        protocol: 'https',
+        hostname: 'replicate.delivery',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: '**.replicate.delivery',
+        port: '',
+        pathname: '/**',
+      },
+      // Vercel Blob Storage CDN
+      {
+        protocol: 'https',
+        hostname: '**.public.blob.vercel-storage.com',
+        port: '',
+        pathname: '/**',
+      },
     ],
   },
   transpilePackages: ['motion'],

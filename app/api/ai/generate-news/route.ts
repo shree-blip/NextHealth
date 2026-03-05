@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { generateText } from 'ai';
 import { openai } from '@ai-sdk/openai';
-import OpenAI from 'openai';
+import Replicate from 'replicate';
 import prisma from '@/lib/prisma';
 import { persistImage } from '@/lib/persist-image';
 
@@ -119,42 +119,32 @@ Return this exact JSON structure:
 }
 
 /**
- * STEP 5: Generate a DALL-E image for the news article.
+ * STEP 5: Generate a cover image for the news article using Replicate (flux-schnell).
  *
- * IMAGE RULES (from agent prompt):
+ * IMAGE RULES:
  * - No cartoons. No illustrated art. No "AI-looking" faces.
- * - Use only real-looking photos: professional editorial/journalistic style.
+ * - Professional photojournalistic / editorial style.
  * - Alt text must include the focus keyword.
  */
 async function generateNewsImage(focusKeyword: string, title: string): Promise<string | null> {
-  if (!process.env.OPENAI_API_KEY) return null;
+  if (!process.env.REPLICATE_API_TOKEN) return null;
 
   try {
-    const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-    const response = await client.images.generate({
-      model: 'dall-e-3',
-      prompt: `STRICT RULES: This image must look like a REAL photograph taken by a professional photojournalist. Absolutely NO cartoons, NO illustrated art, NO AI-looking faces, NO digital art style, NO vector graphics, NO 3D renders.
+    const replicate = new Replicate({ auth: process.env.REPLICATE_API_TOKEN });
+    const output = (await replicate.run('black-forest-labs/flux-schnell', {
+      input: {
+        prompt: `Professional photojournalistic photograph for a healthcare industry news article about "${title}". Hospital corridor, health policy conference, medical technology lab, or healthcare executives in discussion. Realistic people in authentic settings, natural documentary-style lighting, realistic skin tones. High-end photojournalism similar to Reuters Health or STAT News. No cartoons, no digital art, no illustrated style, no text overlays, no logos.`,
+        aspect_ratio: '16:9',
+        num_outputs: 1,
+        output_format: 'webp',
+        output_quality: 85,
+      },
+    })) as string[];
 
-Create a professional, photorealistic journalistic photograph for a healthcare industry news article about "${title}".
-
-Scene requirements:
-- Show a REAL modern healthcare environment: hospital corridor, medical technology lab, health policy conference, clinical professionals in discussion, or a healthcare executive meeting
-- Include realistic people in authentic settings — NOT stock-photo-perfect poses
-- Natural lighting, realistic skin tones and imperfections
-- Documentary/editorial photography style
-- Authentic medical or corporate healthcare environment visible
-- Professional attire appropriate to the scene
-
-Style: High-end photojournalism, similar to images in Reuters Health, STAT News, or Becker's Hospital Review. Shot on a Nikon Z9 with a 35mm lens. No text overlays, no watermarks, no logos, no graphic design elements.`,
-      n: 1,
-      size: '1792x1024',
-      quality: 'standard',
-    });
-
-    const tempUrl = response.data?.[0]?.url;
+    const tempUrl = Array.isArray(output) ? output[0] : null;
     if (!tempUrl) return null;
 
-    // Persist the image to permanent storage (DALL-E URLs expire after ~1 hour)
+    // Persist to permanent storage (Replicate output URLs expire after ~1 hour)
     const permanentUrl = await persistImage(tempUrl, 'news');
     return permanentUrl;
   } catch (error) {
@@ -334,11 +324,9 @@ REMEMBER:
   // ── STEP 5: Generate the cover image (real photo, no cartoons) ──────
   const imageUrl = await generateNewsImage(seo.focusKeyword, seo.headline);
 
-  // If we have an image, prepend it with keyword-rich alt text
-  if (imageUrl) {
-    const imageHtml = `<figure style="margin: 0 0 2rem 0;"><img src="${imageUrl}" alt="${seo.focusKeyword} - ${seo.headline}" style="width: 100%; height: auto; border-radius: 12px;" /><figcaption style="text-align: center; font-size: 0.875rem; color: #64748b; margin-top: 0.5rem;">${seo.headline}</figcaption></figure>`;
-    cleanedContent = imageHtml + cleanedContent;
-  }
+  // The cover image is saved to the article's coverImage field and rendered by
+  // SinglePostLayout as a hero image above the article — do NOT embed it again
+  // inside the HTML content to avoid displaying it twice.
 
   // ── Generate excerpt ────────────────────────────────────────────────
   const { text: excerpt } = await generateText({
