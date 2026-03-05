@@ -89,9 +89,10 @@ function formatStandardWeekLabel(year: number, weekNumber: number): string {
 interface ClientAnalyticsViewProps {
   refreshTrigger?: number;
   isAdmin?: boolean;
+  onLoadingStateChange?: (loading: boolean) => void;
 }
 
-export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false }: ClientAnalyticsViewProps) {
+export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false, onLoadingStateChange }: ClientAnalyticsViewProps) {
   const { theme } = useSitePreferences();
   const isDark = theme === 'dark';
   const currentYear = new Date().getFullYear();
@@ -115,6 +116,10 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false }:
   const socketRef = useRef<Socket | null>(null);
   const clinicIdRef = useRef<string>('');
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    onLoadingStateChange?.(loading);
+  }, [loading, onLoadingStateChange]);
 
   // Initialize Socket.io connection
   useEffect(() => {
@@ -301,17 +306,20 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false }:
         } else {
           // Client mode: loop through assigned clinics
           console.log('[Client Analytics] Client mode: fetching data for', clinics.length, 'assigned clinics');
-          for (const clinic of clinics) {
-            const res = await fetch(`/api/analytics/weekly?clinicId=${clinic.id}`);
-            if (res.ok) {
+          const responses = await Promise.all(
+            clinics.map(async (clinic) => {
+              const res = await fetch(`/api/analytics/weekly?clinicId=${clinic.id}`);
+              if (!res.ok) {
+                console.error('[Client Analytics] Failed to fetch for clinic', clinic.name, ':', res.status);
+                return [] as WeeklyAnalytics[];
+              }
               const data = await res.json();
               const clinicData = data.analytics || [];
               console.log('[Client Analytics] Loaded', clinicData.length, 'records for', clinic.name);
-              allAnalytics = [...allAnalytics, ...clinicData];
-            } else {
-              console.error('[Client Analytics] Failed to fetch for clinic', clinic.name, ':', res.status);
-            }
-          }
+              return clinicData as WeeklyAnalytics[];
+            })
+          );
+          allAnalytics = responses.flat();
           console.log('[Client Analytics] Client: total loaded', allAnalytics.length, 'records from', clinics.length, 'clinics');
         }
       } else {

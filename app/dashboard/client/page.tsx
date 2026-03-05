@@ -41,6 +41,7 @@ import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Toolti
 import ClientAnalyticsView from '@/components/ClientAnalyticsView';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import LoadingScreen from '@/components/LoadingScreen';
 import { useSitePreferences } from '@/components/SitePreferencesProvider';
 import PricingCard from '@/components/PricingCard';
 import BillingView from '@/components/BillingView';
@@ -125,6 +126,9 @@ function ClientDashboard() {
   const [user, setUser] = useState<any>(null);
   const [myClinics, setMyClinics] = useState<any[]>([]);
   const [activeView, setActiveView] = useState<ClientView>('overview');
+  const [authLoading, setAuthLoading] = useState(true);
+  const [clinicsLoading, setClinicsLoading] = useState(false);
+  const [analyticsTabLoading, setAnalyticsTabLoading] = useState(false);
   const [selectedPlanForBilling, setSelectedPlanForBilling] = useState<{ id: string; name: string; price: number } | null>(null);
 
   // Subscription state
@@ -212,19 +216,26 @@ function ClientDashboard() {
 
   useEffect(() => {
     // Check auth
-    fetch('/api/auth/me').then(res => {
-      if (!res.ok) {
+    fetch('/api/auth/me')
+      .then(res => {
+        if (!res.ok) {
+          router.push('/login');
+          return null;
+        }
+        return res.json();
+      })
+      .then(data => {
+        if (!data) return;
+        if (data.role !== 'client' && data.role !== 'admin') {
+          router.push('/login');
+        } else {
+          setUser(data);
+        }
+      })
+      .catch(() => {
         router.push('/login');
-      } else {
-        res.json().then(data => {
-          if (data.role !== 'client' && data.role !== 'admin') {
-            router.push('/login');
-          } else {
-            setUser(data);
-          }
-        });
-      }
-    });
+      })
+      .finally(() => setAuthLoading(false));
 
     // Fetch subscription status
     fetchSubscriptionStatus();
@@ -237,6 +248,7 @@ function ClientDashboard() {
   useEffect(() => {
     if (!user) return;
 
+    setClinicsLoading(true);
     fetch(`/api/client/clinics?userId=${user.id}`)
       .then(res => res.json())
       .then(data => {
@@ -244,8 +256,15 @@ function ClientDashboard() {
           setMyClinics(data.clinics);
         }
       })
-      .catch(err => console.error('Failed to fetch clinics:', err));
+      .catch(err => console.error('Failed to fetch clinics:', err))
+      .finally(() => setClinicsLoading(false));
   }, [user]);
+
+  useEffect(() => {
+    if (activeView !== 'analytics') {
+      setAnalyticsTabLoading(false);
+    }
+  }, [activeView]);
 
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' });
@@ -354,8 +373,15 @@ function ClientDashboard() {
       ? `Great to see you, ${user.name}. Here’s what’s happening across your clinics today.`
       : `Welcome back, ${user.name}`;
 
+  const showGlobalLoader =
+    authLoading ||
+    (activeView === 'overview' && clinicsLoading) ||
+    (activeView === 'membership' && loadingSub) ||
+    (activeView === 'analytics' && analyticsTabLoading);
+
   return (
     <>
+    <LoadingScreen active={showGlobalLoader} durationMs={1000} />
     <Navbar />
     <div className="dashboard-scope min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex pt-20">
       {/* Toast */}
@@ -376,7 +402,7 @@ function ClientDashboard() {
       <aside className="w-64 border-r border-slate-100 dark:border-slate-800 flex flex-col p-6 hidden lg:flex dark:bg-slate-900/50">
         <nav className="space-y-2 flex-grow mt-4">
           <NavItem icon={BarChart3} label="Overview" active={activeView === 'overview'} onClick={() => setActiveView('overview')} />
-          <NavItem icon={TrendingUp} label="Analytics" active={activeView === 'analytics'} onClick={() => setActiveView('analytics')} />
+          <NavItem icon={TrendingUp} label="Analytics" active={activeView === 'analytics'} onClick={() => { setAnalyticsTabLoading(true); setActiveView('analytics'); }} />
           <NavItem icon={Users} label="Patient Leads" badge="Coming Soon" onClick={() => {}} />
           <NavItem icon={Calendar} label="Patient Count" badge="Coming Soon" onClick={() => {}} />
           <NavItem icon={MessageSquare} label="AI Conversations" badge="Coming Soon" onClick={() => {}} />
@@ -474,7 +500,10 @@ function ClientDashboard() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
             >
-              <ClientAnalyticsView refreshTrigger={analyticsRefreshKey} />
+              <ClientAnalyticsView
+                refreshTrigger={analyticsRefreshKey}
+                onLoadingStateChange={setAnalyticsTabLoading}
+              />
             </motion.div>
           ) : activeView === 'profile' ? (
             <motion.div

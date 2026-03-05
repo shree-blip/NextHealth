@@ -7,10 +7,12 @@ import Logo from '@/components/Logo';
 interface LoadingScreenProps {
   durationMs?: number;
   onComplete?: () => void;
+  active?: boolean;
 }
 
-export default function LoadingScreen({ durationMs = 400, onComplete }: LoadingScreenProps) {
-  const [isLoading, setIsLoading] = useState(true);
+export default function LoadingScreen({ durationMs = 400, onComplete, active }: LoadingScreenProps) {
+  const isControlled = typeof active === 'boolean';
+  const [isLoading, setIsLoading] = useState(isControlled ? Boolean(active) : true);
   const [progress, setProgress] = useState(0);
   const rafRef = useRef<number>(0);
   const startRef = useRef<number>(0);
@@ -21,22 +23,21 @@ export default function LoadingScreen({ durationMs = 400, onComplete }: LoadingS
   }, [onComplete]);
 
   useEffect(() => {
-    // Already loading, start progress
+    if (isControlled) return;
+
     document.body.style.overflow = 'hidden';
     startRef.current = performance.now();
 
     const tick = (now: number) => {
       const elapsed = now - startRef.current;
-      // Use easeOut curve for more natural progress
       const linearProgress = elapsed / durationMs;
-      const easedProgress = 1 - Math.pow(1 - linearProgress, 3); // cubic ease-out
+      const easedProgress = 1 - Math.pow(1 - linearProgress, 3);
       const pct = Math.min(Math.round(easedProgress * 100), 100);
       setProgress(pct);
 
       if (pct < 100) {
         rafRef.current = requestAnimationFrame(tick);
       } else {
-        // Dismiss immediately when hitting 100%
         setIsLoading(false);
         document.body.classList.add('loaded');
         document.body.style.overflow = '';
@@ -50,7 +51,47 @@ export default function LoadingScreen({ durationMs = 400, onComplete }: LoadingS
       cancelAnimationFrame(rafRef.current);
       document.body.style.overflow = '';
     };
-  }, [durationMs]);
+  }, [durationMs, isControlled]);
+
+  useEffect(() => {
+    if (!isControlled) return;
+
+    cancelAnimationFrame(rafRef.current);
+
+    if (active) {
+      setIsLoading(true);
+      document.body.style.overflow = 'hidden';
+      startRef.current = performance.now();
+
+      const tick = (now: number) => {
+        const elapsed = now - startRef.current;
+        const pct = Math.min(95, Math.round(100 - Math.exp(-elapsed / 1200) * 100));
+        setProgress(pct);
+        rafRef.current = requestAnimationFrame(tick);
+      };
+
+      rafRef.current = requestAnimationFrame(tick);
+    } else {
+      setProgress(100);
+      const timeout = window.setTimeout(() => {
+        setIsLoading(false);
+        document.body.classList.add('loaded');
+        document.body.style.overflow = '';
+        onCompleteRef.current?.();
+      }, 180);
+
+      return () => {
+        window.clearTimeout(timeout);
+      };
+    }
+
+    return () => {
+      cancelAnimationFrame(rafRef.current);
+      if (!active) {
+        document.body.style.overflow = '';
+      }
+    };
+  }, [active, isControlled]);
 
   return (
     <AnimatePresence>
