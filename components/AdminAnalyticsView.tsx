@@ -356,17 +356,21 @@ export default function AdminAnalyticsView({ isDark, refreshTrigger }: AdminAnal
           <ChevronDown className={`h-4 w-4 transition-transform ${showDropdown ? 'rotate-180' : ''}`} />
         </button>
         {showDropdown && (
-          <div className={`absolute top-full mt-2 w-full rounded-xl border shadow-xl z-10 ${
-            isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'
-          }`}>
+          <div
+            className={`absolute top-full mt-2 w-full rounded-xl border shadow-xl z-10 ${
+              isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'
+            }`}
+            style={isDark ? { backgroundColor: '#1e293b', color: '#f1f5f9' } : {}}
+          >
             <button
               onClick={() => {
                 setSelectedClinic('all');
                 setShowDropdown(false);
               }}
-              className={`w-full px-6 py-3 text-left hover:bg-emerald-50 dark:hover:bg-emerald-900/20 first:rounded-t-xl ${
-                selectedClinic === 'all' ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 font-bold' : ''
+              className={`w-full px-6 py-3 text-left first:rounded-t-xl hover:bg-emerald-50 dark:hover:bg-emerald-900/40 ${
+                selectedClinic === 'all' ? 'bg-emerald-50 dark:bg-emerald-900/40 text-emerald-400 font-bold' : ''
               }`}
+              style={isDark ? { color: selectedClinic === 'all' ? '#34d399' : '#f1f5f9' } : {}}
             >
               All Clinics
             </button>
@@ -377,9 +381,10 @@ export default function AdminAnalyticsView({ isDark, refreshTrigger }: AdminAnal
                   setSelectedClinic(clinic.id);
                   setShowDropdown(false);
                 }}
-                className={`w-full px-6 py-3 text-left hover:bg-emerald-50 dark:hover:bg-emerald-900/20 last:rounded-b-xl ${
-                  selectedClinic === clinic.id ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 font-bold' : ''
+                className={`w-full px-6 py-3 text-left last:rounded-b-xl hover:bg-emerald-50 dark:hover:bg-emerald-900/40 ${
+                  selectedClinic === clinic.id ? 'bg-emerald-50 dark:bg-emerald-900/40 text-emerald-400 font-bold' : ''
                 }`}
+                style={isDark ? { color: selectedClinic === clinic.id ? '#34d399' : '#f1f5f9' } : {}}
               >
                 {clinic.name}
               </button>

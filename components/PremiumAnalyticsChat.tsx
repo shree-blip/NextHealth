@@ -38,7 +38,7 @@ const QUICK_PROMPTS = [
 ];
 
 export default function PremiumAnalyticsChat({ defaultExpanded = false }: PremiumAnalyticsChatProps) {
-  const { theme } = useSitePreferences();
+  const { theme, t } = useSitePreferences();
   const isDark = theme === 'dark';
 
   const [messages, setMessages] = useState<Message[]>([]);
@@ -47,11 +47,17 @@ export default function PremiumAnalyticsChat({ defaultExpanded = false }: Premiu
   const [hasGreeted, setHasGreeted] = useState(false);
   const [expanded, setExpanded] = useState(defaultExpanded);
 
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const scrollToBottom = useCallback(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const container = messagesContainerRef.current;
+    if (container) {
+      container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
+      return;
+    }
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }, []);
 
   useEffect(() => {
@@ -120,7 +126,7 @@ export default function PremiumAnalyticsChat({ defaultExpanded = false }: Premiu
         {
           id: `bot-${Date.now()}`,
           role: 'assistant',
-          content: data.reply || data.error || 'Sorry, something went wrong.',
+          content: data.reply || data.error || t('Sorry, something went wrong.'),
           timestamp: new Date(),
         },
       ]);
@@ -130,7 +136,7 @@ export default function PremiumAnalyticsChat({ defaultExpanded = false }: Premiu
         {
           id: `err-${Date.now()}`,
           role: 'assistant',
-          content: "Sorry, I couldn't connect to the analytics service. Please try again.",
+          content: t("Sorry, I couldn't connect to the analytics service. Please try again."),
           timestamp: new Date(),
         },
       ]);
@@ -193,16 +199,16 @@ export default function PremiumAnalyticsChat({ defaultExpanded = false }: Premiu
           <button
             onClick={clearChat}
             className="p-2 rounded-full hover:bg-white/20 transition-colors"
-            aria-label="Clear chat"
-            title="Clear conversation"
+            aria-label={t('Clear chat')}
+            title={t('Clear chat')}
           >
             <Trash2 className="h-4 w-4" />
           </button>
           <button
             onClick={() => setExpanded(!expanded)}
             className="p-2 rounded-full hover:bg-white/20 transition-colors"
-            aria-label={expanded ? 'Collapse' : 'Expand'}
-            title={expanded ? 'Collapse' : 'Expand'}
+            aria-label={expanded ? t('Collapse') : t('Expand')}
+            title={expanded ? t('Collapse') : t('Expand')}
           >
             {expanded ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
           </button>
@@ -210,7 +216,7 @@ export default function PremiumAnalyticsChat({ defaultExpanded = false }: Premiu
       </div>
 
       {/* Messages */}
-      <div className={`flex-1 overflow-y-auto p-4 space-y-4 ${isDark ? 'bg-slate-950' : 'bg-slate-50'}`}>
+      <div ref={messagesContainerRef} className={`flex-1 overflow-y-auto p-4 space-y-4 ${isDark ? 'bg-slate-950' : 'bg-slate-50'}`}>
         {messages.map((msg) => (
           <div
             key={msg.id}
@@ -260,7 +266,7 @@ export default function PremiumAnalyticsChat({ defaultExpanded = false }: Premiu
                   className={`h-3.5 w-3.5 animate-spin ${isDark ? 'text-violet-400' : 'text-violet-500'}`}
                 />
                 <span className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                  Analyzing your data...
+                  {t('Analyzing your data...')}
                 </span>
               </div>
             </div>
@@ -271,20 +277,30 @@ export default function PremiumAnalyticsChat({ defaultExpanded = false }: Premiu
         {messages.length <= 1 && !isLoading && (
           <div className="space-y-2 pt-2">
             <p className={`text-xs font-medium px-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
-              Try asking:
+              {t('Try asking:')}
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {QUICK_PROMPTS.map((q, i) => (
                 <button
                   key={i}
-                  onClick={() => sendMessage(q)}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    sendMessage(t(q));
+                    // Scroll only the chat container, not the page
+                    setTimeout(() => {
+                      const container = messagesContainerRef.current;
+                      if (container) {
+                        container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
+                      }
+                    }, 100);
+                  }}
                   className={`text-left text-sm px-4 py-2.5 rounded-xl transition-all hover:scale-[1.01] ${
                     isDark
                       ? 'bg-slate-800/60 text-slate-300 hover:bg-slate-800 border border-slate-700/50 hover:border-violet-500/30'
                       : 'bg-white text-slate-600 hover:bg-violet-50 border border-slate-200 hover:border-violet-300 shadow-sm'
                   }`}
                 >
-                  {q}
+                  {t(q)}
                 </button>
               ))}
             </div>
@@ -308,7 +324,7 @@ export default function PremiumAnalyticsChat({ defaultExpanded = false }: Premiu
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Ask about your analytics..."
+            placeholder={t('Ask about your analytics...')}
             disabled={isLoading}
             className={`flex-1 px-4 py-2.5 rounded-xl text-sm outline-none transition-all ${
               isDark
@@ -331,7 +347,7 @@ export default function PremiumAnalyticsChat({ defaultExpanded = false }: Premiu
           </button>
         </form>
         <p className={`text-xs text-center mt-2 ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>
-          Premium AI · Real-time analytics data
+          {t('Premium AI · Real-time analytics data')}
         </p>
       </div>
     </motion.div>

@@ -93,7 +93,7 @@ interface ClientAnalyticsViewProps {
 }
 
 export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false, onLoadingStateChange }: ClientAnalyticsViewProps) {
-  const { theme } = useSitePreferences();
+  const { theme, language, t } = useSitePreferences();
   const isDark = theme === 'dark';
   const currentYear = new Date().getFullYear();
   const [analytics, setAnalytics] = useState<WeeklyAnalytics[]>([]);
@@ -113,6 +113,7 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false, o
   const [endDate, setEndDate] = useState<string>('');
   const [isSearchingDateRange, setIsSearchingDateRange] = useState(false);
   const [hasDateRangeFilter, setHasDateRangeFilter] = useState(false);
+  const locale = language === 'es' ? 'es-US' : 'en-US';
   const socketRef = useRef<Socket | null>(null);
   const clinicIdRef = useRef<string>('');
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -423,12 +424,12 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false, o
           <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
             <div className="flex items-center gap-3">
               <h3 className={`text-lg font-bold flex items-center gap-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                <Filter className="h-4 w-4" /> Edit Report Filters
+                <Filter className="h-4 w-4" /> {t('Edit Report Filters')}
               </h3>
               {lastUpdated && (
                 <span className={`text-xs flex items-center gap-1.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                   <Clock className="h-3.5 w-3.5" />
-                  Last updated: {lastUpdated.toLocaleTimeString()}
+                  {t('Last updated:')} {lastUpdated.toLocaleTimeString(locale)}
                 </span>
               )}
             </div>
@@ -445,14 +446,14 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false, o
                 className="px-4 py-2 rounded-lg bg-blue-500 text-white font-bold hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
                 <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-                Refresh
+                {t('Refresh')}
               </button>
               <button
                 onClick={resetToCurrentYearWeeks}
                 className="px-4 py-2 rounded-lg bg-slate-500 text-white font-bold hover:bg-slate-400 flex items-center gap-2"
               >
                 <RotateCcw className="h-4 w-4" />
-                Reset Filters
+                {t('Reset Filters')}
               </button>
             </div>
           </div>
@@ -465,7 +466,7 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false, o
                 setSelectedWeek('all');
                 setHasDateRangeFilter(false);
               }}
-              className={`px-4 py-3 rounded-xl border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-100' : 'bg-white border-slate-200 text-slate-900'}`}
+              className={`px-4 py-3 rounded-xl border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-100' : 'bg-white border-slate-200 text-slate-900'} dark:[color-scheme:dark]`}
             >
               {availableYears.map((year) => (
                 <option key={year} value={year}>{year}</option>
@@ -478,11 +479,11 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false, o
                 setSelectedWeek('all');
                 setHasDateRangeFilter(false);
               }}
-              className={`px-4 py-3 rounded-xl border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-100' : 'bg-white border-slate-200 text-slate-900'}`}
+              className={`px-4 py-3 rounded-xl border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-100' : 'bg-white border-slate-200 text-slate-900'} dark:[color-scheme:dark]`}
             >
-              <option value="all">All Months</option>
+              <option value="all">{t('All Months')}</option>
               {availableMonths.map((month) => (
-                <option key={month} value={month}>{MONTH_NAMES[month] || `Month ${month}`}</option>
+                <option key={month} value={month}>{t(MONTH_NAMES[month] || `Month ${month}`)}</option>
               ))}
             </select>
             <select
@@ -491,9 +492,9 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false, o
                 setSelectedWeek(e.target.value);
                 setHasDateRangeFilter(false);
               }}
-              className={`px-4 py-3 rounded-xl border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-100' : 'bg-white border-slate-200 text-slate-900'}`}
+              className={`px-4 py-3 rounded-xl border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-100' : 'bg-white border-slate-200 text-slate-900'} dark:[color-scheme:dark]`}
             >
-              <option value="all">Current Year Weeks</option>
+              <option value="all">{t('Current Year Weeks')}</option>
               {availableWeeks.map((week) => (
                 <option key={week} value={week}>{formatStandardWeekLabel(Number(selectedYear), week)}</option>
               ))}
@@ -502,7 +503,7 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false, o
               type="text"
               value={dateFilter}
               onChange={(e) => setDateFilter(e.target.value)}
-              placeholder="Filter by date/week label"
+              placeholder={t('Filter by date/week label')}
               className={`px-4 py-3 rounded-xl border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-100 placeholder:text-slate-500' : 'bg-white border-slate-200 text-slate-900 placeholder:text-slate-400'}`}
             />
           </div>
@@ -517,7 +518,7 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false, o
                   : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
               }`}
             >
-              📅 Custom Date Range
+              📅 {t('Custom Date Range')}
               {showDateRange ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
             </button>
 
@@ -526,24 +527,26 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false, o
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div>
                     <label className={`block text-xs font-semibold mb-1 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
-                      Start Date
+                      {t('Start Date')}
                     </label>
                     <input
                       type="date"
                       value={startDate}
                       onChange={(e) => setStartDate(e.target.value)}
-                      className={`w-full px-4 py-2 rounded-lg border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-100' : 'bg-white border-slate-200 text-slate-900'}`}
+                      className={`w-full px-4 py-2 rounded-lg border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-100' : 'bg-white border-slate-200 text-slate-900'} dark:[color-scheme:dark]`}
+                      style={isDark ? { backgroundColor: '#1e293b', color: '#f1f5f9', borderColor: '#334155' } : {}}
                     />
                   </div>
                   <div>
                     <label className={`block text-xs font-semibold mb-1 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
-                      End Date
+                      {t('End Date')}
                     </label>
                     <input
                       type="date"
                       value={endDate}
                       onChange={(e) => setEndDate(e.target.value)}
-                      className={`w-full px-4 py-2 rounded-lg border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-100' : 'bg-white border-slate-200 text-slate-900'}`}
+                      className={`w-full px-4 py-2 rounded-lg border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-100' : 'bg-white border-slate-200 text-slate-900'} dark:[color-scheme:dark]`}
+                      style={isDark ? { backgroundColor: '#1e293b', color: '#f1f5f9', borderColor: '#334155' } : {}}
                     />
                   </div>
                 </div>
@@ -555,10 +558,10 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false, o
                   {isSearchingDateRange ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin" />
-                      Searching...
+                      {t('Searching...')}
                     </>
                   ) : (
-                    '🔍 Search Date Range'
+                    `🔍 ${t('Search Date Range')}`
                   )}
                 </button>
               </div>
@@ -568,9 +571,9 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false, o
 
         <div className={`rounded-2xl p-8 border text-center ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
           <TrendingUp className={`h-12 w-12 mx-auto mb-4 ${isDark ? 'text-slate-500' : 'text-slate-400'}`} />
-          <h3 className={`text-xl font-bold mb-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>No Data For Selected Filters</h3>
+          <h3 className={`text-xl font-bold mb-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('No Data For Selected Filters')}</h3>
           <p className={isDark ? 'text-slate-400' : 'text-slate-600'}>
-            Try changing year, month, week, or date label filters to see analytics results.
+            {t('Try changing year, month, week, or date label filters to see analytics results.')}
           </p>
         </div>
       </div>
@@ -636,9 +639,9 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false, o
   }, 0);
 
   const trafficSourcesData = [
-    { name: 'GMB Visits', value: filteredAnalytics.reduce((sum, w) => sum + w.websiteVisits, 0) },
-    { name: 'Direct Traffic', value: directTrafficValue },
-    { name: 'Directions', value: filteredAnalytics.reduce((sum, w) => sum + w.directionClicks, 0) },
+    { name: t('GMB Visits'), value: filteredAnalytics.reduce((sum, w) => sum + w.websiteVisits, 0) },
+    { name: t('Direct Traffic'), value: directTrafficValue },
+    { name: t('Directions'), value: filteredAnalytics.reduce((sum, w) => sum + w.directionClicks, 0) },
   ].filter(item => item.value > 0);
 
   const currentClinic = clinics.find(c => c.id === selectedClinic);
@@ -658,23 +661,27 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false, o
             }`}
           >
             <Building2 className="h-5 w-5 text-emerald-500" />
-            <span>{isAllLocations ? (isAdmin ? 'All Clinics' : 'All Locations') : currentClinic?.name || 'Select Clinic'}</span>
+            <span>{isAllLocations ? (isAdmin ? t('All Clinics') : t('All Locations')) : currentClinic?.name || t('Select Clinic')}</span>
             <ChevronDown className={`h-4 w-4 transition-transform ${showDropdown ? 'rotate-180' : ''}`} />
           </button>
           {showDropdown && (
-            <div className={`absolute top-full mt-2 w-full rounded-xl border shadow-xl z-10 ${
-              isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'
-            }`}>
+            <div
+              className={`absolute top-full mt-2 w-full rounded-xl border shadow-xl z-50 ${
+                isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'
+              }`}
+              style={isDark ? { backgroundColor: '#1e293b', color: '#f1f5f9' } : {}}
+            >
               <button
                 onClick={() => {
                   setSelectedClinic('all');
                   setShowDropdown(false);
                 }}
-                className={`w-full px-6 py-3 text-left hover:bg-emerald-50 dark:hover:bg-emerald-900/20 first:rounded-t-xl ${
-                  isAllLocations ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 font-bold' : ''
+                className={`w-full px-6 py-3 text-left first:rounded-t-xl hover:bg-emerald-50 dark:hover:bg-emerald-900/40 ${
+                  isAllLocations ? 'bg-emerald-50 dark:bg-emerald-900/40 text-emerald-400 font-bold' : ''
                 }`}
+                style={isDark ? { color: isAllLocations ? '#34d399' : '#f1f5f9' } : {}}
               >
-                {isAdmin ? 'All Clinics' : 'All Locations'}
+                {isAdmin ? t('All Clinics') : t('All Locations')}
               </button>
               {clinics.map(clinic => (
                 <button
@@ -683,9 +690,10 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false, o
                     setSelectedClinic(clinic.id);
                     setShowDropdown(false);
                   }}
-                  className={`w-full px-6 py-3 text-left hover:bg-emerald-50 dark:hover:bg-emerald-900/20 last:rounded-b-xl ${
-                    selectedClinic === clinic.id ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 font-bold' : ''
+                  className={`w-full px-6 py-3 text-left last:rounded-b-xl hover:bg-emerald-50 dark:hover:bg-emerald-900/40 ${
+                    selectedClinic === clinic.id ? 'bg-emerald-50 dark:bg-emerald-900/40 text-emerald-400 font-bold' : ''
                   }`}
+                  style={isDark ? { color: selectedClinic === clinic.id ? '#34d399' : '#f1f5f9' } : {}}
                 >
                   {clinic.name}
                 </button>
@@ -708,13 +716,13 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false, o
               }`}
             >
               <Filter className="h-4 w-4" />
-              Edit Report Filters
+              {t('Edit Report Filters')}
               {showFilters ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
             </button>
             {lastUpdated && (
               <span className={`text-xs flex items-center gap-1.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                 <Clock className="h-3.5 w-3.5" />
-                Last updated: {lastUpdated.toLocaleTimeString()}
+                {t('Last updated:')} {lastUpdated.toLocaleTimeString(locale)}
               </span>
             )}
           </div>
@@ -731,14 +739,14 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false, o
               className="px-4 py-2 rounded-lg bg-blue-500 text-white font-bold hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
               <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-              Refresh
+              {t('Refresh')}
             </button>
             <button
               onClick={resetToCurrentYearWeeks}
               className="px-4 py-2 rounded-lg bg-slate-500 text-white font-bold hover:bg-slate-400 flex items-center gap-2"
             >
               <RotateCcw className="h-4 w-4" />
-              Reset Filters
+              {t('Reset Filters')}
             </button>
           </div>
         </div>
@@ -754,7 +762,7 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false, o
                 setSelectedWeek('all');
                 setHasDateRangeFilter(false);
               }}
-              className={`px-4 py-3 rounded-xl border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-100' : 'bg-white border-slate-200 text-slate-900'}`}
+              className={`px-4 py-3 rounded-xl border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-100' : 'bg-white border-slate-200 text-slate-900'} dark:[color-scheme:dark]`}
             >
               {availableYears.map((year) => (
                 <option key={year} value={year}>{year}</option>
@@ -768,11 +776,11 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false, o
                 setSelectedWeek('all');
                 setHasDateRangeFilter(false);
               }}
-              className={`px-4 py-3 rounded-xl border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-100' : 'bg-white border-slate-200 text-slate-900'}`}
+              className={`px-4 py-3 rounded-xl border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-100' : 'bg-white border-slate-200 text-slate-900'} dark:[color-scheme:dark]`}
             >
-              <option value="all">All Months</option>
+              <option value="all">{t('All Months')}</option>
               {availableMonths.map((month) => (
-                <option key={month} value={month}>{MONTH_NAMES[month] || `Month ${month}`}</option>
+                <option key={month} value={month}>{t(MONTH_NAMES[month] || `Month ${month}`)}</option>
               ))}
             </select>
 
@@ -782,9 +790,9 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false, o
                 setSelectedWeek(e.target.value);
                 setHasDateRangeFilter(false);
               }}
-              className={`px-4 py-3 rounded-xl border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-100' : 'bg-white border-slate-200 text-slate-900'}`}
+              className={`px-4 py-3 rounded-xl border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-100' : 'bg-white border-slate-200 text-slate-900'} dark:[color-scheme:dark]`}
             >
-              <option value="all">Current Year Weeks</option>
+              <option value="all">{t('Current Year Weeks')}</option>
               {availableWeeks.map((week) => (
                 <option key={week} value={week}>{formatStandardWeekLabel(Number(selectedYear), week)}</option>
               ))}
@@ -794,7 +802,7 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false, o
               type="text"
               value={dateFilter}
               onChange={(e) => setDateFilter(e.target.value)}
-              placeholder="Date/Week label (e.g. Nov Week 1)"
+              placeholder={t('Date/Week label (e.g. Nov Week 1)')}
               className={`px-4 py-3 rounded-xl border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-100 placeholder:text-slate-500' : 'bg-white border-slate-200 text-slate-900 placeholder:text-slate-400'}`}
             />
           </div>
@@ -809,7 +817,7 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false, o
                   : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
               }`}
             >
-              📅 Custom Date Range
+              📅 {t('Custom Date Range')}
               {showDateRange ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
             </button>
 
@@ -818,24 +826,26 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false, o
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div>
                     <label className={`block text-xs font-semibold mb-1 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
-                      Start Date
+                      {t('Start Date')}
                     </label>
                     <input
                       type="date"
                       value={startDate}
                       onChange={(e) => setStartDate(e.target.value)}
-                      className={`w-full px-4 py-2 rounded-lg border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-100' : 'bg-white border-slate-200 text-slate-900'}`}
+                      className={`w-full px-4 py-2 rounded-lg border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-100' : 'bg-white border-slate-200 text-slate-900'} dark:[color-scheme:dark]`}
+                      style={isDark ? { backgroundColor: '#1e293b', color: '#f1f5f9', borderColor: '#334155' } : {}}
                     />
                   </div>
                   <div>
                     <label className={`block text-xs font-semibold mb-1 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
-                      End Date
+                      {t('End Date')}
                     </label>
                     <input
                       type="date"
                       value={endDate}
                       onChange={(e) => setEndDate(e.target.value)}
-                      className={`w-full px-4 py-2 rounded-lg border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-100' : 'bg-white border-slate-200 text-slate-900'}`}
+                      className={`w-full px-4 py-2 rounded-lg border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-100' : 'bg-white border-slate-200 text-slate-900'} dark:[color-scheme:dark]`}
+                      style={isDark ? { backgroundColor: '#1e293b', color: '#f1f5f9', borderColor: '#334155' } : {}}
                     />
                   </div>
                 </div>
@@ -847,10 +857,10 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false, o
                   {isSearchingDateRange ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin" />
-                      Searching...
+                      {t('Searching...')}
                     </>
                   ) : (
-                    '🔍 Search Date Range'
+                    `🔍 ${t('Search Date Range')}`
                   )}
                 </button>
               </div>
@@ -871,7 +881,8 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false, o
             <ArrowUpRight className="h-5 w-5 text-emerald-500" />
           </div>
           <h3 className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{totals.traffic.toLocaleString()}</h3>
-          <p className={`text-sm font-semibold ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{periodPrefix} Traffic</p>
+          <p className={`text-sm font-semibold ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{t(periodPrefix)} {t('Traffic')}</p>
+          <p className={`text-xs mt-1 ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>{t('Includes website visits and direct traffic for selected filters.')}</p>
         </motion.div>
 
         <motion.div
@@ -885,7 +896,8 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false, o
             <ArrowUpRight className="h-5 w-5 text-emerald-500" />
           </div>
           <h3 className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{totals.calls}</h3>
-          <p className={`text-sm font-semibold ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{periodPrefix} GMB Calls</p>
+          <p className={`text-sm font-semibold ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{t(periodPrefix)} {t('GMB Calls')}</p>
+          <p className={`text-xs mt-1 ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>{t('Calls tracked from your Google Business Profile.')}</p>
         </motion.div>
 
         <motion.div
@@ -897,11 +909,12 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false, o
           <div className="flex items-center justify-between mb-3">
             <DollarSign className="h-8 w-8 text-indigo-500" />
             <span className={`text-xs font-bold px-2 py-1 rounded-full ${isDark ? 'bg-indigo-900/30 text-indigo-400' : 'bg-indigo-100 text-indigo-600'}`}>
-              Ad Spend
+              {t('Ad Spend')}
             </span>
           </div>
           <h3 className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>${totalAdSpend.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h3>
-          <p className={`text-sm font-semibold ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{periodPrefix} Ad Spend</p>
+          <p className={`text-sm font-semibold ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{t(periodPrefix)} {t('Ad Spend')}</p>
+          <p className={`text-xs mt-1 ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>{t('Combined Meta and Google spend for selected filters.')}</p>
         </motion.div>
 
         <motion.div
@@ -913,11 +926,12 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false, o
           <div className="flex items-center justify-between mb-3">
             <FileText className="h-8 w-8 text-purple-500" />
             <span className={`text-xs font-bold px-2 py-1 rounded-full ${isDark ? 'bg-purple-900/30 text-purple-400' : 'bg-purple-100 text-purple-600'}`}>
-              Content
+              {t('Content')}
             </span>
           </div>
           <h3 className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{totals.blogs}</h3>
-          <p className={`text-sm font-semibold ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{periodPrefix} Blogs Published</p>
+          <p className={`text-sm font-semibold ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{t(periodPrefix)} {t('Blogs Published')}</p>
+          <p className={`text-xs mt-1 ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>{t('Published blog posts in the selected period.')}</p>
         </motion.div>
       </div>
 
@@ -929,7 +943,7 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false, o
         className={`rounded-2xl p-6 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}
       >
         <h3 className={`text-xl font-bold mb-6 ${isDark ? 'text-white' : 'text-slate-900'}`}>
-          📈 SEO Performance Over Time
+          📈 {t('SEO Performance Over Time')}
         </h3>
         <ResponsiveContainer width="100%" height={300}>
           <LineChart data={trafficData}>
@@ -944,8 +958,8 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false, o
               }}
             />
             <Legend />
-            <Line type="monotone" dataKey="traffic" name="Traffic" stroke="#10b981" strokeWidth={3} dot={{ fill: '#10b981', r: 5 }} />
-            <Line type="monotone" dataKey="ranking" name="Avg Ranking" stroke="#3b82f6" strokeWidth={3} dot={{ fill: '#3b82f6', r: 5 }} />
+            <Line type="monotone" dataKey="traffic" name={t('Traffic')} stroke="#10b981" strokeWidth={3} dot={{ fill: '#10b981', r: 5 }} />
+            <Line type="monotone" dataKey="ranking" name={t('Avg Ranking')} stroke="#3b82f6" strokeWidth={3} dot={{ fill: '#3b82f6', r: 5 }} />
           </LineChart>
         </ResponsiveContainer>
       </motion.div>
@@ -958,7 +972,7 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false, o
         className={`rounded-2xl p-6 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}
       >
         <h3 className={`text-xl font-bold mb-6 ${isDark ? 'text-white' : 'text-slate-900'}`}>
-          📍 Google My Business Activity
+          📍 {t('Google My Business Activity')}
         </h3>
         <ResponsiveContainer width="100%" height={300}>
           <BarChart data={gmbData}>
@@ -973,9 +987,9 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false, o
               }}
             />
             <Legend />
-            <Bar dataKey="calls" name="Calls" fill="#10b981" radius={[8, 8, 0, 0]} />
-            <Bar dataKey="visits" name="Website Visits" fill="#3b82f6" radius={[8, 8, 0, 0]} />
-            <Bar dataKey="directions" name="Directions" fill="#f59e0b" radius={[8, 8, 0, 0]} />
+            <Bar dataKey="calls" name={t('Calls')} fill="#10b981" radius={[8, 8, 0, 0]} />
+            <Bar dataKey="visits" name={t('Website Visits')} fill="#3b82f6" radius={[8, 8, 0, 0]} />
+            <Bar dataKey="directions" name={t('Directions')} fill="#f59e0b" radius={[8, 8, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </motion.div>
@@ -990,7 +1004,7 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false, o
           className={`rounded-2xl p-6 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}
         >
           <h3 className={`text-xl font-bold mb-6 ${isDark ? 'text-white' : 'text-slate-900'}`}>
-            💰 Ad Spend & Conversions
+            💰 {t('Ad Spend & Conversions')}
           </h3>
           <ResponsiveContainer width="100%" height={300}>
             <AreaChart data={adsData}>
@@ -1005,8 +1019,8 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false, o
                 }}
               />
               <Legend />
-              <Area type="monotone" dataKey="metaSpend" name="Meta Spend" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.6} />
-              <Area type="monotone" dataKey="googleSpend" name="Google Spend" stroke="#10b981" fill="#10b981" fillOpacity={0.6} />
+              <Area type="monotone" dataKey="metaSpend" name={t('Meta Spend')} stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.6} />
+              <Area type="monotone" dataKey="googleSpend" name={t('Google Spend')} stroke="#10b981" fill="#10b981" fillOpacity={0.6} />
             </AreaChart>
           </ResponsiveContainer>
         </motion.div>
@@ -1019,7 +1033,7 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false, o
           className={`rounded-2xl p-6 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}
         >
           <h3 className={`text-xl font-bold mb-6 ${isDark ? 'text-white' : 'text-slate-900'}`}>
-            🎯 Traffic Source Distribution
+            🎯 {t('Traffic Source Distribution')}
           </h3>
           <ResponsiveContainer width="100%" height={300}>
             <PieChart>
@@ -1060,7 +1074,7 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false, o
         className={`rounded-2xl p-6 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}
       >
         <h3 className={`text-xl font-bold mb-6 ${isDark ? 'text-white' : 'text-slate-900'}`}>
-          📱 Social Media Performance
+          📱 {t('Social Media Performance')}
         </h3>
         <ResponsiveContainer width="100%" height={300}>
           <AreaChart data={socialData}>
@@ -1075,9 +1089,7 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false, o
               }}
             />
             <Legend />
-            <Area type="monotone" dataKey="views" name="Views" stroke="#8b5cf6" fill="#8b5cf6" fillOpacity={0.6} />
-            <Area type="monotone" dataKey="patients" name="Patient Count" stroke="#ec4899" fill="#ec4899" fillOpacity={0.6} />
-            <Area type="monotone" dataKey="posts" name="Posts" stroke="#06b6d4" fill="#06b6d4" fillOpacity={0.3} />
+            <Area type="monotone" dataKey="views" name={t('Views')} stroke="#8b5cf6" fill="#8b5cf6" fillOpacity={0.6} />
           </AreaChart>
         </ResponsiveContainer>
       </motion.div>
