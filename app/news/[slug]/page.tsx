@@ -3,7 +3,6 @@ import Footer from '@/components/Footer';
 import { Metadata } from 'next';
 import prisma from '@/lib/prisma';
 import { notFound } from 'next/navigation';
-import Image from 'next/image';
 import Link from 'next/link';
 import SinglePostLayout from '@/components/post/SinglePostLayout';
 
@@ -58,7 +57,7 @@ export async function generateStaticParams() {
 
 export default async function NewsArticlePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const article = await prisma.newsArticle.findUnique({ where: { slug } });
+  const article = (await prisma.newsArticle.findUnique({ where: { slug } })) as any;
   if (!article) notFound();
 
   // Get other news for "More News" section
@@ -75,14 +74,18 @@ export default async function NewsArticlePage({ params }: { params: Promise<{ sl
     '@type': 'NewsArticle',
     headline: article.title,
     description: article.excerpt || '',
-    image: article.coverImage ? `${SITE_URL}${article.coverImage}` : undefined,
+    image: article.coverImage
+      ? (article.coverImage.startsWith('http') ? article.coverImage : `${SITE_URL}${article.coverImage}`)
+      : undefined,
     datePublished: article.publishedAt?.toISOString(),
+    dateCreated: article.sourceDate?.toISOString() || undefined,
     dateModified: article.updatedAt.toISOString(),
     publisher: {
       '@type': 'Organization',
-      name: 'The NextGen Healthcare Marketing',
+      name: article.publisher || 'The NextGen Healthcare Marketing',
       url: SITE_URL,
     },
+    isBasedOn: article.sourceUrl || undefined,
     mainEntityOfPage: {
       '@type': 'WebPage',
       '@id': `${SITE_URL}/news/${article.slug}`,
@@ -95,7 +98,10 @@ export default async function NewsArticlePage({ params }: { params: Promise<{ sl
     content: article.content,
     excerpt: article.excerpt,
     coverImage: article.coverImage,
+    publisher: article.publisher,
     source: article.source,
+    sourceUrl: article.sourceUrl,
+    sourceDate: article.sourceDate?.toISOString() || null,
     publishedAt: article.publishedAt?.toISOString() || null,
   };
   const serializedMore = moreNews.map((n) => ({
@@ -115,11 +121,16 @@ export default async function NewsArticlePage({ params }: { params: Promise<{ sl
         title={article.title}
         shareTitle={article.title}
         headerTop={
-          article.source ? (
-            <span className="inline-flex items-center px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200 text-xs font-bold rounded-full">
-              {article.source}
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center px-3 py-1 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold rounded-full">
+              Publisher: {article.publisher || 'The NextGen Healthcare Marketing'}
             </span>
-          ) : undefined
+            {article.source && (
+              <span className="inline-flex items-center px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200 text-xs font-bold rounded-full">
+                Source: {article.source}
+              </span>
+            )}
+          </div>
         }
         headerMeta={
           article.publishedAt ? (
@@ -140,6 +151,26 @@ export default async function NewsArticlePage({ params }: { params: Promise<{ sl
             <p className="text-lg sm:text-xl text-slate-600 dark:text-slate-300 leading-relaxed font-medium border-l-4 border-blue-500 dark:border-blue-400 pl-5 italic">
               {article.excerpt}
             </p>
+          )}
+
+          {(article.source || article.sourceUrl || article.sourceDate) && (
+            <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 sm:p-5 text-sm text-slate-700 dark:text-slate-300">
+              <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+                <p><span className="font-semibold">Publisher:</span> {article.publisher || 'The NextGen Healthcare Marketing'}</p>
+                {article.source && <p><span className="font-semibold">Source:</span> {article.source}</p>}
+                {article.sourceDate && (
+                  <p>
+                    <span className="font-semibold">Source Publish Date:</span>{' '}
+                    {new Date(article.sourceDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                  </p>
+                )}
+                {article.sourceUrl && (
+                  <a href={article.sourceUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 underline font-medium">
+                    View Original Source
+                  </a>
+                )}
+              </div>
+            </div>
           )}
 
           <div className="rounded-3xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm p-5 sm:p-8 lg:p-10 min-w-0">
@@ -178,12 +209,12 @@ export default async function NewsArticlePage({ params }: { params: Promise<{ sl
                 <Link key={news.slug} href={`/news/${news.slug}`} className="group">
                   <article className="rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700 hover:shadow-lg transition-all hover:-translate-y-1 bg-white dark:bg-slate-800 h-full">
                     <div className="relative h-44 overflow-hidden">
-                      <Image
+                      <img
                         src={news.coverImage || '/4.png'}
                         alt={news.title}
-                        fill
-                        sizes="(min-width: 1024px) 30vw, (min-width: 768px) 45vw, 100vw"
-                        className="object-cover group-hover:scale-105 transition-transform duration-500"
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        loading="lazy"
+                        decoding="async"
                       />
                       {news.source && (
                         <span className="absolute top-3 left-3 px-2.5 py-1 bg-blue-600/90 dark:bg-blue-500/90 text-white text-[11px] font-bold rounded-full">

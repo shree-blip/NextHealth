@@ -1,5 +1,4 @@
 import { ReactNode } from 'react';
-import Image from 'next/image';
 import SocialShare from '@/components/SocialShare';
 
 interface SinglePostLayoutProps {
@@ -35,12 +34,12 @@ export default function SinglePostLayout({
 
       {coverImage && (
         <div className="relative w-full h-64 sm:h-80 lg:h-[28rem] mt-5 rounded-3xl overflow-hidden border border-slate-200 dark:border-slate-700 shadow-sm">
-          <Image
+          <img
             src={coverImage}
             alt={coverAlt || title}
-            fill
-            sizes="(min-width: 1024px) 80vw, 100vw"
-            className="object-cover"
+            className="w-full h-full object-cover"
+            loading="eager"
+            decoding="async"
           />
         </div>
       )}

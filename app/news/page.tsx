@@ -14,7 +14,10 @@ interface NewsArticle {
   slug: string;
   excerpt: string | null;
   coverImage: string | null;
+  publisher: string | null;
   source: string | null;
+  sourceUrl: string | null;
+  sourceDate: string | null;
   publishedAt: string | null;
 }
 
@@ -156,6 +159,29 @@ export default function NewsPage() {
                           <p className={`text-base leading-relaxed mb-6 line-clamp-3 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
                             {featured.excerpt}
                           </p>
+                          <div className={`mb-4 text-sm ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+                            <span className="font-semibold">Publisher:</span> {featured.publisher || 'The NextGen Healthcare Marketing'}
+                            {featured.source && (
+                              <>
+                                {' · '}
+                                <span className="font-semibold">Source:</span>{' '}
+                                {featured.sourceUrl ? (
+                                  <a href={featured.sourceUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 underline">
+                                    {featured.source}
+                                  </a>
+                                ) : (
+                                  <span>{featured.source}</span>
+                                )}
+                              </>
+                            )}
+                            {featured.sourceDate && (
+                              <>
+                                {' · '}
+                                <span className="font-semibold">Source Date:</span>{' '}
+                                {new Date(featured.sourceDate).toLocaleDateString(dateLocale, { month: 'short', day: 'numeric', year: 'numeric' })}
+                              </>
+                            )}
+                          </div>
                           <div className="flex items-center justify-between">
                             <div className={`flex items-center gap-2 text-sm ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
                               <Clock className="h-4 w-4" />
@@ -218,6 +244,27 @@ export default function NewsPage() {
                             <p className={`text-sm line-clamp-3 mb-4 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
                               {article.excerpt}
                             </p>
+                            <div className={`text-xs mb-3 space-y-1 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+                              <p><span className="font-semibold">Publisher:</span> {article.publisher || 'The NextGen Healthcare Marketing'}</p>
+                              {article.source && (
+                                <p>
+                                  <span className="font-semibold">Source:</span>{' '}
+                                  {article.sourceUrl ? (
+                                    <a href={article.sourceUrl} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="text-blue-600 dark:text-blue-400 underline">
+                                      {article.source}
+                                    </a>
+                                  ) : (
+                                    article.source
+                                  )}
+                                </p>
+                              )}
+                              {article.sourceDate && (
+                                <p>
+                                  <span className="font-semibold">Source Date:</span>{' '}
+                                  {new Date(article.sourceDate).toLocaleDateString(dateLocale, { month: 'short', day: 'numeric', year: 'numeric' })}
+                                </p>
+                              )}
+                            </div>
                             <span className="inline-flex items-center gap-1 text-blue-500 font-semibold text-sm group-hover:gap-2 transition-all">
                               {t('Read More')} <ArrowRight className="h-4 w-4" />
                             </span>

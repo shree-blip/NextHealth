@@ -16,7 +16,10 @@ export default function NewNewsArticle() {
     excerpt: '',
     content: '',
     coverImage: '',
+    publisher: 'The NextGen Healthcare Marketing',
     source: '',
+    sourceUrl: '',
+    sourceDate: '',
     seoTitle: '',
     metaDesc: '',
     publishedAt: '',
@@ -44,6 +47,7 @@ export default function NewNewsArticle() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         ...form,
+        sourceDate: form.sourceDate ? new Date(form.sourceDate).toISOString() : null,
         publishedAt: form.publishedAt ? new Date(form.publishedAt).toISOString() : null,
       }),
     });
@@ -139,8 +143,18 @@ export default function NewNewsArticle() {
                 )}
               </div>
 
-              {/* Source & SEO Title */}
+              {/* Publisher & Source */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block font-medium mb-1">Publisher</label>
+                  <input 
+                    name="publisher" 
+                    value={form.publisher} 
+                    onChange={handleChange} 
+                    className="w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 bg-white dark:bg-slate-800 focus:outline-none focus:border-emerald-500" 
+                    placeholder="Publisher name"
+                  />
+                </div>
                 <div>
                   <label className="block font-medium mb-1">Source</label>
                   <input 
@@ -149,6 +163,29 @@ export default function NewNewsArticle() {
                     onChange={handleChange} 
                     className="w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 bg-white dark:bg-slate-800 focus:outline-none focus:border-emerald-500" 
                     placeholder="e.g. FDA, CDC, Reuters"
+                  />
+                </div>
+                <div>
+                  <label className="block font-medium mb-1">Source URL</label>
+                  <input 
+                    name="sourceUrl" 
+                    value={form.sourceUrl} 
+                    onChange={handleChange} 
+                    className="w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 bg-white dark:bg-slate-800 focus:outline-none focus:border-emerald-500" 
+                    placeholder="https://original-source.com/article"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block font-medium mb-1">Source Publish Date</label>
+                  <input 
+                    type="date"
+                    name="sourceDate" 
+                    value={form.sourceDate} 
+                    onChange={handleChange} 
+                    className="w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 bg-white dark:bg-slate-800 focus:outline-none focus:border-emerald-500" 
                   />
                 </div>
                 <div>

@@ -18,7 +18,10 @@ export default function EditNewsArticle() {
     excerpt: '',
     content: '',
     coverImage: '',
+    publisher: 'The NextGen Healthcare Marketing',
     source: '',
+    sourceUrl: '',
+    sourceDate: '',
     seoTitle: '',
     metaDesc: '',
     publishedAt: '',
@@ -37,7 +40,10 @@ export default function EditNewsArticle() {
             excerpt: data.excerpt || '',
             content: data.content || '',
             coverImage: data.coverImage || '',
+            publisher: data.publisher || 'The NextGen Healthcare Marketing',
             source: data.source || '',
+            sourceUrl: data.sourceUrl || '',
+            sourceDate: data.sourceDate ? data.sourceDate.split('T')[0] : '',
             seoTitle: data.seoTitle || '',
             metaDesc: data.metaDesc || '',
             publishedAt: data.publishedAt ? data.publishedAt.split('T')[0] : '',
@@ -60,6 +66,7 @@ export default function EditNewsArticle() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         ...form,
+        sourceDate: form.sourceDate ? new Date(form.sourceDate).toISOString() : null,
         publishedAt: form.publishedAt ? new Date(form.publishedAt).toISOString() : null,
       }),
     });
@@ -165,8 +172,18 @@ export default function EditNewsArticle() {
               )}
             </div>
 
-            {/* Source & SEO Title */}
+            {/* Publisher & Source */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block font-medium mb-1 text-slate-900 dark:text-white">Publisher</label>
+                <input 
+                  name="publisher" 
+                  value={form.publisher} 
+                  onChange={handleChange} 
+                  className="w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 bg-white dark:bg-slate-800 focus:outline-none focus:border-emerald-500" 
+                  placeholder="Publisher name"
+                />
+              </div>
               <div>
                 <label className="block font-medium mb-1 text-slate-900 dark:text-white">Source</label>
                 <input 
@@ -175,6 +192,29 @@ export default function EditNewsArticle() {
                   onChange={handleChange} 
                   className="w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 bg-white dark:bg-slate-800 focus:outline-none focus:border-emerald-500" 
                   placeholder="e.g. FDA, CDC, Reuters"
+                />
+              </div>
+              <div>
+                <label className="block font-medium mb-1 text-slate-900 dark:text-white">Source URL</label>
+                <input 
+                  name="sourceUrl" 
+                  value={form.sourceUrl} 
+                  onChange={handleChange} 
+                  className="w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 bg-white dark:bg-slate-800 focus:outline-none focus:border-emerald-500" 
+                  placeholder="https://original-source.com/article"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block font-medium mb-1 text-slate-900 dark:text-white">Source Publish Date</label>
+                <input 
+                  type="date"
+                  name="sourceDate" 
+                  value={form.sourceDate} 
+                  onChange={handleChange} 
+                  className="w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 bg-white dark:bg-slate-800 focus:outline-none focus:border-emerald-500" 
                 />
               </div>
               <div>

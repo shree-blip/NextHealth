@@ -65,7 +65,10 @@ model NewsArticle {
   excerpt     String?
   content     String
   coverImage  String?
+  publisher   String?   @default("The NextGen Healthcare Marketing")
   source      String?
+  sourceUrl   String?
+  sourceDate  DateTime?
   seoTitle    String?
   metaDesc    String?
   publishedAt DateTime?

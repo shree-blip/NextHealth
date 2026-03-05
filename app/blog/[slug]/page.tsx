@@ -126,7 +126,9 @@ export default async function BlogPost({ params }: { params: Promise<{ slug: str
     '@type': 'BlogPosting',
     headline: post.title,
     description: post.metaDesc || post.excerpt || '',
-    image: post.coverImage ? `${SITE_URL}${post.coverImage}` : undefined,
+    image: post.coverImage
+      ? (post.coverImage.startsWith('http') ? post.coverImage : `${SITE_URL}${post.coverImage}`)
+      : undefined,
     datePublished: post.publishedAt?.toISOString(),
     dateModified: post.updatedAt.toISOString(),
     author: post.author ? {
