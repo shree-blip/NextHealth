@@ -1,8 +1,9 @@
 import { MetadataRoute } from 'next';
+import prisma from '@/lib/prisma';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://thenextgenhealth.com';
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Static pages
   const staticPages: MetadataRoute.Sitemap = [
     {
@@ -175,5 +176,25 @@ export default function sitemap(): MetadataRoute.Sitemap {
     },
   ];
 
-  return staticPages;
+  // Dynamically add published blog posts
+  let blogPosts: MetadataRoute.Sitemap = [];
+  try {
+    const posts = await prisma.post.findMany({
+      where: { publishedAt: { not: null } },
+      select: { slug: true, updatedAt: true, publishedAt: true },
+      orderBy: { publishedAt: 'desc' },
+    });
+    
+    blogPosts = posts.map(post => ({
+      url: `${SITE_URL}/blog/${post.slug}`,
+      lastModified: post.updatedAt || post.publishedAt || new Date(),
+      changeFrequency: 'weekly' as const,
+      priority: 0.7,
+    }));
+  } catch (error) {
+    console.error('Sitemap blog posts fetch error:', error);
+    // Continue without blog posts if database is unreachable
+  }
+
+  return [...staticPages, ...blogPosts];
 }

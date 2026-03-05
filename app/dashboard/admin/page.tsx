@@ -3121,6 +3121,30 @@ function BlogManagementSection() {
     }
   };
 
+  // ── Toggle publish/draft status ───────────────────────────────────
+  const handleTogglePublish = async (postId: number, currentStatus: string | null) => {
+    try {
+      const newStatus = currentStatus ? null : new Date().toISOString();
+      const res = await fetch(`/api/admin/posts/${postId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ publishedAt: newStatus }),
+      });
+      if (!res.ok) throw new Error('Failed to update status');
+      
+      // Update local state
+      setPosts(posts.map(p => p.id === postId ? { ...p, publishedAt: newStatus } : p));
+      
+      // Trigger sitemap revalidation
+      if (newStatus) {
+        await fetch('/api/revalidate-sitemap', { method: 'POST' });
+      }
+    } catch (error) {
+      console.error('Toggle publish error:', error);
+      alert('Failed to update post status');
+    }
+  };
+
   // ── AI Blog generation handler ────────────────────────────────────
   const handleAiGenerate = async (autoPublish: boolean) => {
     setAiGenerating(true);
@@ -3287,58 +3311,82 @@ function BlogManagementSection() {
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500"></div>
         </div>
       ) : posts.length === 0 ? (
-        <div className="glass rounded-2xl border border-slate-200 dark:border-slate-700 p-12 text-center">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 p-12 text-center">
           <FileText className="h-12 w-12 text-slate-400 mx-auto mb-4" />
-          <p className="text-slate-500 dark:text-slate-400 mb-4">No posts yet. Create your first blog post!</p>
-          <Link href="/dashboard/admin/blog/new" className="text-emerald-500 font-bold hover:underline">Create Post →</Link>
+          <p className="text-slate-600 dark:text-slate-400 mb-4">No posts yet. Create your first blog post!</p>
+          <Link href="/dashboard/admin/blog/new" className="text-emerald-500 dark:text-emerald-400 font-bold hover:underline">Create Post →</Link>
         </div>
       ) : (
-        <div className="overflow-x-auto glass rounded-2xl border border-slate-200 dark:border-slate-700">
-          <table className="w-full text-left">
-            <thead>
-              <tr className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-widest border-b border-slate-100 dark:border-slate-700">
-                <th className="px-4 py-4">Post</th>
-                <th className="px-4 py-4">Slug</th>
-                <th className="px-4 py-4">Published</th>
-                <th className="px-4 py-4">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
-              {posts.map(post => (
-                <tr key={post.id} className="hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-                  <td className="px-4 py-4">
-                    <div className="flex items-center gap-4">
-                      {post.coverImage && <img src={post.coverImage} alt="" className="w-14 h-14 object-cover rounded-lg" />}
-                      <div>
-                        <p className="font-bold">{post.title}</p>
-                        {post.excerpt && <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 line-clamp-1">{post.excerpt}</p>}
+        <div className="grid gap-4">
+          {posts.map(post => (
+            <div key={post.id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-5 hover:border-emerald-300 dark:hover:border-emerald-700 transition-all">
+              <div className="flex items-start gap-4">
+                {/* Thumbnail */}
+                {post.coverImage ? (
+                  <img src={post.coverImage} alt="" className="w-24 h-24 object-cover rounded-lg flex-shrink-0" />
+                ) : (
+                  <div className="w-24 h-24 bg-slate-100 dark:bg-slate-800 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <FileText className="h-8 w-8 text-slate-400" />
+                  </div>
+                )}
+                
+                {/* Content */}
+                <div className="flex-grow min-w-0">
+                  <div className="flex items-start justify-between gap-4 mb-2">
+                    <div className="flex-grow min-w-0">
+                      <h3 className="font-bold text-lg text-slate-900 dark:text-slate-100 mb-1 line-clamp-1">{post.title}</h3>
+                      {post.excerpt && (
+                        <p className="text-sm text-slate-600 dark:text-slate-400 line-clamp-2 mb-2">{post.excerpt}</p>
+                      )}
+                      <div className="flex flex-wrap items-center gap-3 text-xs">
+                        <span className="text-slate-500 dark:text-slate-500 font-mono">/{post.slug}</span>
+                        {post.publishedAt ? (
+                          <span className="inline-flex items-center gap-1.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 px-2.5 py-1 rounded-full font-medium">
+                            <span className="w-1.5 h-1.5 bg-emerald-500 dark:bg-emerald-400 rounded-full"></span>
+                            Published {new Date(post.publishedAt).toLocaleDateString()}
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 px-2.5 py-1 rounded-full font-medium">
+                            <span className="w-1.5 h-1.5 bg-amber-500 dark:bg-amber-400 rounded-full"></span>
+                            Draft
+                          </span>
+                        )}
                       </div>
                     </div>
-                  </td>
-                  <td className="px-4 py-4 text-sm text-slate-600 dark:text-slate-400">/{post.slug}</td>
-                  <td className="px-4 py-4">
-                    {post.publishedAt ? (
-                      <span className="text-xs bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 px-3 py-1 rounded-full">
-                        {new Date(post.publishedAt).toLocaleDateString()}
-                      </span>
-                    ) : (
-                      <span className="text-xs bg-slate-100 dark:bg-slate-800 text-slate-500 px-3 py-1 rounded-full">Draft</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-4">
-                    <div className="flex items-center gap-2">
-                      <Link href={`/dashboard/admin/blog/edit/${post.id}`} className="p-2 text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg">
-                        <Edit className="h-4 w-4" />
-                      </Link>
-                      <button onClick={() => handleDelete(post.id)} className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg">
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                  </div>
+                </div>
+                
+                {/* Actions */}
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <button
+                    onClick={() => handleTogglePublish(post.id, post.publishedAt)}
+                    className={`p-2 rounded-lg transition-all ${
+                      post.publishedAt
+                        ? 'text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20'
+                        : 'text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20'
+                    }`}
+                    title={post.publishedAt ? 'Unpublish' : 'Publish'}
+                  >
+                    <Eye className="h-5 w-5" />
+                  </button>
+                  <Link
+                    href={`/dashboard/admin/blog/edit/${post.id}`}
+                    className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-all"
+                    title="Edit"
+                  >
+                    <Edit className="h-5 w-5" />
+                  </Link>
+                  <button
+                    onClick={() => handleDelete(post.id)}
+                    className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all"
+                    title="Delete"
+                  >
+                    <Trash2 className="h-5 w-5" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       )}
       <DeleteConfirmationModal

@@ -16,20 +16,26 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const body = await request.json();
+  
+  // Build update data dynamically (allows partial updates)
+  const updateData: any = {};
+  
+  if (body.title !== undefined) updateData.title = body.title;
+  if (body.slug !== undefined) updateData.slug = body.slug;
+  if (body.excerpt !== undefined) updateData.excerpt = body.excerpt || null;
+  if (body.content !== undefined) updateData.content = body.content;
+  if (body.coverImage !== undefined) updateData.coverImage = body.coverImage || null;
+  if (body.coverImageAlt !== undefined) updateData.coverImageAlt = body.coverImageAlt || null;
+  if (body.seoTitle !== undefined) updateData.seoTitle = body.seoTitle || null;
+  if (body.metaDesc !== undefined) updateData.metaDesc = body.metaDesc || null;
+  if (body.canonical !== undefined) updateData.canonical = body.canonical || null;
+  if (body.publishedAt !== undefined) {
+    updateData.publishedAt = body.publishedAt ? new Date(body.publishedAt) : null;
+  }
+  
   const post = await prisma.post.update({
     where: { id: parseInt(id) },
-    data: {
-      title: body.title,
-      slug: body.slug,
-      excerpt: body.excerpt || null,
-      content: body.content,
-      coverImage: body.coverImage || null,
-      coverImageAlt: body.coverImageAlt || null,
-      seoTitle: body.seoTitle || null,
-      metaDesc: body.metaDesc || null,
-      canonical: body.canonical || null,
-      publishedAt: body.publishedAt ? new Date(body.publishedAt) : null,
-    }
+    data: updateData,
   });
   return NextResponse.json(post);
 }
