@@ -9,13 +9,20 @@ export const dynamic = 'force-dynamic';
  */
 export async function POST(request: Request) {
   try {
+    const body = await request.json().catch(() => ({}));
+    const slug = typeof body?.slug === 'string' ? body.slug : null;
+
     // Revalidate sitemap and blog pages
     revalidatePath('/sitemap.xml');
     revalidatePath('/blog');
+    if (slug) {
+      revalidatePath(`/blog/${slug}`);
+    }
     
     return NextResponse.json({ 
       success: true, 
       revalidated: true,
+      slug: slug || null,
       timestamp: new Date().toISOString()
     });
   } catch (error) {

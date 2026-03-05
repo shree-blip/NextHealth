@@ -121,7 +121,7 @@ async function generateBlogImage(focusKeyword: string, title: string): Promise<s
     const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
     const response = await client.images.generate({
       model: 'dall-e-3',
-      prompt: `Professional healthcare marketing blog header image for an article about "${title}". Modern, clean, medical-themed illustration with blue and green tones. No text in the image. High quality, suitable as a blog cover photo.`,
+      prompt: `Professional, photorealistic healthcare marketing blog header photo for an article about "${title}". Show real dental/clinical staff or patients in a modern clinic setting, natural lighting, realistic skin tones, authentic medical environment, shallow depth of field, no cartoon style, no illustrations, no text overlays. High-quality editorial style image suitable as a professional blog cover photo.`,
       n: 1,
       size: '1792x1024',
       quality: 'standard',

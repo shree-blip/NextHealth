@@ -381,10 +381,31 @@ html.theme-light textarea::placeholder {
   color: #94a3b8;
 }
 
-/* Ensure light theme buttons and forms are readable */
-html.theme-light button,
-html.theme-light a {
+/* Ensure light theme buttons are readable */
+html.theme-light button {
   color: inherit;
+}
+
+/* Blog/article links must remain clearly visible and accessible */
+[data-article-content] a,
+html.theme-light [data-article-content] a,
+html.theme-dark [data-article-content] a {
+  color: #2563eb !important;
+  text-decoration: underline !important;
+  text-underline-offset: 2px;
+  font-weight: 500;
+}
+
+[data-article-content] a:hover,
+html.theme-light [data-article-content] a:hover,
+html.theme-dark [data-article-content] a:hover {
+  color: #1d4ed8 !important;
+}
+
+[data-article-content] a:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+  border-radius: 2px;
 }
 
 html.theme-light .bg-white {

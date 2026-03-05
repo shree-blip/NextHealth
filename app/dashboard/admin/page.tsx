@@ -3122,7 +3122,7 @@ function BlogManagementSection() {
   };
 
   // ── Toggle publish/draft status ───────────────────────────────────
-  const handleTogglePublish = async (postId: number, currentStatus: string | null) => {
+  const handleTogglePublish = async (postId: number, currentStatus: string | null, slug: string) => {
     try {
       const newStatus = currentStatus ? null : new Date().toISOString();
       const res = await fetch(`/api/admin/posts/${postId}`, {
@@ -3137,7 +3137,11 @@ function BlogManagementSection() {
       
       // Trigger sitemap revalidation
       if (newStatus) {
-        await fetch('/api/revalidate-sitemap', { method: 'POST' });
+        await fetch('/api/revalidate-sitemap', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ slug }),
+        });
       }
     } catch (error) {
       console.error('Toggle publish error:', error);
@@ -3359,7 +3363,7 @@ function BlogManagementSection() {
                 {/* Actions */}
                 <div className="flex items-center gap-2 flex-shrink-0">
                   <button
-                    onClick={() => handleTogglePublish(post.id, post.publishedAt)}
+                    onClick={() => handleTogglePublish(post.id, post.publishedAt, post.slug)}
                     className={`p-2 rounded-lg transition-all ${
                       post.publishedAt
                         ? 'text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20'

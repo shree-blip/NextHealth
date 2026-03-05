@@ -123,7 +123,11 @@ export default function EditBlogPost() {
       
       // Trigger sitemap revalidation if publishing
       if (publish || form.publishedAt) {
-        await fetch('/api/revalidate-sitemap', { method: 'POST' });
+        await fetch('/api/revalidate-sitemap', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ slug: form.slug }),
+        });
       }
       
       router.push('/dashboard/admin?view=blog-management');
