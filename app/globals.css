@@ -188,7 +188,94 @@ body.loaded::before {
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
 }
 
-/* Rich Text Editor - Dark mode support */
+/* ── Editor Shell: enforced readability ─────────────────── */
+.editor-shell {
+  color: #0f172a;
+  background: #ffffff;
+}
+.editor-shell a {
+  color: #2563eb !important;
+  text-decoration: underline !important;
+}
+.editor-shell a:hover {
+  color: #1d4ed8 !important;
+}
+
+.dark .editor-shell,
+.theme-dark .editor-shell,
+html.theme-dark .editor-shell {
+  color: #e2e8f0 !important;
+  background: #0b1220 !important;
+}
+.dark .editor-shell a,
+.theme-dark .editor-shell a,
+html.theme-dark .editor-shell a {
+  color: #60a5fa !important;
+  text-decoration: underline !important;
+}
+.dark .editor-shell a:hover,
+.theme-dark .editor-shell a:hover,
+html.theme-dark .editor-shell a:hover {
+  color: #93c5fd !important;
+}
+
+.dark .editor-shell h1,
+.dark .editor-shell h2,
+.dark .editor-shell h3,
+.dark .editor-shell h4,
+.dark .editor-shell p,
+.dark .editor-shell li,
+.dark .editor-shell span,
+.dark .editor-shell strong,
+.dark .editor-shell em,
+.dark .editor-shell div,
+.theme-dark .editor-shell h1,
+.theme-dark .editor-shell h2,
+.theme-dark .editor-shell h3,
+.theme-dark .editor-shell h4,
+.theme-dark .editor-shell p,
+.theme-dark .editor-shell li,
+.theme-dark .editor-shell span,
+.theme-dark .editor-shell strong,
+.theme-dark .editor-shell em,
+.theme-dark .editor-shell div,
+html.theme-dark .editor-shell h1,
+html.theme-dark .editor-shell h2,
+html.theme-dark .editor-shell h3,
+html.theme-dark .editor-shell h4,
+html.theme-dark .editor-shell p,
+html.theme-dark .editor-shell li,
+html.theme-dark .editor-shell span,
+html.theme-dark .editor-shell strong,
+html.theme-dark .editor-shell em,
+html.theme-dark .editor-shell div {
+  color: #e2e8f0 !important;
+}
+
+.dark .editor-shell pre,
+.theme-dark .editor-shell pre,
+html.theme-dark .editor-shell pre {
+  color: #e2e8f0 !important;
+  background: #1e293b !important;
+}
+.dark .editor-shell code,
+.theme-dark .editor-shell code,
+html.theme-dark .editor-shell code {
+  color: #e2e8f0 !important;
+  background: #334155 !important;
+}
+.dark .editor-shell blockquote,
+.theme-dark .editor-shell blockquote,
+html.theme-dark .editor-shell blockquote {
+  color: #94a3b8 !important;
+}
+.dark .editor-shell:empty:before,
+.theme-dark .editor-shell:empty:before,
+html.theme-dark .editor-shell:empty:before {
+  color: #64748b !important;
+}
+
+/* Legacy Rich Text Editor fallback */
 [contenteditable] {
   color: rgb(15 23 42); /* slate-900 */
 }

@@ -396,7 +396,7 @@ export default function RichTextEditor({
         suppressContentEditableWarning
         onInput={handleInput}
         onKeyDown={handleKeyDown}
-        className="p-4 focus:outline-none prose dark:prose-invert max-w-none rich-text-editor-content bg-white dark:bg-slate-900"
+        className="editor-shell p-4 focus:outline-none prose dark:prose-invert max-w-none"
         style={{ minHeight }}
         data-placeholder={placeholder}
       />
@@ -735,95 +735,6 @@ export default function RichTextEditor({
         :global(.theme-dark) [contenteditable] code {
           background: #334155;
           color: #e2e8f0;
-        }
-      `}</style>
-      <style jsx global>{`
-        /* ── Rich Text Editor: Light Mode ─────────────────────── */
-        .rich-text-editor-content {
-          color: #0f172a;
-          line-height: 1.7;
-          font-size: 1rem;
-        }
-        .rich-text-editor-content a {
-          color: #2563eb !important;
-          text-decoration: underline;
-        }
-        .rich-text-editor-content a:hover {
-          color: #1d4ed8 !important;
-        }
-
-        /* ── Rich Text Editor: Dark Mode ──────────────────────── */
-        .dark .rich-text-editor-content,
-        .theme-dark .rich-text-editor-content,
-        html.theme-dark .rich-text-editor-content {
-          color: #e2e8f0 !important;
-        }
-        .dark .rich-text-editor-content h1,
-        .dark .rich-text-editor-content h2,
-        .dark .rich-text-editor-content h3,
-        .dark .rich-text-editor-content h4,
-        .dark .rich-text-editor-content p,
-        .dark .rich-text-editor-content li,
-        .dark .rich-text-editor-content span,
-        .dark .rich-text-editor-content strong,
-        .dark .rich-text-editor-content em,
-        .dark .rich-text-editor-content div,
-        .theme-dark .rich-text-editor-content h1,
-        .theme-dark .rich-text-editor-content h2,
-        .theme-dark .rich-text-editor-content h3,
-        .theme-dark .rich-text-editor-content h4,
-        .theme-dark .rich-text-editor-content p,
-        .theme-dark .rich-text-editor-content li,
-        .theme-dark .rich-text-editor-content span,
-        .theme-dark .rich-text-editor-content strong,
-        .theme-dark .rich-text-editor-content em,
-        .theme-dark .rich-text-editor-content div,
-        html.theme-dark .rich-text-editor-content h1,
-        html.theme-dark .rich-text-editor-content h2,
-        html.theme-dark .rich-text-editor-content h3,
-        html.theme-dark .rich-text-editor-content h4,
-        html.theme-dark .rich-text-editor-content p,
-        html.theme-dark .rich-text-editor-content li,
-        html.theme-dark .rich-text-editor-content span,
-        html.theme-dark .rich-text-editor-content strong,
-        html.theme-dark .rich-text-editor-content em,
-        html.theme-dark .rich-text-editor-content div {
-          color: #e2e8f0 !important;
-        }
-        .dark .rich-text-editor-content a,
-        .theme-dark .rich-text-editor-content a,
-        html.theme-dark .rich-text-editor-content a {
-          color: #60a5fa !important;
-          text-decoration: underline;
-        }
-        .dark .rich-text-editor-content a:hover,
-        .theme-dark .rich-text-editor-content a:hover,
-        html.theme-dark .rich-text-editor-content a:hover {
-          color: #93c5fd !important;
-        }
-        .dark .rich-text-editor-content pre,
-        .theme-dark .rich-text-editor-content pre,
-        html.theme-dark .rich-text-editor-content pre {
-          color: #e2e8f0 !important;
-          background: #1e293b !important;
-        }
-        .dark .rich-text-editor-content code,
-        .theme-dark .rich-text-editor-content code,
-        html.theme-dark .rich-text-editor-content code {
-          color: #e2e8f0 !important;
-          background: #334155 !important;
-        }
-        .dark .rich-text-editor-content blockquote,
-        .theme-dark .rich-text-editor-content blockquote,
-        html.theme-dark .rich-text-editor-content blockquote {
-          color: #94a3b8 !important;
-        }
-
-        /* ── Placeholder in dark mode ────────────────────────── */
-        .dark .rich-text-editor-content:empty:before,
-        .theme-dark .rich-text-editor-content:empty:before,
-        html.theme-dark .rich-text-editor-content:empty:before {
-          color: #64748b !important;
         }
       `}</style>
     </div>
