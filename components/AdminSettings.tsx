@@ -36,15 +36,17 @@ export default function AdminSettings() {
       <AnimatePresence>
         {isOpen && (
           <>
+            {/* Backdrop overlay */}
             <div
-              className="fixed inset-0 z-40"
+              className="fixed inset-0 z-[60] bg-black/20"
               onClick={() => setIsOpen(false)}
             />
+            {/* Dropdown menu */}
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: -10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: -10 }}
-              className="absolute top-12 right-0 z-50 w-80 bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 p-6"
+              className="fixed sm:absolute top-16 sm:top-12 right-4 sm:right-0 z-[70] w-80 max-w-[calc(100vw-2rem)] bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 p-6"
             >
               {/* Theme Section */}
               <div className="mb-6">

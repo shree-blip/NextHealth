@@ -1555,10 +1555,10 @@ function AdminDashboardContent() {
       {/* Main Content */}
       <main className="flex-grow p-8 overflow-y-auto flex flex-col">
         {/* Header with Mobile Menu Button and Settings */}
-        <div className="flex items-center justify-between mb-6 lg:mb-8">
+        <div className="flex items-center justify-end mb-6 lg:mb-8 relative">
           <button
             onClick={() => setShowMobileMenu(!showMobileMenu)}
-            className="lg:hidden p-2 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-800"
+            className="lg:hidden p-2 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-800 absolute left-0"
           >
             <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
