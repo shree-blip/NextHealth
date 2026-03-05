@@ -26,6 +26,7 @@ export async function POST(request: Request) {
       excerpt: body.excerpt || null,
       content: body.content,
       coverImage: body.coverImage || null,
+      coverImageAlt: body.coverImageAlt || null,
       publisher: body.publisher || 'The NextGen Healthcare Marketing',
       source: body.source || null,
       sourceUrl: body.sourceUrl || null,

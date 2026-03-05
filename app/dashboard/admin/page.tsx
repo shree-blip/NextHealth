@@ -3411,6 +3411,14 @@ function NewsManagementSection() {
   const router = useRouter();
   const [articles, setArticles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // AI Auto-News state
+  const [aiGenerating, setAiGenerating] = useState(false);
+  const [aiCustomTopic, setAiCustomTopic] = useState('');
+  const [aiResult, setAiResult] = useState<any>(null);
+  const [aiError, setAiError] = useState('');
+  const [aiShowPanel, setAiShowPanel] = useState(false);
+
   const [deleteModal, setDeleteModal] = useState({
     isOpen: false,
     articleId: 0,
@@ -3448,6 +3456,61 @@ function NewsManagementSection() {
     }
   };
 
+  // ── Toggle publish/draft status ───────────────────────────────────
+  const handleTogglePublish = async (articleId: number, currentStatus: string | null, slug: string) => {
+    try {
+      const newStatus = currentStatus ? null : new Date().toISOString();
+      const res = await fetch(`/api/admin/news/${articleId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ publishedAt: newStatus }),
+      });
+      if (!res.ok) throw new Error('Failed to update status');
+      
+      setArticles(articles.map(a => a.id === articleId ? { ...a, publishedAt: newStatus } : a));
+      
+      if (newStatus) {
+        await fetch('/api/revalidate-sitemap', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ slug }),
+        });
+      }
+    } catch (error) {
+      console.error('Toggle publish error:', error);
+      alert('Failed to update article status');
+    }
+  };
+
+  // ── AI News generation handler ────────────────────────────────────
+  const handleAiGenerate = async (autoPublish: boolean) => {
+    setAiGenerating(true);
+    setAiResult(null);
+    setAiError('');
+    try {
+      const res = await fetch('/api/ai/generate-news', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          topic: aiCustomTopic.trim() || undefined,
+          autoPublish,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error || 'Generation failed');
+      setAiResult(data.article);
+      setAiCustomTopic('');
+      // Refresh article list
+      const articlesRes = await fetch('/api/news');
+      const articlesData = await articlesRes.json();
+      setArticles(articlesData);
+    } catch (err) {
+      setAiError(err instanceof Error ? err.message : 'Generation failed');
+    } finally {
+      setAiGenerating(false);
+    }
+  };
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
@@ -3455,77 +3518,219 @@ function NewsManagementSection() {
           <h2 className="text-2xl font-bold">News Management</h2>
           <p className="text-slate-600 dark:text-slate-400">Create and manage healthcare news articles.</p>
         </div>
-        <Link
-          href="/dashboard/admin/news/new"
-          className="flex items-center gap-2 bg-emerald-500 text-black px-5 py-3 rounded-xl font-bold hover:bg-emerald-400 transition-all"
-        >
-          <Plus className="h-5 w-5" /> New Article
-        </Link>
+        <div className="flex gap-3">
+          <button
+            onClick={() => setAiShowPanel(!aiShowPanel)}
+            className="flex items-center gap-2 bg-violet-500 text-white px-5 py-3 rounded-xl font-bold hover:bg-violet-400 transition-all"
+          >
+            <Sparkles className="h-5 w-5" /> AI Auto-News
+          </button>
+          <Link
+            href="/dashboard/admin/news/new"
+            className="flex items-center gap-2 bg-emerald-500 text-black px-5 py-3 rounded-xl font-bold hover:bg-emerald-400 transition-all"
+          >
+            <Plus className="h-5 w-5" /> New Article
+          </Link>
+        </div>
       </div>
+
+      {/* ── AI Auto-News Panel ────────────────────────────────────────── */}
+      <AnimatePresence>
+        {aiShowPanel && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="mb-8 overflow-hidden"
+          >
+            <div className="glass rounded-2xl border border-violet-200 dark:border-violet-800 p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 bg-violet-100 dark:bg-violet-900/30 rounded-xl">
+                  <Sparkles className="h-5 w-5 text-violet-600 dark:text-violet-400" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-lg">AI News Generator</h3>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">
+                    Auto-generates SEO-optimized news articles with images and credible sources. Runs daily at 2 PM CST.
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2 text-slate-700 dark:text-slate-300">Custom Topic (optional)</label>
+                  <input
+                    type="text"
+                    value={aiCustomTopic}
+                    onChange={(e) => setAiCustomTopic(e.target.value)}
+                    placeholder="Leave blank for auto-selected healthcare news topic..."
+                    className="w-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-sm focus:outline-none focus:border-violet-500"
+                    disabled={aiGenerating}
+                  />
+                </div>
+
+                <div className="flex flex-wrap gap-3">
+                  <button
+                    onClick={() => handleAiGenerate(false)}
+                    disabled={aiGenerating}
+                    className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm border-2 border-violet-500 text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {aiGenerating ? (
+                      <><RefreshCw className="h-4 w-4 animate-spin" /> Generating...</>
+                    ) : (
+                      <><Sparkles className="h-4 w-4" /> Generate Draft</>
+                    )}
+                  </button>
+                  <button
+                    onClick={() => handleAiGenerate(true)}
+                    disabled={aiGenerating}
+                    className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm bg-violet-500 text-white hover:bg-violet-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {aiGenerating ? (
+                      <><RefreshCw className="h-4 w-4 animate-spin" /> Publishing...</>
+                    ) : (
+                      <><Zap className="h-4 w-4" /> Generate &amp; Publish</>
+                    )}
+                  </button>
+                </div>
+
+                {/* Generation result */}
+                {aiResult && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-xl p-4"
+                  >
+                    <p className="text-sm font-bold text-emerald-700 dark:text-emerald-400 mb-2">✅ News article generated successfully!</p>
+                    <div className="space-y-1 text-sm text-slate-600 dark:text-slate-400">
+                      <p><strong>Title:</strong> {aiResult.title}</p>
+                      <p><strong>SEO Title:</strong> {aiResult.seoTitle}</p>
+                      <p><strong>Keyword:</strong> {aiResult.focusKeyword}</p>
+                      <p><strong>Slug:</strong> /{aiResult.slug}</p>
+                      <p><strong>Publisher:</strong> {aiResult.publisher}</p>
+                      <p><strong>Source:</strong> {aiResult.source}</p>
+                      <p><strong>Status:</strong> <span className={aiResult.status === 'published' ? 'text-emerald-600 dark:text-emerald-400 font-bold' : 'text-amber-600 dark:text-amber-400 font-bold'}>{aiResult.status === 'published' ? '🟢 Published' : '🟡 Draft'}</span></p>
+                    </div>
+                    <div className="flex gap-2 mt-3">
+                      <Link href={`/dashboard/admin/news/edit/${aiResult.id}`} className="text-xs bg-blue-500 text-white px-3 py-1.5 rounded-lg font-bold hover:bg-blue-400 transition-all">Edit Article</Link>
+                      {aiResult.status === 'published' && (
+                        <Link href={`/news/${aiResult.slug}`} target="_blank" className="text-xs bg-emerald-500 text-black px-3 py-1.5 rounded-lg font-bold hover:bg-emerald-400 transition-all">View Live →</Link>
+                      )}
+                    </div>
+                  </motion.div>
+                )}
+
+                {/* Error */}
+                {aiError && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4"
+                  >
+                    <p className="text-sm text-red-700 dark:text-red-400">❌ {aiError}</p>
+                  </motion.div>
+                )}
+
+                {/* Info about daily automation */}
+                <div className="flex items-start gap-3 bg-slate-100 dark:bg-slate-800 rounded-xl p-4 text-sm text-slate-600 dark:text-slate-400">
+                  <Calendar className="h-5 w-5 mt-0.5 flex-shrink-0 text-violet-500" />
+                  <div>
+                    <p className="font-medium text-slate-700 dark:text-slate-300">Daily Auto-Publish Active</p>
+                    <p>A new news article is automatically generated and published every day at <strong>2:00 PM CST</strong>. Each article includes SEO fields, a DALL-E cover image, internal links, and external citations from credible healthcare news sources.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {loading ? (
         <div className="flex items-center justify-center py-12">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500"></div>
         </div>
       ) : articles.length === 0 ? (
-        <div className="glass rounded-2xl border border-slate-200 dark:border-slate-700 p-12 text-center">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 p-12 text-center">
           <Newspaper className="h-12 w-12 text-slate-400 mx-auto mb-4" />
-          <p className="text-slate-500 dark:text-slate-400 mb-4">No news articles yet. Create your first one!</p>
-          <Link href="/dashboard/admin/news/new" className="text-emerald-500 font-bold hover:underline">Create Article →</Link>
+          <p className="text-slate-600 dark:text-slate-400 mb-4">No news articles yet. Create your first one!</p>
+          <Link href="/dashboard/admin/news/new" className="text-emerald-500 dark:text-emerald-400 font-bold hover:underline">Create Article →</Link>
         </div>
       ) : (
-        <div className="overflow-x-auto glass rounded-2xl border border-slate-200 dark:border-slate-700">
-          <table className="w-full text-left">
-            <thead>
-              <tr className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-widest border-b border-slate-100 dark:border-slate-700">
-                <th className="px-4 py-4">Article</th>
-                <th className="px-4 py-4">Source</th>
-                <th className="px-4 py-4">Published</th>
-                <th className="px-4 py-4">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
-              {articles.map(article => (
-                <tr key={article.id} className="hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-                  <td className="px-4 py-4">
-                    <div className="flex items-center gap-4">
-                      {article.coverImage && <img src={article.coverImage} alt="" className="w-14 h-14 object-cover rounded-lg" />}
-                      <div>
-                        <p className="font-bold">{article.title}</p>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">/{article.slug}</p>
+        <div className="grid gap-4">
+          {articles.map(article => (
+            <div key={article.id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-5 hover:border-emerald-300 dark:hover:border-emerald-700 transition-all">
+              <div className="flex items-start gap-4">
+                {/* Thumbnail */}
+                {article.coverImage ? (
+                  <img src={article.coverImage} alt="" className="w-24 h-24 object-cover rounded-lg flex-shrink-0" />
+                ) : (
+                  <div className="w-24 h-24 bg-slate-100 dark:bg-slate-800 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <Newspaper className="h-8 w-8 text-slate-400" />
+                  </div>
+                )}
+                
+                {/* Content */}
+                <div className="flex-grow min-w-0">
+                  <div className="flex items-start justify-between gap-4 mb-2">
+                    <div className="flex-grow min-w-0">
+                      <h3 className="font-bold text-lg text-slate-900 dark:text-slate-100 mb-1 line-clamp-1">{article.title}</h3>
+                      {article.excerpt && (
+                        <p className="text-sm text-slate-600 dark:text-slate-400 line-clamp-2 mb-2">{article.excerpt}</p>
+                      )}
+                      <div className="flex flex-wrap items-center gap-3 text-xs">
+                        <span className="text-slate-500 dark:text-slate-500 font-mono">/{article.slug}</span>
+                        {article.source && (
+                          <span className="inline-flex items-center gap-1.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 px-2.5 py-1 rounded-full font-medium">
+                            {article.source}
+                          </span>
+                        )}
+                        {article.publishedAt ? (
+                          <span className="inline-flex items-center gap-1.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 px-2.5 py-1 rounded-full font-medium">
+                            <span className="w-1.5 h-1.5 bg-emerald-500 dark:bg-emerald-400 rounded-full"></span>
+                            Published {new Date(article.publishedAt).toLocaleDateString()}
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 px-2.5 py-1 rounded-full font-medium">
+                            <span className="w-1.5 h-1.5 bg-amber-500 dark:bg-amber-400 rounded-full"></span>
+                            Draft
+                          </span>
+                        )}
                       </div>
                     </div>
-                  </td>
-                  <td className="px-4 py-4">
-                    {article.source ? (
-                      <span className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 px-3 py-1 rounded-full">{article.source}</span>
-                    ) : (
-                      <span className="text-xs text-slate-400">—</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-4">
-                    {article.publishedAt ? (
-                      <span className="text-xs bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 px-3 py-1 rounded-full">
-                        {new Date(article.publishedAt).toLocaleDateString()}
-                      </span>
-                    ) : (
-                      <span className="text-xs bg-slate-100 dark:bg-slate-800 text-slate-500 px-3 py-1 rounded-full">Draft</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-4">
-                    <div className="flex items-center gap-2">
-                      <Link href={`/dashboard/admin/news/edit/${article.id}`} className="p-2 text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg">
-                        <Edit className="h-4 w-4" />
-                      </Link>
-                      <button onClick={() => handleDelete(article.id)} className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg">
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                  </div>
+                </div>
+                
+                {/* Actions */}
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <button
+                    onClick={() => handleTogglePublish(article.id, article.publishedAt, article.slug)}
+                    className={`p-2 rounded-lg transition-all ${
+                      article.publishedAt
+                        ? 'text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20'
+                        : 'text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20'
+                    }`}
+                    title={article.publishedAt ? 'Unpublish' : 'Publish'}
+                  >
+                    <Eye className="h-5 w-5" />
+                  </button>
+                  <Link
+                    href={`/dashboard/admin/news/edit/${article.id}`}
+                    className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-all"
+                    title="Edit"
+                  >
+                    <Edit className="h-5 w-5" />
+                  </Link>
+                  <button
+                    onClick={() => handleDelete(article.id)}
+                    className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all"
+                    title="Delete"
+                  >
+                    <Trash2 className="h-5 w-5" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       )}
       <DeleteConfirmationModal

@@ -193,8 +193,26 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }));
   } catch (error) {
     console.error('Sitemap blog posts fetch error:', error);
-    // Continue without blog posts if database is unreachable
   }
 
-  return [...staticPages, ...blogPosts];
+  // Dynamically add published news articles
+  let newsArticles: MetadataRoute.Sitemap = [];
+  try {
+    const articles = await prisma.newsArticle.findMany({
+      where: { publishedAt: { not: null } },
+      select: { slug: true, updatedAt: true, publishedAt: true },
+      orderBy: { publishedAt: 'desc' },
+    });
+    
+    newsArticles = articles.map((article: any) => ({
+      url: `${SITE_URL}/news/${article.slug}`,
+      lastModified: article.updatedAt || article.publishedAt || new Date(),
+      changeFrequency: 'weekly' as const,
+      priority: 0.7,
+    }));
+  } catch (error) {
+    console.error('Sitemap news articles fetch error:', error);
+  }
+
+  return [...staticPages, ...blogPosts, ...newsArticles];
 }

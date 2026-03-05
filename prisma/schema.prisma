@@ -59,20 +59,21 @@ model Comment {
 }
 
 model NewsArticle {
-  id          Int       @id @default(autoincrement())
-  title       String
-  slug        String    @unique
-  excerpt     String?
-  content     String
-  coverImage  String?
-  publisher   String?   @default("The NextGen Healthcare Marketing")
-  source      String?
-  sourceUrl   String?
-  sourceDate  DateTime?
-  seoTitle    String?
-  metaDesc    String?
-  publishedAt DateTime?
-  updatedAt   DateTime  @updatedAt
+  id            Int       @id @default(autoincrement())
+  title         String
+  slug          String    @unique
+  excerpt       String?
+  content       String
+  coverImage    String?
+  coverImageAlt String?
+  publisher     String?   @default("The NextGen Healthcare Marketing")
+  source        String?
+  sourceUrl     String?
+  sourceDate    DateTime?
+  seoTitle      String?
+  metaDesc      String?
+  publishedAt   DateTime?
+  updatedAt     DateTime  @updatedAt
 }
 
 model AnalyticsData {
