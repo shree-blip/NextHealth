@@ -364,10 +364,9 @@ async function seedWeeklyAnalytics() {
         // @ts-ignore
         await prisma.weeklyAnalytics.upsert({
           where: {
-            clinicId_year_month_weekNumber: {
+            clinicId_year_weekNumber: {
               clinicId: clinic.id,
               year: variedData.year,
-              month: variedData.month,
               weekNumber: variedData.weekNumber
             }
           },

@@ -3,6 +3,7 @@ import { generateText } from 'ai';
 import { openai } from '@ai-sdk/openai';
 import OpenAI from 'openai';
 import prisma from '@/lib/prisma';
+import { persistImage } from '@/lib/persist-image';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 120; // Blog + image generation can take time
@@ -147,7 +148,12 @@ Style: High-end editorial photography, similar to what you would see in Harvard 
       quality: 'standard',
     });
 
-    return response.data?.[0]?.url || null;
+    const tempUrl = response.data?.[0]?.url;
+    if (!tempUrl) return null;
+
+    // Persist the image to permanent storage (DALL-E URLs expire after ~1 hour)
+    const permanentUrl = await persistImage(tempUrl, 'blog');
+    return permanentUrl;
   } catch (error) {
     console.error('Image generation failed:', error);
     return null;

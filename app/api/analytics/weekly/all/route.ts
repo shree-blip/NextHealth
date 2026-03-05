@@ -11,7 +11,6 @@ export async function GET(req: NextRequest) {
     const analytics = await prisma.weeklyAnalytics.findMany({
       orderBy: [
         { year: 'asc' },
-        { month: 'asc' },
         { weekNumber: 'asc' }
       ]
     });

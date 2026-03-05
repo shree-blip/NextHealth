@@ -3,6 +3,7 @@ import { generateText } from 'ai';
 import { openai } from '@ai-sdk/openai';
 import OpenAI from 'openai';
 import prisma from '@/lib/prisma';
+import { persistImage } from '@/lib/persist-image';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 120;
@@ -150,7 +151,12 @@ Style: High-end photojournalism, similar to images in Reuters Health, STAT News,
       quality: 'standard',
     });
 
-    return response.data?.[0]?.url || null;
+    const tempUrl = response.data?.[0]?.url;
+    if (!tempUrl) return null;
+
+    // Persist the image to permanent storage (DALL-E URLs expire after ~1 hour)
+    const permanentUrl = await persistImage(tempUrl, 'news');
+    return permanentUrl;
   } catch (error) {
     console.error('News image generation failed:', error);
     return null;

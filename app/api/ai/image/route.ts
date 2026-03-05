@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { prisma } from '@/lib/prisma';
+import { persistImage } from '@/lib/persist-image';
 
 export const dynamic = 'force-dynamic';
 
@@ -64,6 +65,10 @@ export async function POST(req: NextRequest) {
       throw new Error('No image URL returned from OpenAI');
     }
 
+    // Persist the image to permanent storage (DALL-E URLs expire after ~1 hour)
+    const permanentUrl = await persistImage(imageUrl, 'ai-image');
+    const finalUrl = permanentUrl || imageUrl; // Fallback to temp URL if persistence fails
+
     // Save to database
     const aiHistory = await prisma.aiHistory.create({
       data: {
@@ -71,13 +76,13 @@ export async function POST(req: NextRequest) {
         generatorType: 'image',
         prompt,
         settings: { format, size },
-        output: imageUrl,
+        output: finalUrl,
       },
     });
 
     return NextResponse.json({
       success: true,
-      imageUrl,
+      imageUrl: finalUrl,
       historyId: aiHistory.id,
     });
   } catch (error: any) {

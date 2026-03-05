@@ -33,12 +33,14 @@ import {
   Lock,
   Eye,
   EyeOff,
+  Sparkles,
 } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import ClientAnalyticsView from '@/components/ClientAnalyticsView';
+import PremiumAnalyticsChat from '@/components/PremiumAnalyticsChat';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import LoadingScreen from '@/components/LoadingScreen';
@@ -121,7 +123,7 @@ export default function ClientDashboardPage() {
 function ClientDashboard() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const CLIENT_VIEWS = ['overview', 'membership', 'analytics', 'profile', 'settings', 'billing'] as const;
+  const CLIENT_VIEWS = ['overview', 'membership', 'analytics', 'ai-chat', 'profile', 'settings', 'billing'] as const;
   type ClientView = typeof CLIENT_VIEWS[number];
   const [user, setUser] = useState<any>(null);
   const [myClinics, setMyClinics] = useState<any[]>([]);
@@ -346,14 +348,20 @@ function ClientDashboard() {
   const currentPlanId = currentPlanIdRaw === 'platinum' ? 'premium' : currentPlanIdRaw;
   const currentPlanTier = PLANS.find(p => p.id === currentPlanId)?.tier || 0;
   const fallbackPlanId = String(user?.planId || '').toLowerCase();
+  const fallbackPlanText = String(user?.plan || '').toLowerCase();
+  const isPremiumClient =
+    currentPlanId === 'premium' ||
+    fallbackPlanId === 'premium' ||
+    fallbackPlanId === 'platinum' ||
+    fallbackPlanText.includes('scale elite') ||
+    fallbackPlanText === 'premium';
   const fallbackPlanLabel = (() => {
     if (fallbackPlanId === 'premium') return 'Scale Elite';
     if (fallbackPlanId === 'gold') return 'Growth Pro';
     if (fallbackPlanId === 'silver') return 'Starter Care';
-    const planText = String(user?.plan || '').toLowerCase();
-    if (planText.includes('scale elite') || planText === 'premium') return 'Scale Elite';
-    if (planText.includes('growth pro') || planText === 'gold') return 'Growth Pro';
-    if (planText.includes('starter care') || planText === 'silver') return 'Starter Care';
+    if (fallbackPlanText.includes('scale elite') || fallbackPlanText === 'premium') return 'Scale Elite';
+    if (fallbackPlanText.includes('growth pro') || fallbackPlanText === 'gold') return 'Growth Pro';
+    if (fallbackPlanText.includes('starter care') || fallbackPlanText === 'silver') return 'Starter Care';
     return 'Free';
   })();
 
@@ -362,11 +370,13 @@ function ClientDashboard() {
       ? 'Your Clinic Snapshot'
       : activeView === 'membership'
         ? 'Membership & Billing'
-        : activeView === 'profile'
-          ? 'My Profile'
-          : activeView === 'settings'
-            ? 'Account Settings'
-            : 'Performance Analytics';
+        : activeView === 'ai-chat'
+          ? 'AI Analytics Assistant'
+          : activeView === 'profile'
+            ? 'My Profile'
+            : activeView === 'settings'
+              ? 'Account Settings'
+              : 'Performance Analytics';
 
   const dashboardSubtitle =
     activeView === 'overview'
@@ -405,7 +415,13 @@ function ClientDashboard() {
           <NavItem icon={TrendingUp} label="Analytics" active={activeView === 'analytics'} onClick={() => { setAnalyticsTabLoading(true); setActiveView('analytics'); }} />
           <NavItem icon={Users} label="Patient Leads" badge="Coming Soon" onClick={() => {}} />
           <NavItem icon={Calendar} label="Patient Count" badge="Coming Soon" onClick={() => {}} />
-          <NavItem icon={MessageSquare} label="AI Conversations" badge="Coming Soon" onClick={() => {}} />
+          <NavItem
+            icon={MessageSquare}
+            label="AI Analytics"
+            active={activeView === 'ai-chat'}
+            onClick={() => setActiveView('ai-chat')}
+            badge={isPremiumClient ? 'Premium' : 'Premium Only'}
+          />
           <NavItem
             icon={CreditCard}
             label="Membership"
@@ -504,6 +520,51 @@ function ClientDashboard() {
                 refreshTrigger={analyticsRefreshKey}
                 onLoadingStateChange={setAnalyticsTabLoading}
               />
+            </motion.div>
+          ) : activeView === 'ai-chat' ? (
+            <motion.div
+              key="ai-chat"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+            >
+              {isPremiumClient ? (
+                <PremiumAnalyticsChat defaultExpanded />
+              ) : (
+                <div className="rounded-3xl p-8 border border-slate-200 dark:border-slate-700 bg-gradient-to-r from-slate-50 to-violet-50 dark:from-slate-900 dark:to-violet-950/30">
+                  <div className="flex items-start gap-4">
+                    <div className="h-12 w-12 rounded-2xl bg-violet-500/20 flex items-center justify-center shrink-0">
+                      <Sparkles className="h-6 w-6 text-violet-500" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-2xl font-bold mb-2">Premium AI Analytics is available on Scale Elite</h3>
+                      <p className="text-slate-600 dark:text-slate-300 mb-6 max-w-3xl">
+                        Get an AI assistant that uses your real dashboard data to answer performance questions, compare clinics, and recommend next actions.
+                      </p>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                        <div className="p-4 rounded-2xl bg-white/70 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700">
+                          <div className="font-semibold mb-1">Real Data Answers</div>
+                          <div className="text-sm text-slate-600 dark:text-slate-400">Uses your actual weekly analytics records.</div>
+                        </div>
+                        <div className="p-4 rounded-2xl bg-white/70 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700">
+                          <div className="font-semibold mb-1">Clinic-Level Insights</div>
+                          <div className="text-sm text-slate-600 dark:text-slate-400">Compare all clinics or drill into one location.</div>
+                        </div>
+                        <div className="p-4 rounded-2xl bg-white/70 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700">
+                          <div className="font-semibold mb-1">Actionable Next Steps</div>
+                          <div className="text-sm text-slate-600 dark:text-slate-400">Get clear recommendations tied to your numbers.</div>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => setActiveView('membership')}
+                        className="rounded-xl bg-violet-500 px-5 py-3 text-white font-semibold hover:bg-violet-600 transition-colors"
+                      >
+                        Upgrade to Scale Elite
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </motion.div>
           ) : activeView === 'profile' ? (
             <motion.div

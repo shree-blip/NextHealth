@@ -209,10 +209,9 @@ async function main() {
     for (const rec of records) {
       await prisma.weeklyAnalytics.upsert({
         where: {
-          clinicId_year_month_weekNumber: {
+          clinicId_year_weekNumber: {
             clinicId: rec.clinicId,
             year: rec.year,
-            month: rec.month,
             weekNumber: rec.weekNumber,
           },
         },

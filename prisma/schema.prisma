@@ -240,9 +240,9 @@ model WeeklyAnalytics {
   updatedAt               DateTime @updatedAt
   clinic                  Clinic   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
 
-  @@unique([clinicId, year, month, weekNumber])
+  @@unique([clinicId, year, weekNumber])
   @@index([clinicId])
-  @@index([year, month, weekNumber])
+  @@index([year, weekNumber])
 }
 
 model GMBConnection {

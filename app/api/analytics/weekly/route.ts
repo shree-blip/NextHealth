@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { getCanonicalWeekData } from '@/lib/analytics-week';
 
 // GET - Fetch weekly analytics for a specific clinic
 export async function GET(request: NextRequest) {
@@ -29,7 +30,6 @@ export async function GET(request: NextRequest) {
       where,
       orderBy: [
         { year: 'asc' },
-        { month: 'asc' },
         { weekNumber: 'asc' }
       ]
     });
@@ -50,54 +50,61 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { clinicId, year, month, weekNumber, weekLabel, ...data } = body;
+    const { clinicId, year, weekNumber, ...data } = body;
 
-    console.log('[Analytics API POST] Received data for:', { clinicId, year, month, weekNumber, weekLabel });
+    console.log('[Analytics API POST] Received data for:', { clinicId, year, weekNumber });
 
-    if (!clinicId || !year || !month || !weekNumber || !weekLabel) {
+    if (!clinicId || !year || !weekNumber) {
       console.error('[Analytics API POST] Missing required fields',' body:', body);
       return NextResponse.json(
-        { error: 'Missing required fields: clinicId, year, month, weekNumber, weekLabel' },
+        { error: 'Missing required fields: clinicId, year, weekNumber' },
         { status: 400 }
       );
     }
 
     // Ensure numeric values are properly typed
     const numericYear = Number(year);
-    const numericMonth = Number(month);
     const numericWeekNumber = Number(weekNumber);
 
-    if (isNaN(numericYear) || isNaN(numericMonth) || isNaN(numericWeekNumber)) {
-      console.error('[Analytics API POST] Invalid numeric values:', { year, month, weekNumber });
-      return NextResponse.json({ error: 'Year, month, and weekNumber must be valid numbers' }, { status: 400 });
+    if (isNaN(numericYear) || isNaN(numericWeekNumber)) {
+      console.error('[Analytics API POST] Invalid numeric values:', { year, weekNumber });
+      return NextResponse.json({ error: 'Year and weekNumber must be valid numbers' }, { status: 400 });
     }
+
+    const canonical = getCanonicalWeekData(numericYear, numericWeekNumber);
 
     console.log('[Analytics API POST] Upserting analytics data...');
 
-    // Upsert the analytics data
-    const analytics = await prisma.weeklyAnalytics.upsert({
+    // Canonical write path: one record per clinic + year + weekNumber
+    const existing = await prisma.weeklyAnalytics.findFirst({
       where: {
-        clinicId_year_month_weekNumber: {
-          clinicId,
-          year: numericYear,
-          month: numericMonth,
-          weekNumber: numericWeekNumber
-        }
-      },
-      update: {
-        weekLabel,
-        ...data,
-        updatedAt: new Date()
-      },
-      create: {
         clinicId,
         year: numericYear,
-        month: numericMonth,
         weekNumber: numericWeekNumber,
-        weekLabel,
-        ...data
-      }
+      },
+      orderBy: { updatedAt: 'desc' },
     });
+
+    const analytics = existing
+      ? await prisma.weeklyAnalytics.update({
+          where: { id: existing.id },
+          data: {
+            weekLabel: canonical.weekLabel,
+            month: canonical.month,
+            ...data,
+            updatedAt: new Date(),
+          },
+        })
+      : await prisma.weeklyAnalytics.create({
+          data: {
+            clinicId,
+            year: numericYear,
+            month: canonical.month,
+            weekNumber: numericWeekNumber,
+            weekLabel: canonical.weekLabel,
+            ...data,
+          },
+        });
 
     console.log('[Analytics API POST] Successfully saved analytics:', analytics.id);
     return NextResponse.json({ success: true, analytics });
