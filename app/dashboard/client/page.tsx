@@ -156,6 +156,10 @@ function ClientDashboard() {
     country: 'US',
   });
 
+  // User menu dropdown state
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+
   const fetchSubscriptionStatus = useCallback(() => {
     setLoadingSub(true);
     fetch('/api/stripe/status')
@@ -269,6 +273,8 @@ function ClientDashboard() {
   }, [activeView]);
 
   const handleLogout = async () => {
+    setShowLogoutConfirm(false);
+    setUserMenuOpen(false);
     await fetch('/api/auth/logout', { method: 'POST' });
     router.push('/login');
   };
@@ -436,11 +442,6 @@ function ClientDashboard() {
           <NavItem icon={User} label="Profile" active={activeView === 'profile'} onClick={() => setActiveView('profile')} />
           <NavItem icon={Settings} label="Settings" active={activeView === 'settings'} onClick={() => setActiveView('settings')} />
         </nav>
-
-        <button onClick={handleLogout} className="flex items-center gap-3 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-colors p-3">
-          <LogOut className="h-5 w-5" />
-          <span className="text-sm font-bold">Logout</span>
-        </button>
       </aside>
 
       {/* Main Content */}
@@ -463,11 +464,103 @@ function ClientDashboard() {
               <Bell className="h-5 w-5" />
               <div className="absolute top-2 right-2 w-2 h-2 bg-emerald-500 rounded-full" />
             </button>
-            <div className="h-10 w-10 rounded-full bg-emerald-500 flex items-center justify-center text-black font-bold uppercase">
-              {user.name.substring(0, 2)}
+            
+            {/* User Menu Dropdown */}
+            <div className="relative">
+              <button 
+                onClick={() => setUserMenuOpen(!userMenuOpen)}
+                className="h-10 w-10 rounded-full bg-emerald-500 flex items-center justify-center text-black font-bold uppercase hover:bg-emerald-400 transition-colors"
+              >
+                {user.name.substring(0, 2)}
+              </button>
+              
+              {/* Dropdown Menu */}
+              <AnimatePresence>
+                {userMenuOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="absolute right-0 mt-2 w-56 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xl overflow-hidden z-50"
+                  >
+                    <div className="p-3 border-b border-slate-200 dark:border-slate-700">
+                      <p className="text-sm font-bold text-slate-900 dark:text-slate-100">{user.name}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">{user.email}</p>
+                    </div>
+                    <button
+                      onClick={() => { setUserMenuOpen(false); setActiveView('profile'); }}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 text-left text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                    >
+                      <User className="h-4 w-4" />
+                      Profile
+                    </button>
+                    <button
+                      onClick={() => { setUserMenuOpen(false); setActiveView('settings'); }}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 text-left text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                    >
+                      <Settings className="h-4 w-4" />
+                      Settings
+                    </button>
+                    <div className="border-t border-slate-200 dark:border-slate-700">
+                      <button
+                        onClick={() => { setUserMenuOpen(false); setShowLogoutConfirm(true); }}
+                        className="w-full flex items-center gap-3 px-4 py-2.5 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                      >
+                        <LogOut className="h-4 w-4" />
+                        Logout
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </div>
         </header>
+
+        {/* Logout Confirmation Modal */}
+        <AnimatePresence>
+          {showLogoutConfirm && (
+            <>
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50"
+                onClick={() => setShowLogoutConfirm(false)}
+              />
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-white dark:bg-slate-800 rounded-2xl shadow-2xl p-6 z-50"
+              >
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+                    <LogOut className="h-6 w-6 text-red-600 dark:text-red-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">Confirm Logout</h3>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">Are you sure you want to log out?</p>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setShowLogoutConfirm(false)}
+                    className="flex-1 px-4 py-2.5 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleLogout}
+                    className="flex-1 px-4 py-2.5 rounded-lg bg-red-600 text-white font-semibold hover:bg-red-700 transition-colors"
+                  >
+                    Logout
+                  </button>
+                </div>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
 
         <AnimatePresence mode="wait">
           {activeView === 'billing' && selectedPlanForBilling ? (
@@ -1135,6 +1228,9 @@ function ProfileView({ user, setToast }: { user: any; setToast: (toast: { type: 
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string>(user.avatar || '');
 
+  // Track if form has been modified (dirty state)
+  const isDirty = formData.name !== user.name || formData.avatar !== user.avatar || avatarFile !== null;
+
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -1295,13 +1391,22 @@ function ProfileView({ user, setToast }: { user: any; setToast: (toast: { type: 
             {/* Submit Button */}
             <button
               type="submit"
-              disabled={isSubmitting}
-              className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-semibold py-3.5 rounded-xl hover:shadow-lg hover:shadow-emerald-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              disabled={isSubmitting || !isDirty}
+              className={`w-full font-semibold py-3.5 rounded-xl transition-all flex items-center justify-center gap-2 ${
+                isDirty && !isSubmitting
+                  ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white hover:shadow-lg hover:shadow-emerald-500/30'
+                  : 'bg-slate-200 dark:bg-slate-700 text-slate-400 dark:text-slate-500 cursor-not-allowed'
+              }`}
             >
               {isSubmitting ? (
                 <>
                   <Loader2 className="h-5 w-5 animate-spin" />
                   Saving...
+                </>
+              ) : !isDirty ? (
+                <>
+                  <Check className="h-5 w-5" />
+                  No Changes
                 </>
               ) : (
                 <>
@@ -1310,6 +1415,11 @@ function ProfileView({ user, setToast }: { user: any; setToast: (toast: { type: 
                 </>
               )}
             </button>
+            {isDirty && !isSubmitting && (
+              <p className="text-xs text-center text-amber-600 dark:text-amber-400 -mt-2">
+                You have unsaved changes
+              </p>
+            )}
           </div>
         </div>
 

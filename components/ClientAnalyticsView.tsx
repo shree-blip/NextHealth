@@ -534,7 +534,7 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false, o
                       value={startDate}
                       onChange={(e) => setStartDate(e.target.value)}
                       className={`w-full px-4 py-2 rounded-lg border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-100' : 'bg-white border-slate-200 text-slate-900'} dark:[color-scheme:dark]`}
-                      style={isDark ? { backgroundColor: '#1e293b', color: '#f1f5f9', borderColor: '#334155' } : {}}
+                      style={isDark ? { backgroundColor: '#0f172a', color: '#f1f5f9', borderColor: '#334155', colorScheme: 'dark' } : {}}
                     />
                   </div>
                   <div>
@@ -546,7 +546,7 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false, o
                       value={endDate}
                       onChange={(e) => setEndDate(e.target.value)}
                       className={`w-full px-4 py-2 rounded-lg border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-100' : 'bg-white border-slate-200 text-slate-900'} dark:[color-scheme:dark]`}
-                      style={isDark ? { backgroundColor: '#1e293b', color: '#f1f5f9', borderColor: '#334155' } : {}}
+                      style={isDark ? { backgroundColor: '#0f172a', color: '#f1f5f9', borderColor: '#334155', colorScheme: 'dark' } : {}}
                     />
                   </div>
                 </div>
@@ -669,7 +669,7 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false, o
               className={`absolute top-full mt-2 w-full rounded-xl border shadow-xl z-50 ${
                 isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'
               }`}
-              style={isDark ? { backgroundColor: '#1e293b', color: '#f1f5f9' } : {}}
+              style={isDark ? { backgroundColor: '#0f172a', color: '#f1f5f9' } : {}}
             >
               <button
                 onClick={() => {
@@ -762,7 +762,7 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false, o
                 setSelectedWeek('all');
                 setHasDateRangeFilter(false);
               }}
-              className={`px-4 py-3 rounded-xl border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-100' : 'bg-white border-slate-200 text-slate-900'} dark:[color-scheme:dark]`}
+              className={`px-4 py-3 rounded-xl border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-100' : 'bg-white border-slate-200 text-slate-900'} dark:[color-scheme:dark] [&>option]:bg-slate-900 [&>option]:text-slate-100 dark:[&>option]:bg-slate-900 dark:[&>option]:text-slate-100`}
             >
               {availableYears.map((year) => (
                 <option key={year} value={year}>{year}</option>
@@ -776,7 +776,7 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false, o
                 setSelectedWeek('all');
                 setHasDateRangeFilter(false);
               }}
-              className={`px-4 py-3 rounded-xl border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-100' : 'bg-white border-slate-200 text-slate-900'} dark:[color-scheme:dark]`}
+              className={`px-4 py-3 rounded-xl border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-100' : 'bg-white border-slate-200 text-slate-900'} dark:[color-scheme:dark] [&>option]:bg-slate-900 [&>option]:text-slate-100 dark:[&>option]:bg-slate-900 dark:[&>option]:text-slate-100`}
             >
               <option value="all">{t('All Months')}</option>
               {availableMonths.map((month) => (
@@ -790,7 +790,7 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false, o
                 setSelectedWeek(e.target.value);
                 setHasDateRangeFilter(false);
               }}
-              className={`px-4 py-3 rounded-xl border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-100' : 'bg-white border-slate-200 text-slate-900'} dark:[color-scheme:dark]`}
+              className={`px-4 py-3 rounded-xl border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-100' : 'bg-white border-slate-200 text-slate-900'} dark:[color-scheme:dark] [&>option]:bg-slate-900 [&>option]:text-slate-100 dark:[&>option]:bg-slate-900 dark:[&>option]:text-slate-100`}
             >
               <option value="all">{t('Current Year Weeks')}</option>
               {availableWeeks.map((week) => (
@@ -833,7 +833,7 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false, o
                       value={startDate}
                       onChange={(e) => setStartDate(e.target.value)}
                       className={`w-full px-4 py-2 rounded-lg border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-100' : 'bg-white border-slate-200 text-slate-900'} dark:[color-scheme:dark]`}
-                      style={isDark ? { backgroundColor: '#1e293b', color: '#f1f5f9', borderColor: '#334155' } : {}}
+                      style={isDark ? { backgroundColor: '#0f172a', color: '#f1f5f9', borderColor: '#334155', colorScheme: 'dark' } : {}}
                     />
                   </div>
                   <div>
@@ -845,7 +845,7 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false, o
                       value={endDate}
                       onChange={(e) => setEndDate(e.target.value)}
                       className={`w-full px-4 py-2 rounded-lg border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-100' : 'bg-white border-slate-200 text-slate-900'} dark:[color-scheme:dark]`}
-                      style={isDark ? { backgroundColor: '#1e293b', color: '#f1f5f9', borderColor: '#334155' } : {}}
+                      style={isDark ? { backgroundColor: '#0f172a', color: '#f1f5f9', borderColor: '#334155', colorScheme: 'dark' } : {}}
                     />
                   </div>
                 </div>
@@ -1010,17 +1010,20 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false, o
             <AreaChart data={adsData}>
               <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#334155' : '#e2e8f0'} />
               <XAxis dataKey="week" stroke={isDark ? '#94a3b8' : '#64748b'} />
-              <YAxis stroke={isDark ? '#94a3b8' : '#64748b'} />
+              <YAxis yAxisId="left" stroke={isDark ? '#94a3b8' : '#64748b'} />
+              <YAxis yAxisId="right" orientation="right" stroke={isDark ? '#94a3b8' : '#64748b'} />
               <Tooltip
                 contentStyle={{
-                  backgroundColor: isDark ? '#1e293b' : '#ffffff',
+                  backgroundColor: isDark ? '#0f172a' : '#ffffff',
                   border: `1px solid ${isDark ? '#475569' : '#e2e8f0'}`,
                   borderRadius: '12px',
                 }}
               />
               <Legend />
-              <Area type="monotone" dataKey="metaSpend" name={t('Meta Spend')} stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.6} />
-              <Area type="monotone" dataKey="googleSpend" name={t('Google Spend')} stroke="#10b981" fill="#10b981" fillOpacity={0.6} />
+              <Area yAxisId="left" type="monotone" dataKey="metaSpend" name={t('Meta Spend')} stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.6} />
+              <Area yAxisId="left" type="monotone" dataKey="googleSpend" name={t('Google Spend')} stroke="#10b981" fill="#10b981" fillOpacity={0.6} />
+              <Area yAxisId="right" type="monotone" dataKey="metaConversions" name={t('Meta Conversions')} stroke="#f59e0b" fill="#f59e0b" fillOpacity={0.4} />
+              <Area yAxisId="right" type="monotone" dataKey="googleConversions" name={t('Google Conversions')} stroke="#ef4444" fill="#ef4444" fillOpacity={0.4} />
             </AreaChart>
           </ResponsiveContainer>
         </motion.div>

@@ -101,9 +101,9 @@ function PricingCardContent({
           textMuted: isDark ? 'text-amber-100' : 'text-amber-50',
           checkColor: isDark ? 'text-amber-300' : 'text-yellow-200',
           buttonBg: 'bg-white',
-          buttonText: 'text-amber-900',
+          buttonText: 'text-amber-950 font-bold',
           buttonBorder: 'border-white',
-          buttonHover: 'hover:bg-amber-50',
+          buttonHover: 'hover:bg-amber-50 hover:shadow-lg',
           spotlightWrap: isDark ? 'bg-amber-100/10 border border-amber-200/20' : 'bg-white/15 border border-white/20',
           spotlightTitle: 'text-amber-100',
           spotlightText: 'text-amber-50',
@@ -251,12 +251,14 @@ function PricingCardContent({
           ) : (
             <button
               onClick={onCtaClick}
-              disabled={disabled || loading}
+              disabled={disabled || loading || isActive}
               className={`
                 w-full py-3.5 rounded-xl font-semibold text-base
                 transition-all duration-200 border-2
-                ${styles.buttonBg} ${styles.buttonText} ${styles.buttonBorder}
-                ${disabled ? 'cursor-not-allowed' : styles.buttonHover + ' hover:scale-[1.02] active:scale-[0.98]'}
+                ${isActive 
+                  ? 'bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400 border-slate-300 dark:border-slate-600 cursor-not-allowed opacity-75' 
+                  : `${styles.buttonBg} ${styles.buttonText} ${styles.buttonBorder} ${disabled ? 'cursor-not-allowed opacity-50' : styles.buttonHover + ' hover:scale-[1.02] active:scale-[0.98]'}`
+                }
               `}
             >
               {loading ? (

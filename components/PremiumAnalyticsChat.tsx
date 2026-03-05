@@ -283,8 +283,10 @@ export default function PremiumAnalyticsChat({ defaultExpanded = false }: Premiu
               {QUICK_PROMPTS.map((q, i) => (
                 <button
                   key={i}
+                  type="button"
                   onClick={(e) => {
                     e.preventDefault();
+                    e.stopPropagation();
                     sendMessage(t(q));
                     // Scroll only the chat container, not the page
                     setTimeout(() => {
