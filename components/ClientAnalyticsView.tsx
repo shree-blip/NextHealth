@@ -62,31 +62,6 @@ const MONTH_NAMES: Record<number, string> = {
 };
 
 /**
- * Calculate the last week's year, month, and ISO week number based on the current date.
- * "Last week" = the full Mon–Sun week before the current one.
- */
-function getLastWeekFilters(): { year: number; month: number; weekNumber: number } {
-  const now = new Date();
-  // Go back 7 days to land in "last week"
-  const lastWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7);
-  // Find the Monday of that week (ISO: Monday = 1)
-  const day = lastWeek.getDay();
-  const diffToMonday = day === 0 ? -6 : 1 - day;
-  const monday = new Date(lastWeek.getFullYear(), lastWeek.getMonth(), lastWeek.getDate() + diffToMonday);
-
-  const year = monday.getFullYear();
-  const month = monday.getMonth() + 1; // 1-indexed
-
-  // ISO week number calculation
-  const jan1 = new Date(year, 0, 1);
-  const jan1Day = jan1.getDay() || 7; // Mon=1 … Sun=7
-  const firstThursday = new Date(year, 0, 1 + (4 - jan1Day + 7) % 7);
-  const weekNumber = Math.ceil(((monday.getTime() - firstThursday.getTime()) / 86400000 + 4) / 7);
-
-  return { year, month, weekNumber: Math.max(weekNumber, 1) };
-}
-
-/**
  * Convert year, month, weekNumber to the Monday of that ISO week.
  */
 function getWeekMonday(year: number, month: number, weekNumber: number): Date {
@@ -97,6 +72,20 @@ function getWeekMonday(year: number, month: number, weekNumber: number): Date {
   return weekStart;
 }
 
+function formatStandardWeekLabel(year: number, weekNumber: number): string {
+  const weekMonday = getWeekMonday(year, 1, weekNumber);
+  const weekSunday = new Date(weekMonday);
+  weekSunday.setDate(weekMonday.getDate() + 6);
+
+  const formatDate = (date: Date) =>
+    date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+    });
+
+  return `${year} Week ${weekNumber} (${formatDate(weekMonday)}–${formatDate(weekSunday)})`;
+}
+
 interface ClientAnalyticsViewProps {
   refreshTrigger?: number;
   isAdmin?: boolean;
@@ -105,12 +94,13 @@ interface ClientAnalyticsViewProps {
 export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false }: ClientAnalyticsViewProps) {
   const { theme } = useSitePreferences();
   const isDark = theme === 'dark';
+  const currentYear = new Date().getFullYear();
   const [analytics, setAnalytics] = useState<WeeklyAnalytics[]>([]);
   const [clinics, setClinics] = useState<ClinicInfo[]>([]);
   const [selectedClinic, setSelectedClinic] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [showDropdown, setShowDropdown] = useState(false);
-  const [selectedYear, setSelectedYear] = useState<string>('all');
+  const [selectedYear, setSelectedYear] = useState<string>(String(new Date().getFullYear()));
   const [selectedMonth, setSelectedMonth] = useState<string>('all');
   const [selectedWeek, setSelectedWeek] = useState<string>('all');
   const [dateFilter, setDateFilter] = useState<string>('');
@@ -191,18 +181,10 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false }:
     };
   }, [selectedClinic]);
 
-  const resetToLastWeek = () => {
-    const lw = getLastWeekFilters();
-    const hasLW = analytics.some(a => a.year === lw.year && a.month === lw.month && a.weekNumber === lw.weekNumber);
-    if (hasLW) {
-      setSelectedYear(String(lw.year));
-      setSelectedMonth(String(lw.month));
-      setSelectedWeek(String(lw.weekNumber));
-    } else {
-      setSelectedYear('all');
-      setSelectedMonth('all');
-      setSelectedWeek('all');
-    }
+  const resetToCurrentYearWeeks = () => {
+    setSelectedYear(String(currentYear));
+    setSelectedMonth('all');
+    setSelectedWeek('all');
     setDateFilter('');
     setStartDate('');
     setEndDate('');
@@ -233,8 +215,8 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false }:
         return;
       }
 
-      // Set filters to match these weeks
-      setSelectedYear('all');
+      // Keep standard filter defaults while date-range mode is active
+      setSelectedYear(String(currentYear));
       setSelectedMonth('all');
       setSelectedWeek('all');
       setDateFilter('');
@@ -346,32 +328,9 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false }:
       setAnalytics(allAnalytics);
       setLastUpdated(new Date());
 
-      // Auto-fill filter with last week based on current date
-      if (allAnalytics.length > 0) {
-        const lw = getLastWeekFilters();
-        // Check if last-week data exists in the dataset
-        const hasLastWeek = allAnalytics.some(
-          (a) => a.year === lw.year && a.month === lw.month && a.weekNumber === lw.weekNumber
-        );
-        if (hasLastWeek) {
-          setSelectedYear(String(lw.year));
-          setSelectedMonth(String(lw.month));
-          setSelectedWeek(String(lw.weekNumber));
-        } else {
-          // Fallback to the most recent week available
-          const sortedByDate = [...allAnalytics].sort((a, b) => {
-            if (a.year !== b.year) return b.year - a.year;
-            if (a.month !== b.month) return b.month - a.month;
-            return b.weekNumber - a.weekNumber;
-          });
-          const latestWeek = sortedByDate[0];
-          setSelectedYear(String(latestWeek.year));
-          setSelectedMonth(String(latestWeek.month));
-          setSelectedWeek(String(latestWeek.weekNumber));
-        }
-        setDateFilter('');
-      } else {
-        setSelectedYear('all');
+      // Default report scope: current year, all weeks (Mon–Sun week buckets)
+      if (!silent && !hasDateRangeFilter) {
+        setSelectedYear(String(currentYear));
         setSelectedMonth('all');
         setSelectedWeek('all');
         setDateFilter('');
@@ -416,15 +375,15 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false }:
     );
   }
 
-  const availableYears = Array.from(new Set(analytics.map((entry) => entry.year))).sort((a, b) => b - a);
+  const availableYears = Array.from(new Set([currentYear, ...analytics.map((entry) => entry.year)])).sort((a, b) => b - a);
   const availableMonths = Array.from(new Set(
     analytics
-      .filter((entry) => selectedYear === 'all' || entry.year === Number(selectedYear))
+      .filter((entry) => entry.year === Number(selectedYear))
       .map((entry) => entry.month)
   )).sort((a, b) => a - b);
   const availableWeeks = Array.from(new Set(
     analytics
-      .filter((entry) => (selectedYear === 'all' || entry.year === Number(selectedYear)))
+      .filter((entry) => (entry.year === Number(selectedYear)))
       .filter((entry) => (selectedMonth === 'all' || entry.month === Number(selectedMonth)))
       .map((entry) => entry.weekNumber)
   )).sort((a, b) => a - b);
@@ -439,10 +398,11 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false }:
       return weekMonday >= start && weekMonday < end;
     }
 
-    const yearMatch = selectedYear === 'all' || entry.year === Number(selectedYear);
+    const yearMatch = entry.year === Number(selectedYear);
     const monthMatch = selectedMonth === 'all' || entry.month === Number(selectedMonth);
     const weekMatch = selectedWeek === 'all' || entry.weekNumber === Number(selectedWeek);
-    const dateMatch = dateFilter.trim().length === 0 || entry.weekLabel.toLowerCase().includes(dateFilter.toLowerCase());
+    const standardWeekLabel = formatStandardWeekLabel(entry.year, entry.weekNumber);
+    const dateMatch = dateFilter.trim().length === 0 || standardWeekLabel.toLowerCase().includes(dateFilter.toLowerCase());
 
     return yearMatch && monthMatch && weekMatch && dateMatch;
   });
@@ -480,7 +440,7 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false }:
                 Refresh
               </button>
               <button
-                onClick={resetToLastWeek}
+                onClick={resetToCurrentYearWeeks}
                 className="px-4 py-2 rounded-lg bg-slate-500 text-white font-bold hover:bg-slate-400 flex items-center gap-2"
               >
                 <RotateCcw className="h-4 w-4" />
@@ -499,7 +459,6 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false }:
               }}
               className={`px-4 py-3 rounded-xl border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-100' : 'bg-white border-slate-200 text-slate-900'}`}
             >
-              <option value="all">All Years</option>
               {availableYears.map((year) => (
                 <option key={year} value={year}>{year}</option>
               ))}
@@ -526,9 +485,9 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false }:
               }}
               className={`px-4 py-3 rounded-xl border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-100' : 'bg-white border-slate-200 text-slate-900'}`}
             >
-              <option value="all">All Weeks</option>
+              <option value="all">Current Year Weeks</option>
               {availableWeeks.map((week) => (
-                <option key={week} value={week}>Week {week}</option>
+                <option key={week} value={week}>{formatStandardWeekLabel(Number(selectedYear), week)}</option>
               ))}
             </select>
             <input
@@ -629,28 +588,26 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false }:
       ? 'Weekly'
       : selectedMonth !== 'all'
         ? 'Monthly'
-        : selectedYear !== 'all'
-          ? 'Yearly'
-          : 'Total';
+        : 'Yearly';
 
   const totalAdSpend = totals.metaSpend + totals.googleSpend;
 
   // Prepare chart data
   const trafficData = filteredAnalytics.map(w => ({
-    week: w.weekLabel,
+    week: formatStandardWeekLabel(w.year, w.weekNumber),
     traffic: w.totalTraffic,
     ranking: w.avgRanking,
   }));
 
   const gmbData = filteredAnalytics.map(w => ({
-    week: w.weekLabel,
+    week: formatStandardWeekLabel(w.year, w.weekNumber),
     calls: w.callsRequested,
     visits: w.websiteVisits,
     directions: w.directionClicks,
   }));
 
   const adsData = filteredAnalytics.map(w => ({
-    week: w.weekLabel,
+    week: formatStandardWeekLabel(w.year, w.weekNumber),
     metaSpend: w.metaAdSpend,
     googleSpend: w.googleTotalCost,
     metaConversions: w.metaConversions,
@@ -658,7 +615,7 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false }:
   }));
 
   const socialData = filteredAnalytics.map(w => ({
-    week: w.weekLabel,
+    week: formatStandardWeekLabel(w.year, w.weekNumber),
     posts: w.socialPosts,
     views: w.socialViews,
     patients: w.patientCount,
@@ -769,7 +726,7 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false }:
               Refresh
             </button>
             <button
-              onClick={resetToLastWeek}
+              onClick={resetToCurrentYearWeeks}
               className="px-4 py-2 rounded-lg bg-slate-500 text-white font-bold hover:bg-slate-400 flex items-center gap-2"
             >
               <RotateCcw className="h-4 w-4" />
@@ -791,7 +748,6 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false }:
               }}
               className={`px-4 py-3 rounded-xl border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-100' : 'bg-white border-slate-200 text-slate-900'}`}
             >
-              <option value="all">All Years</option>
               {availableYears.map((year) => (
                 <option key={year} value={year}>{year}</option>
               ))}
@@ -820,9 +776,9 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false }:
               }}
               className={`px-4 py-3 rounded-xl border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-100' : 'bg-white border-slate-200 text-slate-900'}`}
             >
-              <option value="all">All Weeks</option>
+              <option value="all">Current Year Weeks</option>
               {availableWeeks.map((week) => (
-                <option key={week} value={week}>Week {week}</option>
+                <option key={week} value={week}>{formatStandardWeekLabel(Number(selectedYear), week)}</option>
               ))}
             </select>
 
