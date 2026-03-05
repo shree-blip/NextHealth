@@ -18,8 +18,8 @@ export const dynamicParams = true; // Allow SSR for new blog posts
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://thenextgenhealth.com';
 
-function normalizeArticleLinks(html: string): string {
-  return html.replace(/<a\s+([^>]*?)href=["']([^"']+)["']([^>]*)>/gi, (match, beforeHref, href, afterHref) => {
+function normalizeArticleHtml(html: string): string {
+  const withNormalizedLinks = html.replace(/<a\s+([^>]*?)href=["']([^"']+)["']([^>]*)>/gi, (match, beforeHref, href, afterHref) => {
     const isExternal = /^https?:\/\//i.test(href) && !href.includes('thenextgenhealth.com');
     const isInternalAbsolute = /^https?:\/\//i.test(href) && href.includes('thenextgenhealth.com');
 
@@ -38,6 +38,26 @@ function normalizeArticleLinks(html: string): string {
     }
 
     return `<a ${withoutTarget}>`;
+  });
+
+  return withNormalizedLinks.replace(/<img\s+([^>]*?)src=["']([^"']+)["']([^>]*)>/gi, (match, beforeSrc, src, afterSrc) => {
+    let normalizedSrc = src.trim();
+
+    if (normalizedSrc.startsWith('//')) {
+      normalizedSrc = `https:${normalizedSrc}`;
+    }
+
+    if (/^https?:\/\/thenextgenhealth\.com\//i.test(normalizedSrc)) {
+      normalizedSrc = normalizedSrc.replace(/^https?:\/\/thenextgenhealth\.com/i, '');
+    }
+
+    const attrs = `${beforeSrc || ''}src="${normalizedSrc}"${afterSrc || ''}`;
+    const withDefaults = attrs
+      .replace(/\s+loading=["'][^"']*["']/gi, '')
+      .replace(/\s+decoding=["'][^"']*["']/gi, '')
+      .replace(/\s+onerror=["'][^"']*["']/gi, '');
+
+    return `<img ${withDefaults} loading="lazy" decoding="async" onerror="this.onerror=null;this.src='/4.png';" />`;
   });
 }
 
@@ -180,7 +200,7 @@ export default async function BlogPost({ params }: { params: Promise<{ slug: str
                 prose-pre:bg-slate-900 dark:prose-pre:bg-slate-950 prose-pre:overflow-x-auto
                 prose-blockquote:text-slate-700 dark:prose-blockquote:text-slate-300 prose-blockquote:border-slate-300 dark:prose-blockquote:border-slate-600
                 prose-img:rounded-xl break-words"
-              dangerouslySetInnerHTML={{ __html: normalizeArticleLinks(post.content) }}
+              dangerouslySetInnerHTML={{ __html: normalizeArticleHtml(post.content) }}
             />
           </div>
 
