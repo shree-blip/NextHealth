@@ -79,30 +79,30 @@ export default function NewNewsArticle() {
           </div>
 
           <div className="glass rounded-2xl p-6 sm:p-8 border border-slate-200 dark:border-slate-700">
-            <h1 className="text-[20px] font-bold mb-1">New Healthcare News Article</h1>
+            <h1 className="text-[20px] font-bold mb-1 text-slate-900 dark:text-slate-100">New Healthcare News Article</h1>
             <p className="text-slate-500 dark:text-slate-400 mb-6">Publish a new healthcare industry news article</p>
             
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Title & Slug */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block font-medium mb-1">Title *</label>
+                  <label className="block font-medium mb-1 text-slate-700 dark:text-slate-300">Title *</label>
                   <input 
                     name="title" 
                     value={form.title} 
                     onChange={handleTitleChange} 
-                    className="w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 bg-white dark:bg-slate-800 focus:outline-none focus:border-emerald-500" 
+                    className="w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-emerald-500 dark:focus:border-emerald-500 transition-colors" 
                     placeholder="Enter article title"
                     required 
                   />
                 </div>
                 <div>
-                  <label className="block font-medium mb-1">Slug *</label>
+                  <label className="block font-medium mb-1 text-slate-700 dark:text-slate-300">Slug *</label>
                   <input 
                     name="slug" 
                     value={form.slug} 
                     onChange={handleChange} 
-                    className="w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 bg-white dark:bg-slate-800 focus:outline-none focus:border-emerald-500" 
+                    className="w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-emerald-500 dark:focus:border-emerald-500 transition-colors" 
                     placeholder="url-friendly-slug"
                     required 
                   />
@@ -111,13 +111,13 @@ export default function NewNewsArticle() {
 
               {/* Cover Image */}
               <div>
-                <label className="block font-medium mb-1">Cover Image</label>
+                <label className="block font-medium mb-1 text-slate-700 dark:text-slate-300">Cover Image</label>
                 <div className="flex gap-3">
                   <input 
                     name="coverImage" 
                     value={form.coverImage} 
                     onChange={handleChange} 
-                    className="flex-1 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 bg-white dark:bg-slate-800 focus:outline-none focus:border-emerald-500" 
+                    className="flex-1 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-emerald-500 dark:focus:border-emerald-500 transition-colors" 
                     placeholder="Enter image URL or upload"
                   />
                   <button
@@ -130,10 +130,10 @@ export default function NewNewsArticle() {
                   </button>
                 </div>
                 {showImageUpload && (
-                  <div className="mt-3 p-4 border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-lg text-center">
-                    <ImageIcon className="h-8 w-8 mx-auto text-slate-400 mb-2" />
-                    <p className="text-sm text-slate-500">Drag and drop an image here, or enter URL above</p>
-                    <p className="text-xs text-slate-400 mt-1">Recommended: 1200x630px for social sharing</p>
+                  <div className="mt-3 p-4 border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-lg text-center bg-slate-50 dark:bg-slate-800/50">
+                    <ImageIcon className="h-8 w-8 mx-auto text-slate-400 dark:text-slate-500 mb-2" />
+                    <p className="text-sm text-slate-500 dark:text-slate-400">Drag and drop an image here, or enter URL above</p>
+                    <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">Recommended: 1200x630px for social sharing</p>
                   </div>
                 )}
                 {form.coverImage && (
@@ -146,32 +146,32 @@ export default function NewNewsArticle() {
               {/* Publisher & Source */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block font-medium mb-1">Publisher</label>
+                  <label className="block font-medium mb-1 text-slate-700 dark:text-slate-300">Publisher</label>
                   <input 
                     name="publisher" 
                     value={form.publisher} 
                     onChange={handleChange} 
-                    className="w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 bg-white dark:bg-slate-800 focus:outline-none focus:border-emerald-500" 
+                    className="w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-emerald-500 dark:focus:border-emerald-500 transition-colors" 
                     placeholder="Publisher name"
                   />
                 </div>
                 <div>
-                  <label className="block font-medium mb-1">Source</label>
+                  <label className="block font-medium mb-1 text-slate-700 dark:text-slate-300">Source</label>
                   <input 
                     name="source" 
                     value={form.source} 
                     onChange={handleChange} 
-                    className="w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 bg-white dark:bg-slate-800 focus:outline-none focus:border-emerald-500" 
+                    className="w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-emerald-500 dark:focus:border-emerald-500 transition-colors" 
                     placeholder="e.g. FDA, CDC, Reuters"
                   />
                 </div>
                 <div>
-                  <label className="block font-medium mb-1">Source URL</label>
+                  <label className="block font-medium mb-1 text-slate-700 dark:text-slate-300">Source URL</label>
                   <input 
                     name="sourceUrl" 
                     value={form.sourceUrl} 
                     onChange={handleChange} 
-                    className="w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 bg-white dark:bg-slate-800 focus:outline-none focus:border-emerald-500" 
+                    className="w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-emerald-500 dark:focus:border-emerald-500 transition-colors" 
                     placeholder="https://original-source.com/article"
                   />
                 </div>
@@ -179,46 +179,46 @@ export default function NewNewsArticle() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block font-medium mb-1">Source Publish Date</label>
+                  <label className="block font-medium mb-1 text-slate-700 dark:text-slate-300">Source Publish Date</label>
                   <input 
                     type="date"
                     name="sourceDate" 
                     value={form.sourceDate} 
                     onChange={handleChange} 
-                    className="w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 bg-white dark:bg-slate-800 focus:outline-none focus:border-emerald-500" 
+                    className="w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-emerald-500 dark:focus:border-emerald-500 transition-colors" 
                   />
                 </div>
                 <div>
-                  <label className="block font-medium mb-1">SEO Title</label>
+                  <label className="block font-medium mb-1 text-slate-700 dark:text-slate-300">SEO Title</label>
                   <input 
                     name="seoTitle" 
                     value={form.seoTitle} 
                     onChange={handleChange} 
-                    className="w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 bg-white dark:bg-slate-800 focus:outline-none focus:border-emerald-500" 
+                    className="w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-emerald-500 dark:focus:border-emerald-500 transition-colors" 
                     placeholder="SEO optimized title"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block font-medium mb-1">Meta Description</label>
+                <label className="block font-medium mb-1 text-slate-700 dark:text-slate-300">Meta Description</label>
                 <input 
                   name="metaDesc" 
                   value={form.metaDesc} 
                   onChange={handleChange} 
-                  className="w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 bg-white dark:bg-slate-800 focus:outline-none focus:border-emerald-500" 
+                  className="w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-emerald-500 dark:focus:border-emerald-500 transition-colors" 
                   placeholder="Brief description for search engines (150-160 chars)"
                 />
               </div>
 
               {/* Excerpt */}
               <div>
-                <label className="block font-medium mb-1">Excerpt</label>
+                <label className="block font-medium mb-1 text-slate-700 dark:text-slate-300">Excerpt</label>
                 <textarea 
                   name="excerpt" 
                   value={form.excerpt} 
                   onChange={handleChange} 
-                  className="w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 bg-white dark:bg-slate-800 focus:outline-none focus:border-emerald-500" 
+                  className="w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-emerald-500 dark:focus:border-emerald-500 transition-colors" 
                   rows={2}
                   placeholder="Brief summary shown in news listings"
                 />
@@ -226,7 +226,7 @@ export default function NewNewsArticle() {
 
               {/* Content - Rich Text Editor */}
               <div>
-                <label className="block font-medium mb-1">Content *</label>
+                <label className="block font-medium mb-1 text-slate-700 dark:text-slate-300">Content *</label>
                 <RichTextEditor
                   value={form.content}
                   onChange={(content) => setForm({ ...form, content })}
@@ -238,13 +238,13 @@ export default function NewNewsArticle() {
 
               {/* Publish Date */}
               <div className="max-w-xs">
-                <label className="block font-medium mb-1">Publish Date</label>
+                <label className="block font-medium mb-1 text-slate-700 dark:text-slate-300">Publish Date</label>
                 <input 
                   type="date" 
                   name="publishedAt" 
                   value={form.publishedAt} 
                   onChange={handleChange} 
-                  className="w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 bg-white dark:bg-slate-800 focus:outline-none focus:border-emerald-500" 
+                  className="w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-emerald-500 dark:focus:border-emerald-500 transition-colors" 
                 />
               </div>
 
@@ -259,7 +259,7 @@ export default function NewNewsArticle() {
                 <button 
                   type="button" 
                   onClick={() => router.push('/dashboard/admin?view=news-management')} 
-                  className="px-6 py-3 bg-slate-200 dark:bg-slate-600 text-slate-900 dark:text-white rounded-xl hover:bg-slate-300 dark:hover:bg-slate-500 transition-colors"
+                  className="px-6 py-3 bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-slate-100 rounded-xl hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors"
                 >
                   Cancel
                 </button>

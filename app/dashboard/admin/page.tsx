@@ -50,6 +50,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import DeleteConfirmationModal from '@/components/DeleteConfirmationModal';
 import ActionFeedback from '@/components/ActionFeedback';
+import BackgroundTaskNotification, { BackgroundTask } from '@/components/BackgroundTaskNotification';
 import { useSitePreferences } from '@/components/SitePreferencesProvider';
 import AdminSettings from '@/components/AdminSettings';
 import { useAdminTranslation } from '@/hooks/useAdminTranslation';
@@ -757,6 +758,30 @@ function AdminDashboardContent() {
     showSuccess: false,
     successMessage: '',
   });
+
+  // Background task management
+  const [backgroundTasks, setBackgroundTasks] = useState<BackgroundTask[]>([]);
+  const taskIdRef = useRef(0);
+
+  const addBackgroundTask = (type: 'blog' | 'news', message: string) => {
+    const id = `task-${++taskIdRef.current}`;
+    setBackgroundTasks(prev => [...prev, { id, type, status: 'running', message }]);
+    return id;
+  };
+
+  const updateBackgroundTask = (id: string, status: 'success' | 'error', message: string, details?: string) => {
+    setBackgroundTasks(prev => 
+      prev.map(task => task.id === id ? { ...task, status, message, details } : task)
+    );
+    // Auto-dismiss success/error after 10 seconds
+    setTimeout(() => {
+      setBackgroundTasks(prev => prev.filter(task => task.id !== id));
+    }, 10000);
+  };
+
+  const dismissBackgroundTask = (id: string) => {
+    setBackgroundTasks(prev => prev.filter(task => task.id !== id));
+  };
 
   const startActionFeedback = (loadingText: string) => {
     setActionFeedback(prev => ({
@@ -1611,6 +1636,8 @@ function AdminDashboardContent() {
           t={t}
           commandCenterData={commandCenterData}
           navigateToSection={navigateToSection}
+          addBackgroundTask={addBackgroundTask}
+          updateBackgroundTask={updateBackgroundTask}
         />
         </div>
       </main>
@@ -1949,6 +1976,11 @@ function AdminDashboardContent() {
       showSuccess={actionFeedback.showSuccess}
       successMessage={actionFeedback.successMessage}
       onDismissSuccess={() => setActionFeedback(prev => ({ ...prev, showSuccess: false }))}
+    />
+
+    <BackgroundTaskNotification 
+      tasks={backgroundTasks}
+      onDismiss={dismissBackgroundTask}
     />
 
     <Footer />
@@ -2336,6 +2368,8 @@ function ContentForSection(props: {
   t: (key: string) => string;
   commandCenterData: any;
   navigateToSection: (section: string) => void;
+  addBackgroundTask: (type: 'blog' | 'news', message: string) => string;
+  updateBackgroundTask: (id: string, status: 'success' | 'error', message: string, details?: string) => void;
 }) {
   const {
     section,
@@ -2369,6 +2403,8 @@ function ContentForSection(props: {
     t,
     commandCenterData,
     navigateToSection,
+    addBackgroundTask,
+    updateBackgroundTask,
   } = props;
 
   switch(section) {
@@ -3055,10 +3091,10 @@ function ContentForSection(props: {
       );
 
     case 'Blog Management':
-      return <BlogManagementSection />;
+      return <BlogManagementSection addBackgroundTask={addBackgroundTask} updateBackgroundTask={updateBackgroundTask} />;
 
     case 'News Management':
-      return <NewsManagementSection />;
+      return <NewsManagementSection addBackgroundTask={addBackgroundTask} updateBackgroundTask={updateBackgroundTask} />;
 
     case 'My Profile':
       return <AdminProfileView user={user} />;
@@ -3072,16 +3108,19 @@ function ContentForSection(props: {
 }
 
 /* ─── Blog Management Section ─── */
-function BlogManagementSection() {
+function BlogManagementSection({ 
+  addBackgroundTask, 
+  updateBackgroundTask 
+}: { 
+  addBackgroundTask: (type: 'blog' | 'news', message: string) => string;
+  updateBackgroundTask: (id: string, status: 'success' | 'error', message: string, details?: string) => void;
+}) {
   const router = useRouter();
   const [posts, setPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   // AI Auto-Blog state
-  const [aiGenerating, setAiGenerating] = useState(false);
   const [aiCustomTopic, setAiCustomTopic] = useState('');
-  const [aiResult, setAiResult] = useState<any>(null);
-  const [aiError, setAiError] = useState('');
   const [aiShowPanel, setAiShowPanel] = useState(false);
 
   const [deleteModal, setDeleteModal] = useState({
@@ -3151,9 +3190,10 @@ function BlogManagementSection() {
 
   // ── AI Blog generation handler ────────────────────────────────────
   const handleAiGenerate = async (autoPublish: boolean) => {
-    setAiGenerating(true);
-    setAiResult(null);
-    setAiError('');
+    const taskId = addBackgroundTask('blog', `Generating AI blog post${autoPublish ? ' and publishing' : ''}...`);
+    setAiCustomTopic('');
+    setAiShowPanel(false); // Close the panel so user can navigate away
+    
     try {
       const res = await fetch('/api/ai/generate-blog', {
         method: 'POST',
@@ -3165,16 +3205,26 @@ function BlogManagementSection() {
       });
       const data = await res.json();
       if (!res.ok || !data.success) throw new Error(data.error || 'Generation failed');
-      setAiResult(data.post);
-      setAiCustomTopic('');
+      
       // Refresh post list
       const postsRes = await fetch('/api/posts');
       const postsData = await postsRes.json();
       setPosts(postsData);
+      
+      // Show success notification
+      updateBackgroundTask(
+        taskId, 
+        'success', 
+        '✅ Blog post generated successfully!',
+        `"${data.post.title}" is now ${autoPublish ? 'published' : 'saved as draft'}`
+      );
     } catch (err) {
-      setAiError(err instanceof Error ? err.message : 'Generation failed');
-    } finally {
-      setAiGenerating(false);
+      updateBackgroundTask(
+        taskId, 
+        'error', 
+        '❌ Blog generation failed',
+        err instanceof Error ? err.message : 'Unknown error'
+      );
     }
   };
 
@@ -3232,69 +3282,23 @@ function BlogManagementSection() {
                     onChange={(e) => setAiCustomTopic(e.target.value)}
                     placeholder="Leave blank for auto-selected healthcare marketing topic..."
                     className="w-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-sm focus:outline-none focus:border-violet-500"
-                    disabled={aiGenerating}
                   />
                 </div>
 
                 <div className="flex flex-wrap gap-3">
                   <button
                     onClick={() => handleAiGenerate(false)}
-                    disabled={aiGenerating}
-                    className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm border-2 border-violet-500 text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm border-2 border-violet-500 text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-all"
                   >
-                    {aiGenerating ? (
-                      <><RefreshCw className="h-4 w-4 animate-spin" /> Generating...</>
-                    ) : (
-                      <><Sparkles className="h-4 w-4" /> Generate Draft</>
-                    )}
+                    <Sparkles className="h-4 w-4" /> Generate Draft
                   </button>
                   <button
                     onClick={() => handleAiGenerate(true)}
-                    disabled={aiGenerating}
-                    className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm bg-violet-500 text-white hover:bg-violet-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm bg-violet-500 text-white hover:bg-violet-400 transition-all"
                   >
-                    {aiGenerating ? (
-                      <><RefreshCw className="h-4 w-4 animate-spin" /> Publishing...</>
-                    ) : (
-                      <><Zap className="h-4 w-4" /> Generate &amp; Publish</>
-                    )}
+                    <Zap className="h-4 w-4" /> Generate &amp; Publish
                   </button>
                 </div>
-
-                {/* Generation result */}
-                {aiResult && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-xl p-4"
-                  >
-                    <p className="text-sm font-bold text-emerald-700 dark:text-emerald-400 mb-2">✅ Blog post generated successfully!</p>
-                    <div className="space-y-1 text-sm text-slate-600 dark:text-slate-400">
-                      <p><strong>Title:</strong> {aiResult.title}</p>
-                      <p><strong>SEO Title:</strong> {aiResult.seoTitle}</p>
-                      <p><strong>Keyword:</strong> {aiResult.focusKeyword}</p>
-                      <p><strong>Slug:</strong> /{aiResult.slug}</p>
-                      <p><strong>Status:</strong> <span className={aiResult.status === 'published' ? 'text-emerald-600 dark:text-emerald-400 font-bold' : 'text-amber-600 dark:text-amber-400 font-bold'}>{aiResult.status === 'published' ? '🟢 Published' : '🟡 Draft'}</span></p>
-                    </div>
-                    <div className="flex gap-2 mt-3">
-                      <Link href={`/dashboard/admin/blog/edit/${aiResult.id}`} className="text-xs bg-blue-500 text-white px-3 py-1.5 rounded-lg font-bold hover:bg-blue-400 transition-all">Edit Post</Link>
-                      {aiResult.status === 'published' && (
-                        <Link href={`/blog/${aiResult.slug}`} target="_blank" className="text-xs bg-emerald-500 text-black px-3 py-1.5 rounded-lg font-bold hover:bg-emerald-400 transition-all">View Live →</Link>
-                      )}
-                    </div>
-                  </motion.div>
-                )}
-
-                {/* Error */}
-                {aiError && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4"
-                  >
-                    <p className="text-sm text-red-700 dark:text-red-400">❌ {aiError}</p>
-                  </motion.div>
-                )}
 
                 {/* Info about daily automation */}
                 <div className="flex items-start gap-3 bg-slate-100 dark:bg-slate-800 rounded-xl p-4 text-sm text-slate-600 dark:text-slate-400">
@@ -3407,16 +3411,19 @@ function BlogManagementSection() {
 }
 
 /* ─── News Management Section ─── */
-function NewsManagementSection() {
+function NewsManagementSection({ 
+  addBackgroundTask, 
+  updateBackgroundTask 
+}: { 
+  addBackgroundTask: (type: 'blog' | 'news', message: string) => string;
+  updateBackgroundTask: (id: string, status: 'success' | 'error', message: string, details?: string) => void;
+}) {
   const router = useRouter();
   const [articles, setArticles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   // AI Auto-News state
-  const [aiGenerating, setAiGenerating] = useState(false);
   const [aiCustomTopic, setAiCustomTopic] = useState('');
-  const [aiResult, setAiResult] = useState<any>(null);
-  const [aiError, setAiError] = useState('');
   const [aiShowPanel, setAiShowPanel] = useState(false);
 
   const [deleteModal, setDeleteModal] = useState({
@@ -3484,9 +3491,10 @@ function NewsManagementSection() {
 
   // ── AI News generation handler ────────────────────────────────────
   const handleAiGenerate = async (autoPublish: boolean) => {
-    setAiGenerating(true);
-    setAiResult(null);
-    setAiError('');
+    const taskId = addBackgroundTask('news', `Generating AI news article${autoPublish ? ' and publishing' : ''}...`);
+    setAiCustomTopic('');
+    setAiShowPanel(false); // Close the panel so user can navigate away
+    
     try {
       const res = await fetch('/api/ai/generate-news', {
         method: 'POST',
@@ -3498,16 +3506,26 @@ function NewsManagementSection() {
       });
       const data = await res.json();
       if (!res.ok || !data.success) throw new Error(data.error || 'Generation failed');
-      setAiResult(data.article);
-      setAiCustomTopic('');
+      
       // Refresh article list
       const articlesRes = await fetch('/api/news');
       const articlesData = await articlesRes.json();
       setArticles(articlesData);
+      
+      // Show success notification
+      updateBackgroundTask(
+        taskId, 
+        'success', 
+        '✅ News article generated successfully!',
+        `"${data.article.title}" is now ${autoPublish ? 'published' : 'saved as draft'}`
+      );
     } catch (err) {
-      setAiError(err instanceof Error ? err.message : 'Generation failed');
-    } finally {
-      setAiGenerating(false);
+      updateBackgroundTask(
+        taskId, 
+        'error', 
+        '❌ News generation failed',
+        err instanceof Error ? err.message : 'Unknown error'
+      );
     }
   };
 
@@ -3565,71 +3583,23 @@ function NewsManagementSection() {
                     onChange={(e) => setAiCustomTopic(e.target.value)}
                     placeholder="Leave blank for auto-selected healthcare news topic..."
                     className="w-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-sm focus:outline-none focus:border-violet-500"
-                    disabled={aiGenerating}
                   />
                 </div>
 
                 <div className="flex flex-wrap gap-3">
                   <button
                     onClick={() => handleAiGenerate(false)}
-                    disabled={aiGenerating}
-                    className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm border-2 border-violet-500 text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm border-2 border-violet-500 text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-all"
                   >
-                    {aiGenerating ? (
-                      <><RefreshCw className="h-4 w-4 animate-spin" /> Generating...</>
-                    ) : (
-                      <><Sparkles className="h-4 w-4" /> Generate Draft</>
-                    )}
+                    <Sparkles className="h-4 w-4" /> Generate Draft
                   </button>
                   <button
                     onClick={() => handleAiGenerate(true)}
-                    disabled={aiGenerating}
-                    className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm bg-violet-500 text-white hover:bg-violet-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm bg-violet-500 text-white hover:bg-violet-400 transition-all"
                   >
-                    {aiGenerating ? (
-                      <><RefreshCw className="h-4 w-4 animate-spin" /> Publishing...</>
-                    ) : (
-                      <><Zap className="h-4 w-4" /> Generate &amp; Publish</>
-                    )}
+                    <Zap className="h-4 w-4" /> Generate &amp; Publish
                   </button>
                 </div>
-
-                {/* Generation result */}
-                {aiResult && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-xl p-4"
-                  >
-                    <p className="text-sm font-bold text-emerald-700 dark:text-emerald-400 mb-2">✅ News article generated successfully!</p>
-                    <div className="space-y-1 text-sm text-slate-600 dark:text-slate-400">
-                      <p><strong>Title:</strong> {aiResult.title}</p>
-                      <p><strong>SEO Title:</strong> {aiResult.seoTitle}</p>
-                      <p><strong>Keyword:</strong> {aiResult.focusKeyword}</p>
-                      <p><strong>Slug:</strong> /{aiResult.slug}</p>
-                      <p><strong>Publisher:</strong> {aiResult.publisher}</p>
-                      <p><strong>Source:</strong> {aiResult.source}</p>
-                      <p><strong>Status:</strong> <span className={aiResult.status === 'published' ? 'text-emerald-600 dark:text-emerald-400 font-bold' : 'text-amber-600 dark:text-amber-400 font-bold'}>{aiResult.status === 'published' ? '🟢 Published' : '🟡 Draft'}</span></p>
-                    </div>
-                    <div className="flex gap-2 mt-3">
-                      <Link href={`/dashboard/admin/news/edit/${aiResult.id}`} className="text-xs bg-blue-500 text-white px-3 py-1.5 rounded-lg font-bold hover:bg-blue-400 transition-all">Edit Article</Link>
-                      {aiResult.status === 'published' && (
-                        <Link href={`/news/${aiResult.slug}`} target="_blank" className="text-xs bg-emerald-500 text-black px-3 py-1.5 rounded-lg font-bold hover:bg-emerald-400 transition-all">View Live →</Link>
-                      )}
-                    </div>
-                  </motion.div>
-                )}
-
-                {/* Error */}
-                {aiError && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4"
-                  >
-                    <p className="text-sm text-red-700 dark:text-red-400">❌ {aiError}</p>
-                  </motion.div>
-                )}
 
                 {/* Info about daily automation */}
                 <div className="flex items-start gap-3 bg-slate-100 dark:bg-slate-800 rounded-xl p-4 text-sm text-slate-600 dark:text-slate-400">

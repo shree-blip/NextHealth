@@ -27,44 +27,11 @@ const INTERNAL_PAGES = [
   { url: '/contact', label: 'contact us' },
   { url: '/pricing', label: 'pricing plans' },
   { url: '/hipaa', label: 'HIPAA compliance' },
+  { url: '/automation', label: 'healthcare marketing automation' },
   { url: '/news', label: 'healthcare marketing news' },
 ];
 
-// ── Healthcare news topic pool ──────────────────────────────────────
-const NEWS_TOPIC_POOL = [
-  'CMS Announces New Telehealth Reimbursement Rules for 2026',
-  'Google Updates Local Search Algorithm: Impact on Healthcare Providers',
-  'AMA Report: Digital Marketing Now Essential for Patient Acquisition',
-  'HIPAA Compliance Updates for Healthcare Websites in 2026',
-  'Rise of AI-Powered Patient Engagement Tools in Emergency Rooms',
-  'New Study Shows 80% of Patients Choose Providers Based on Online Presence',
-  'Meta Introduces Healthcare-Specific Ad Targeting Options',
-  'Urgent Care Industry Sees Record Growth in Suburban Markets',
-  'HHS Releases New Guidelines for Healthcare Digital Advertising',
-  'Google Business Profile Adds New Healthcare Features for Clinics',
-  'Dental Industry Trends: How Digital Marketing is Transforming Patient Outreach',
-  'Emergency Room Marketing Spend Increases 35% Year-Over-Year',
-  'FDA Relaxes Social Media Guidelines for Healthcare Providers',
-  'Telemedicine Marketing: Best Practices Emerging from Latest Research',
-  'Healthcare Cybersecurity Alert: New Threats Targeting Patient Portals',
-  'Medicare Advantage Plans Drive New Marketing Opportunities for ERs',
-  'Voice Search Optimization Becomes Critical for Healthcare SEO',
-  'Healthcare Review Sites See Surge in Patient Reviews Post-Pandemic',
-  'New FTC Rules Affect Healthcare Testimonial Marketing',
-  'Healthcare Workforce Shortage Creates Marketing Challenges for Clinics',
-  'Patient Experience Technology: The New Frontier in Healthcare Marketing',
-  'Rural Healthcare Marketing: Strategies for Reaching Underserved Communities',
-  'Healthcare Data Analytics: How Clinics Are Using Data to Drive Growth',
-  'Insurance Companies Partner with ERs for Direct Marketing Campaigns',
-  'Wellness Industry Boom: Marketing Strategies for Longevity Clinics',
-  'Healthcare Email Marketing Benchmarks for 2026',
-  'Browser Privacy Changes Impact Healthcare Retargeting Campaigns',
-  'Medical Practice Acquisitions Drive Need for Rebranding Strategies',
-  'Healthcare Influencer Marketing: Ethical Guidelines and Best Practices',
-  'New ADA Website Accessibility Requirements for Healthcare Providers',
-];
-
-// ── Credible news sources ──────────────────────────────────────────
+// ── Credible news sources (prefer .gov, .edu, CDC, NIH, CMS, WHO) ──
 const NEWS_SOURCES = [
   { url: 'https://www.beckershospitalreview.com', name: "Becker's Hospital Review" },
   { url: 'https://www.fiercehealthcare.com', name: 'Fierce Healthcare' },
@@ -73,6 +40,8 @@ const NEWS_SOURCES = [
   { url: 'https://www.healthaffairs.org', name: 'Health Affairs' },
   { url: 'https://www.cms.gov', name: 'CMS.gov' },
   { url: 'https://www.hhs.gov', name: 'HHS.gov' },
+  { url: 'https://www.nih.gov', name: 'National Institutes of Health (NIH)' },
+  { url: 'https://www.cdc.gov', name: 'Centers for Disease Control and Prevention (CDC)' },
   { url: 'https://www.ama-assn.org', name: 'American Medical Association' },
   { url: 'https://www.advisory.com', name: 'Advisory Board' },
   { url: 'https://www.healthcarefinancenews.com', name: 'Healthcare Finance News' },
@@ -84,32 +53,77 @@ const NEWS_SOURCES = [
 ];
 
 /**
- * Pick a news topic that hasn't been used recently.
+ * STEP 1: AI-driven keyword research + topic selection for news.
+ * Uses GPT to find a low-competition, high-intent keyword and news topic
+ * that does NOT duplicate existing articles.
  */
-async function pickNewsTopic(): Promise<string> {
-  const recentArticles = await prisma.newsArticle.findMany({
-    orderBy: { updatedAt: 'desc' },
-    take: 30,
-    select: { title: true },
-  });
-  const recentTitles = recentArticles.map((a: any) => a.title.toLowerCase());
+async function researchNewsKeywordAndTopic(
+  customTopic: string | undefined,
+  existingTitles: string[]
+): Promise<{ topic: string; focusKeyword: string; supportingKeywords: string[] }> {
+  const { text: keywordJson } = await generateText({
+    model: openai('gpt-4o-mini'),
+    system: `You are an SEO keyword research agent for thenextgenhealth.com. Our niche is Healthcare Marketing and Custom Software Solutions for healthcare businesses.
 
-  const unused = NEWS_TOPIC_POOL.filter((topic) => {
-    const topicWords = topic.toLowerCase().split(/\s+/);
-    return !recentTitles.some((title: string) => {
-      const matchCount = topicWords.filter((w) => w.length > 4 && title.includes(w)).length;
-      return matchCount >= 3;
-    });
+Your job is to find ONE low-competition, high-intent keyword and a NEWS topic for it.
+
+KEYWORD RESEARCH RULES:
+- Choose keywords that match buyer intent or newsworthy topics in healthcare marketing.
+- Prefer long-tail keywords with clear intent.
+- Pick from these topic areas:
+  • healthcare marketing trends and news
+  • medical SEO updates and algorithm changes
+  • Google Business Profile for clinics — new features and updates
+  • Google Ads and Meta Ads for healthcare — policy changes, new features
+  • HIPAA-safe marketing and automation — regulatory updates
+  • custom software for healthcare marketing, reporting, dashboards, and workflow systems
+  • telehealth and digital health trends
+  • healthcare industry regulations and policy changes
+- Create a short list of 10 keyword options internally, then select the best 1.
+- Pick 1 primary keyword and 4-6 supporting keywords.
+
+DUPLICATE CHECK:
+The following titles already exist on our site. Do NOT propose a topic that overlaps with any of them. If a similar topic exists, propose a fresh angle that is clearly different.
+
+Existing titles:
+${existingTitles.map((t) => `- ${t}`).join('\n')}
+
+Respond ONLY with valid JSON, no markdown.`,
+    prompt: `${customTopic ? `The user wants a news article about: "${customTopic}". Research the best keyword for this topic.` : 'Research and propose the best keyword + topic for a new healthcare news article.'}
+
+Return this exact JSON structure:
+{
+  "focusKeyword": "the primary SEO keyword (2-5 words, long-tail, high intent)",
+  "supportingKeywords": ["keyword1", "keyword2", "keyword3", "keyword4"],
+  "topic": "the proposed news article topic/angle",
+  "duplicateCheck": "pass or conflict — explain if a similar title exists and how this is different"
+}`,
+    temperature: 0.7,
   });
 
-  if (unused.length > 0) {
-    return unused[Math.floor(Math.random() * unused.length)];
+  try {
+    const parsed = JSON.parse(keywordJson.replace(/```json\n?|\n?```/g, '').trim());
+    return {
+      topic: parsed.topic || customTopic || 'Healthcare Marketing Industry Update',
+      focusKeyword: parsed.focusKeyword,
+      supportingKeywords: parsed.supportingKeywords || [],
+    };
+  } catch {
+    return {
+      topic: customTopic || 'Healthcare Marketing Industry Update',
+      focusKeyword: 'healthcare marketing',
+      supportingKeywords: ['medical SEO', 'clinic marketing', 'digital health', 'healthcare automation'],
+    };
   }
-  return NEWS_TOPIC_POOL[Math.floor(Math.random() * NEWS_TOPIC_POOL.length)];
 }
 
 /**
- * Generate a DALL-E image for the news article
+ * STEP 5: Generate a DALL-E image for the news article.
+ *
+ * IMAGE RULES (from agent prompt):
+ * - No cartoons. No illustrated art. No "AI-looking" faces.
+ * - Use only real-looking photos: professional editorial/journalistic style.
+ * - Alt text must include the focus keyword.
  */
 async function generateNewsImage(focusKeyword: string, title: string): Promise<string | null> {
   if (!process.env.OPENAI_API_KEY) return null;
@@ -118,7 +132,19 @@ async function generateNewsImage(focusKeyword: string, title: string): Promise<s
     const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
     const response = await client.images.generate({
       model: 'dall-e-3',
-      prompt: `Professional, photorealistic news article header photo for a healthcare industry news story about "${title}". Show a real modern healthcare environment — hospital corridor, medical technology, clinical professionals in discussion, or health policy setting. Natural lighting, realistic, editorial photography style, no cartoon style, no illustrations, no text overlays. High-quality journalistic style image.`,
+      prompt: `STRICT RULES: This image must look like a REAL photograph taken by a professional photojournalist. Absolutely NO cartoons, NO illustrated art, NO AI-looking faces, NO digital art style, NO vector graphics, NO 3D renders.
+
+Create a professional, photorealistic journalistic photograph for a healthcare industry news article about "${title}".
+
+Scene requirements:
+- Show a REAL modern healthcare environment: hospital corridor, medical technology lab, health policy conference, clinical professionals in discussion, or a healthcare executive meeting
+- Include realistic people in authentic settings — NOT stock-photo-perfect poses
+- Natural lighting, realistic skin tones and imperfections
+- Documentary/editorial photography style
+- Authentic medical or corporate healthcare environment visible
+- Professional attire appropriate to the scene
+
+Style: High-end photojournalism, similar to images in Reuters Health, STAT News, or Becker's Hospital Review. Shot on a Nikon Z9 with a 35mm lens. No text overlays, no watermarks, no logos, no graphic design elements.`,
       n: 1,
       size: '1792x1024',
       quality: 'standard',
@@ -132,47 +158,66 @@ async function generateNewsImage(focusKeyword: string, title: string): Promise<s
 }
 
 /**
- * Main news generation function
+ * Main news generation function — follows the full 7-step SEO agent workflow.
  */
 async function generateNewsArticle(customTopic?: string) {
   if (!process.env.OPENAI_API_KEY) {
     throw new Error('OPENAI_API_KEY is not configured');
   }
 
-  const topic = customTopic || (await pickNewsTopic());
+  const SITE_URL = process.env.APP_URL || 'https://thenextgenhealth.com';
 
-  // Pick random internal pages and a source for linking
+  // ── STEP 3: Duplicate check — fetch existing titles ─────────────────
+  const existingArticles = await prisma.newsArticle.findMany({
+    orderBy: { updatedAt: 'desc' },
+    take: 50,
+    select: { title: true },
+  });
+  const existingTitles = existingArticles.map((a: any) => a.title);
+
+  // ── STEP 1 + 2 + 3: Keyword research + site context + duplicate check ──
+  const research = await researchNewsKeywordAndTopic(customTopic, existingTitles);
+  const { topic, focusKeyword, supportingKeywords } = research;
+
+  // Pick internal pages and external sources for linking (at least 2 each per agent rules)
   const shuffledInternal = [...INTERNAL_PAGES].sort(() => Math.random() - 0.5);
-  const internalLinks = shuffledInternal.slice(0, 2);
+  const internalLinks = shuffledInternal.slice(0, 3);
   const shuffledSources = [...NEWS_SOURCES].sort(() => Math.random() - 0.5);
   const primarySource = shuffledSources[0];
   const secondarySource = shuffledSources[1];
+  const tertiarySource = shuffledSources[2];
 
-  const SITE_URL = process.env.APP_URL || 'https://thenextgenhealth.com';
-
-  // ── STEP 1: Generate SEO fields ─────────────────────────────────────
+  // ── STEP 4a: Generate SEO fields with Rank Math rules ───────────────
   const { text: seoJson } = await generateText({
     model: openai('gpt-4o-mini'),
-    system: `You are an expert healthcare news editor and SEO specialist. You work for The NextGen Healthcare Marketing, a Texas-based agency. Respond ONLY with valid JSON, no markdown.`,
-    prompt: `Generate SEO fields for a healthcare industry news article about: "${topic}"
+    system: `You are an expert healthcare news editor and SEO specialist for thenextgenhealth.com. Our niche: Healthcare Marketing and Custom Software Solutions for healthcare businesses. Respond ONLY with valid JSON, no markdown.`,
+    prompt: `Generate SEO fields for a healthcare industry news article.
+
+Topic: "${topic}"
+Focus Keyword: "${focusKeyword}"
+Supporting Keywords: ${supportingKeywords.join(', ')}
 
 Return this exact JSON structure:
 {
-  "focusKeyword": "the primary SEO keyword (2-4 words, news-oriented)",
-  "seoTitle": "SEO-optimized headline including the focus keyword (50-60 chars)",
-  "metaDescription": "compelling meta description with the focus keyword (150-160 chars)",
-  "slug": "url-friendly-slug-with-focus-keyword",
-  "headline": "engaging news headline (may differ slightly from SEO title)",
-  "publisher": "name of the simulated credible source publication",
-  "source": "category of the news source (e.g., Industry Report, Government Agency, Research Study)"
+  "focusKeyword": "${focusKeyword}",
+  "supportingKeywords": ${JSON.stringify(supportingKeywords)},
+  "seoTitle": "SEO title following these rules: START with the focus keyword, include a NUMBER, include one strong POWER word (e.g., Breaking, Critical, Major, Urgent) and one SENTIMENT word. MUST be under 70 characters.",
+  "metaDescription": "Meta description: include the focus keyword, 140-160 characters, newsworthy and compelling",
+  "slug": "short-url-slug-with-focus-keyword",
+  "headline": "engaging news headline that includes the focus keyword",
+  "publisher": "The NextGen Healthcare Marketing",
+  "source": "category of news (e.g., Industry Report, Market Analysis, Regulatory Update, Technology News)"
 }
 
-Requirements:
-- The focus keyword must appear in seoTitle, metaDescription, and slug.
-- The slug should be lowercase with hyphens, no special characters.
-- publisher should be "The NextGen Healthcare Marketing".
-- source should describe the type of news (e.g., "Industry Report", "Market Analysis", "Regulatory Update", "Technology News").
-- Make the headline authoritative and newsworthy.`,
+STRICT RULES:
+- seoTitle MUST start with the focus keyword
+- seoTitle MUST contain a number
+- seoTitle MUST contain a power word AND a sentiment word
+- seoTitle MUST be under 70 characters
+- metaDescription MUST be 140-160 characters
+- slug MUST be short, lowercase with hyphens, contain the focus keyword
+- focusKeyword MUST appear in seoTitle, metaDescription, and slug
+- publisher MUST be "The NextGen Healthcare Marketing"`,
     temperature: 0.7,
   });
 
@@ -184,6 +229,7 @@ Requirements:
     headline: string;
     publisher: string;
     source: string;
+    supportingKeywords?: string[];
   };
   try {
     seo = JSON.parse(seoJson.replace(/```json\n?|\n?```/g, '').trim());
@@ -200,40 +246,76 @@ Requirements:
     seo.slug = `${seo.slug}-${Date.now().toString(36)}`;
   }
 
-  // ── STEP 2: Generate the news article content ───────────────────────
+  // ── STEP 4b: Generate the news content (900-1200 words, 100/100 SEO) ──
   const { text: htmlContent } = await generateText({
     model: openai('gpt-4o-mini'),
-    system: `You are an authoritative healthcare industry news writer for The NextGen Healthcare Marketing (${SITE_URL}), a Texas-based agency specializing in marketing for Freestanding Emergency Rooms, Urgent Care centers, Dental clinics, and Wellness & Longevity facilities.
+    system: `You are an authoritative healthcare industry news writer for thenextgenhealth.com — a Healthcare Marketing and Custom Software Solutions agency based in Texas. We serve Freestanding Emergency Rooms, Urgent Care centers, Dental clinics, Wellness & Longevity facilities, and other healthcare businesses.
+
+OUR SERVICES (reference these naturally when relevant):
+- SEO & Local Search optimization for healthcare
+- Google Ads and Meta/Facebook Ads management
+- Google Business Profile optimization
+- Social media marketing for clinics
+- Website design & development (HIPAA-compliant)
+- Content & copywriting services
+- Email drip campaigns for patient retention
+- Analytics & reporting dashboards
+- Brand identity design
+- Strategy & planning
+- Healthcare marketing automation software
+- Custom software solutions for reporting, dashboards, and workflow systems
 
 Your writing style: Journalistic, factual, authoritative — similar to articles from Becker's Hospital Review or Fierce Healthcare. Report on industry developments with data-backed insights and expert analysis.
 
-CRITICAL RULES:
-1. Write EXACTLY 600-800 words of body content (news articles are shorter than blog posts).
-2. Output clean HTML only. No markdown. No \`\`\` code blocks.
+YOU MUST follow ALL of these SEO rules to hit a 100/100 Rank Math score:
+
+CONTENT RULES:
+1. Write EXACTLY 900-1,200 words of body content.
+2. Output clean HTML only. No markdown. No code blocks.
 3. Use semantic HTML: <h2>, <h3>, <p>, <ul>, <li>, <strong>, <em>, <blockquote>.
-4. Do NOT wrap the entire output in any container tag. Start directly with the first <p>.
-5. The focus keyword is "${seo.focusKeyword}". Use it in:
-   - At least ONE heading (H2 or H3)
-   - Naturally throughout the body text
-   - The opening paragraph
-6. Include ONE internal link and ONE external link. Place them NATURALLY.
-7. Write in a news reporting tone — use quotes, statistics, and industry data.
-8. Include attributed quotes from fictional but realistic industry experts.
-9. Structure: Lead paragraph (who/what/when/where/why) → Context/Background → Key Details → Industry Impact → What This Means for Providers.
-10. End with a forward-looking statement or call-to-action for healthcare providers.`,
-    prompt: `Write a complete news article about: "${seo.headline}"
+4. Do NOT wrap output in a container tag. Start directly with the first <p>.
+5. Focus keyword: "${seo.focusKeyword}". Use it:
+   - In the FIRST SENTENCE of the article (the lead paragraph)
+   - In at least ONE <h2> heading
+   - In at least ONE <h3> heading
+   - In the closing paragraph
+   - At about 1% keyword density across the post (NO keyword stuffing)
+6. Supporting keywords to weave in naturally: ${supportingKeywords.join(', ')}
+7. Include a TABLE OF CONTENTS after the lead paragraph using an <ul> with anchor links to each H2 section.
+8. Use SHORT paragraphs (2-3 sentences max) and bullet lists for scannability.
+9. Write in a news reporting tone — use quotes, statistics, and industry data.
+10. Include attributed quotes from realistic industry experts.
 
+LINK RULES:
+11. Include at least 2 INTERNAL links to thenextgenhealth.com service pages. Place them naturally.
+12. Include at least 2 EXTERNAL links to credible sources (.gov, .edu, CDC, NIH, CMS, WHO preferred). Use normal links.
+13. Do NOT cluster all links in one paragraph — spread them across the article.
+
+STRUCTURE:
+14. Lead paragraph (who/what/when/where/why, include focus keyword) → Table of Contents → Context/Background → Key Details with H2/H3 sections → Industry Impact → What This Means for Providers → Forward-looking CTA.
+15. End with a call-to-action directing healthcare providers to explore our services.`,
+    prompt: `Write a complete news article.
+
+Headline: "${seo.headline}"
 Focus Keyword: "${seo.focusKeyword}"
+Supporting Keywords: ${supportingKeywords.join(', ')}
 
-INTERNAL LINKS (use exactly 1, place naturally):
+INTERNAL LINKS (use at least 2, place naturally throughout):
 ${internalLinks.map((l) => `- <a href="${SITE_URL}${l.url}">${l.label}</a>`).join('\n')}
 
-EXTERNAL LINKS (use exactly 1, cite as a source):
+EXTERNAL LINKS (use at least 2, cite as credible sources):
 - <a href="${primarySource.url}" target="_blank" rel="noopener noreferrer">${primarySource.name}</a>
+- <a href="${secondarySource.url}" target="_blank" rel="noopener noreferrer">${secondarySource.name}</a>
+Additional reference: ${tertiarySource.name} (${tertiarySource.url})
 
-Additional reference: ${secondarySource.name} (${secondarySource.url})
-
-Write 600-800 words. Output clean HTML only. Start with the lead paragraph <p> tag. Use a journalistic news reporting style.`,
+REMEMBER:
+- 900-1,200 words
+- Focus keyword in first sentence, at least 1 H2, at least 1 H3, closing paragraph
+- Table of Contents after lead paragraph
+- Short paragraphs and bullet lists
+- At least 2 internal + 2 external links spread throughout
+- Journalistic news reporting style
+- Clean HTML only, start with <p> tag`,
     temperature: 0.75,
   });
 
@@ -243,19 +325,19 @@ Write 600-800 words. Output clean HTML only. Start with the lead paragraph <p> t
     .replace(/^[\s\n]*/, '')
     .trim();
 
-  // ── STEP 3: Generate the cover image ────────────────────────────────
+  // ── STEP 5: Generate the cover image (real photo, no cartoons) ──────
   const imageUrl = await generateNewsImage(seo.focusKeyword, seo.headline);
 
-  // If we have an image, prepend it
+  // If we have an image, prepend it with keyword-rich alt text
   if (imageUrl) {
     const imageHtml = `<figure style="margin: 0 0 2rem 0;"><img src="${imageUrl}" alt="${seo.focusKeyword} - ${seo.headline}" style="width: 100%; height: auto; border-radius: 12px;" /><figcaption style="text-align: center; font-size: 0.875rem; color: #64748b; margin-top: 0.5rem;">${seo.headline}</figcaption></figure>`;
     cleanedContent = imageHtml + cleanedContent;
   }
 
-  // ── STEP 4: Generate excerpt ────────────────────────────────────────
+  // ── Generate excerpt ────────────────────────────────────────────────
   const { text: excerpt } = await generateText({
     model: openai('gpt-4o-mini'),
-    system: 'Generate a 1-2 sentence news excerpt. Plain text only, no HTML. Summarize the key news point.',
+    system: 'Generate a 1-2 sentence news excerpt. Plain text only, no HTML. Include the focus keyword naturally. Summarize the key news point.',
     prompt: `Write a short news excerpt for an article titled "${seo.headline}" with focus keyword "${seo.focusKeyword}". Max 200 characters.`,
     temperature: 0.6,
   });
@@ -270,6 +352,7 @@ Write 600-800 words. Output clean HTML only. Start with the lead paragraph <p> t
     seoTitle: seo.seoTitle,
     metaDesc: seo.metaDescription,
     focusKeyword: seo.focusKeyword,
+    supportingKeywords: supportingKeywords,
     publisher: seo.publisher,
     source: seo.source,
     sourceUrl: primarySource.url,

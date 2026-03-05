@@ -27,49 +27,17 @@ const INTERNAL_PAGES = [
   { url: '/contact', label: 'contact us' },
   { url: '/pricing', label: 'pricing plans' },
   { url: '/hipaa', label: 'HIPAA compliance' },
+  { url: '/automation', label: 'healthcare marketing automation' },
   { url: '/blog', label: 'healthcare marketing blog' },
 ];
 
-// ── Topic pool for daily rotation ───────────────────────────────────
-const TOPIC_POOL = [
-  'How to Increase Patient Volume for Freestanding Emergency Rooms',
-  'Local SEO Strategies for Urgent Care Centers in Texas',
-  'Google Business Profile Optimization for Healthcare Clinics',
-  'Workers Compensation Marketing for Emergency Rooms',
-  'Social Media Marketing Tips for Dental Clinics',
-  'Why Healthcare Providers Need HIPAA-Compliant Marketing',
-  'Google Ads vs Meta Ads for Emergency Room Marketing',
-  'How to Reduce Patient No-Shows with Email Drip Campaigns',
-  'Website Design Best Practices for Medical Clinics',
-  'How Geofencing Helps Emergency Rooms Attract More Patients',
-  'Content Marketing Strategies for Healthcare Providers',
-  'How to Dominate the Google Local Pack for Your ER or Urgent Care',
-  'Building Trust Online: Reputation Management for Healthcare',
-  'Patient Acquisition Cost: How to Track and Lower It',
-  'The Role of Landing Pages in Healthcare Lead Generation',
-  'Emergency Room vs Urgent Care: Marketing the Difference',
-  'How to Market Wellness and Longevity Clinics',
-  'Pediatric Urgent Care Marketing Strategies That Work',
-  'Seasonal Marketing Campaigns for Healthcare Facilities',
-  'How to Use Analytics to Improve Healthcare Marketing ROI',
-  'Branding Strategies for Multi-Location Healthcare Networks',
-  'Video Marketing for Emergency Rooms and Urgent Care Centers',
-  'How to Write Medical Blog Posts That Rank on Google',
-  'The Importance of Mobile-First Design for Healthcare Websites',
-  'PPC Campaign Management for Freestanding Emergency Rooms',
-  'How to Market After-Hours Emergency Care Services',
-  'Email Marketing for Patient Retention in Healthcare',
-  'Competing Against Hospital ERs: Marketing for Freestanding Facilities',
-  'How AI is Transforming Healthcare Marketing in 2026',
-  'Building a Patient Referral Program That Actually Works',
-];
-
-// ── Credible medical/marketing sources for external links ──────────
+// ── Credible external sources (prefer .gov, .edu, CDC, NIH, CMS, WHO) ──
 const EXTERNAL_SOURCES = [
   { url: 'https://www.cdc.gov', name: 'Centers for Disease Control and Prevention (CDC)' },
   { url: 'https://www.who.int', name: 'World Health Organization (WHO)' },
   { url: 'https://www.hhs.gov', name: 'U.S. Department of Health and Human Services' },
   { url: 'https://www.cms.gov', name: 'Centers for Medicare & Medicaid Services' },
+  { url: 'https://www.nih.gov', name: 'National Institutes of Health (NIH)' },
   { url: 'https://www.ama-assn.org', name: 'American Medical Association' },
   { url: 'https://www.healthit.gov', name: 'HealthIT.gov' },
   { url: 'https://www.beckershospitalreview.com', name: "Becker's Hospital Review" },
@@ -84,35 +52,75 @@ const EXTERNAL_SOURCES = [
 ];
 
 /**
- * Pick a topic that hasn't been used recently.
- * Falls back to random from pool if all have been used.
+ * STEP 1: AI-driven keyword research + topic selection.
+ * Uses GPT to find a low-competition, high-intent keyword and topic
+ * that does NOT duplicate existing posts.
  */
-async function pickTopic(): Promise<string> {
-  // Get slugs of the last 30 posts to avoid repeats
-  const recentPosts = await prisma.post.findMany({
-    orderBy: { publishedAt: 'desc' },
-    take: 30,
-    select: { title: true },
-  });
-  const recentTitles = recentPosts.map((p) => p.title.toLowerCase());
+async function researchKeywordAndTopic(
+  customTopic: string | undefined,
+  existingTitles: string[]
+): Promise<{ topic: string; focusKeyword: string; supportingKeywords: string[] }> {
+  const { text: keywordJson } = await generateText({
+    model: openai('gpt-4o-mini'),
+    system: `You are an SEO keyword research agent for thenextgenhealth.com. Our niche is Healthcare Marketing and Custom Software Solutions for healthcare businesses.
 
-  // Find a topic whose keywords don't closely match recent titles
-  const unused = TOPIC_POOL.filter((topic) => {
-    const topicWords = topic.toLowerCase().split(/\s+/);
-    return !recentTitles.some((title) => {
-      const matchCount = topicWords.filter((w) => w.length > 4 && title.includes(w)).length;
-      return matchCount >= 3; // too similar
-    });
+Your job is to find ONE low-competition, high-intent keyword and a blog topic for it.
+
+KEYWORD RESEARCH RULES:
+- Choose keywords that match buyer intent. Example: "healthcare marketing automation software".
+- Prefer long-tail keywords with clear intent.
+- Pick from these topic areas:
+  • healthcare marketing
+  • medical SEO
+  • Google Business Profile for clinics
+  • Google Ads and Meta Ads for healthcare
+  • HIPAA-safe marketing and automation
+  • custom software for healthcare marketing, reporting, dashboards, and workflow systems
+- Create a short list of 10 keyword options internally, then select the best 1 for the post.
+- Pick 1 primary keyword and 4-6 supporting keywords.
+
+DUPLICATE CHECK:
+The following titles already exist on our site. Do NOT propose a topic that overlaps with any of them. If a similar topic exists, propose a fresh angle that is clearly different.
+
+Existing titles:
+${existingTitles.map((t) => `- ${t}`).join('\n')}
+
+Respond ONLY with valid JSON, no markdown.`,
+    prompt: `${customTopic ? `The user wants a blog about: "${customTopic}". Research the best keyword for this topic.` : 'Research and propose the best keyword + topic for a new blog post.'}
+
+Return this exact JSON structure:
+{
+  "focusKeyword": "the primary SEO keyword (2-5 words, long-tail, high buyer intent)",
+  "supportingKeywords": ["keyword1", "keyword2", "keyword3", "keyword4"],
+  "topic": "the proposed blog post topic/angle",
+  "duplicateCheck": "pass or conflict — explain if a similar title exists and how this is different"
+}`,
+    temperature: 0.7,
   });
 
-  if (unused.length > 0) {
-    return unused[Math.floor(Math.random() * unused.length)];
+  try {
+    const parsed = JSON.parse(keywordJson.replace(/```json\n?|\n?```/g, '').trim());
+    return {
+      topic: parsed.topic || customTopic || 'Healthcare Marketing Best Practices',
+      focusKeyword: parsed.focusKeyword,
+      supportingKeywords: parsed.supportingKeywords || [],
+    };
+  } catch {
+    return {
+      topic: customTopic || 'Healthcare Marketing Best Practices',
+      focusKeyword: 'healthcare marketing',
+      supportingKeywords: ['medical SEO', 'clinic marketing', 'patient acquisition', 'healthcare automation'],
+    };
   }
-  return TOPIC_POOL[Math.floor(Math.random() * TOPIC_POOL.length)];
 }
 
 /**
- * Generate a DALL-E image for the blog post
+ * STEP 5: Generate a DALL-E image for the blog post.
+ *
+ * IMAGE RULES (from agent prompt):
+ * - No cartoons. No illustrated art. No "AI-looking" faces.
+ * - Use only real-looking photos: professional editorial photography style.
+ * - Alt text must include the focus keyword.
  */
 async function generateBlogImage(focusKeyword: string, title: string): Promise<string | null> {
   if (!process.env.OPENAI_API_KEY) return null;
@@ -121,7 +129,19 @@ async function generateBlogImage(focusKeyword: string, title: string): Promise<s
     const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
     const response = await client.images.generate({
       model: 'dall-e-3',
-      prompt: `Professional, photorealistic healthcare marketing blog header photo for an article about "${title}". Show real dental/clinical staff or patients in a modern clinic setting, natural lighting, realistic skin tones, authentic medical environment, shallow depth of field, no cartoon style, no illustrations, no text overlays. High-quality editorial style image suitable as a professional blog cover photo.`,
+      prompt: `STRICT RULES: This image must look like a REAL photograph taken by a professional photographer. Absolutely NO cartoons, NO illustrated art, NO AI-looking faces, NO digital art style, NO vector graphics, NO 3D renders.
+
+Create a professional, photorealistic editorial photograph for a healthcare marketing blog article about "${title}".
+
+Scene requirements:
+- Show a REAL modern healthcare environment: actual clinic interior, hospital corridor, medical office, or professional meeting room
+- Include realistic healthcare professionals (doctors, nurses, administrators) OR patients in authentic medical settings
+- Natural lighting (window light or soft clinical lighting), realistic skin tones and textures
+- Shallow depth of field, editorial photography composition
+- Authentic medical equipment, furniture, and decor visible
+- Professional attire: lab coats, scrubs, or business professional clothing
+
+Style: High-end editorial photography, similar to what you would see in Harvard Business Review, JAMA, or Becker's Hospital Review. Shot on a Canon EOS R5 with an 85mm lens. No text overlays, no watermarks, no logos.`,
       n: 1,
       size: '1792x1024',
       quality: 'standard',
@@ -135,46 +155,65 @@ async function generateBlogImage(focusKeyword: string, title: string): Promise<s
 }
 
 /**
- * Main blog generation function
+ * Main blog generation function — follows the full 7-step SEO agent workflow.
  */
 async function generateBlogPost(customTopic?: string) {
   if (!process.env.OPENAI_API_KEY) {
     throw new Error('OPENAI_API_KEY is not configured');
   }
 
-  const topic = customTopic || (await pickTopic());
+  const SITE_URL = process.env.APP_URL || 'https://thenextgenhealth.com';
 
-  // Pick random internal pages and external sources for linking
+  // ── STEP 3: Duplicate check — fetch existing titles ─────────────────
+  const existingPosts = await prisma.post.findMany({
+    orderBy: { publishedAt: 'desc' },
+    take: 50,
+    select: { title: true },
+  });
+  const existingTitles = existingPosts.map((p) => p.title);
+
+  // ── STEP 1 + 2 + 3: Keyword research + site context + duplicate check ──
+  const research = await researchKeywordAndTopic(customTopic, existingTitles);
+  const { topic, focusKeyword, supportingKeywords } = research;
+
+  // Pick internal pages and external sources for linking (at least 2 each per agent rules)
   const shuffledInternal = [...INTERNAL_PAGES].sort(() => Math.random() - 0.5);
   const internalLinks = shuffledInternal.slice(0, 3);
   const shuffledExternal = [...EXTERNAL_SOURCES].sort(() => Math.random() - 0.5);
-  const externalLinks = shuffledExternal.slice(0, 2);
+  const externalLinks = shuffledExternal.slice(0, 3);
 
-  const SITE_URL = process.env.APP_URL || 'https://thenextgenhealth.com';
-
-  // ── STEP 1: Generate SEO fields ─────────────────────────────────────
+  // ── STEP 4a: Generate SEO fields with Rank Math rules ───────────────
   const { text: seoJson } = await generateText({
     model: openai('gpt-4o-mini'),
-    system: `You are an expert healthcare SEO specialist. You work for The NextGen Healthcare Marketing, a Texas-based agency specializing in Freestanding ERs, Urgent Care centers, and Wellness clinics. Respond ONLY with valid JSON, no markdown.`,
-    prompt: `Generate SEO fields for a healthcare marketing blog post about: "${topic}"
+    system: `You are an expert healthcare SEO specialist for thenextgenhealth.com. Our niche: Healthcare Marketing and Custom Software Solutions for healthcare businesses. Respond ONLY with valid JSON, no markdown.`,
+    prompt: `Generate SEO fields for a healthcare marketing blog post.
+
+Topic: "${topic}"
+Focus Keyword: "${focusKeyword}"
+Supporting Keywords: ${supportingKeywords.join(', ')}
 
 Return this exact JSON structure:
 {
-  "focusKeyword": "the primary SEO keyword (2-4 words, high search intent)",
-  "seoTitle": "SEO-optimized title including the focus keyword (50-60 chars)",
-  "metaDescription": "compelling meta description with the focus keyword (150-160 chars)",
-  "slug": "url-friendly-slug-with-focus-keyword",
-  "blogTitle": "engaging blog post title (may differ slightly from SEO title, include focus keyword)"
+  "focusKeyword": "${focusKeyword}",
+  "supportingKeywords": ${JSON.stringify(supportingKeywords)},
+  "seoTitle": "SEO title following these rules: START with the focus keyword, include a NUMBER, include one strong POWER word (e.g., Proven, Essential, Ultimate, Critical) and one SENTIMENT word (positive or negative, e.g., Boost, Devastating, Skyrocket). MUST be under 70 characters.",
+  "metaDescription": "Meta description: include the focus keyword, 140-160 characters, compelling and click-worthy",
+  "slug": "short-url-slug-with-focus-keyword",
+  "blogTitle": "engaging blog post title that includes the focus keyword, a number, and a power word"
 }
 
-Requirements:
-- The focus keyword must appear in seoTitle, metaDescription, and slug.
-- The slug should be lowercase with hyphens, no special characters.
-- Make the title compelling and click-worthy for healthcare professionals.`,
+STRICT RULES:
+- seoTitle MUST start with the focus keyword
+- seoTitle MUST contain a number
+- seoTitle MUST contain a power word AND a sentiment word
+- seoTitle MUST be under 70 characters
+- metaDescription MUST be 140-160 characters
+- slug MUST be short, lowercase with hyphens, contain the focus keyword
+- focusKeyword MUST appear in seoTitle, metaDescription, and slug`,
     temperature: 0.7,
   });
 
-  let seo: { focusKeyword: string; seoTitle: string; metaDescription: string; slug: string; blogTitle: string };
+  let seo: { focusKeyword: string; seoTitle: string; metaDescription: string; slug: string; blogTitle: string; supportingKeywords?: string[] };
   try {
     seo = JSON.parse(seoJson.replace(/```json\n?|\n?```/g, '').trim());
   } catch {
@@ -187,40 +226,71 @@ Requirements:
     seo.slug = `${seo.slug}-${Date.now().toString(36)}`;
   }
 
-  // ── STEP 2: Generate the blog content ───────────────────────────────
+  // ── STEP 4b: Generate the blog content (900-1200 words, 100/100 SEO) ──
   const { text: htmlContent } = await generateText({
     model: openai('gpt-4o-mini'),
-    system: `You are an expert healthcare marketing content writer for The NextGen Healthcare Marketing (${SITE_URL}), a Texas-based agency that specializes in marketing for Freestanding Emergency Rooms, Urgent Care centers, Dental clinics, and Wellness & Longevity facilities.
+    system: `You are an expert SEO content writer for thenextgenhealth.com — a Healthcare Marketing and Custom Software Solutions agency based in Texas. We serve Freestanding Emergency Rooms, Urgent Care centers, Dental clinics, Wellness & Longevity facilities, and other healthcare businesses.
 
-Your writing style reference (match this quality):
-"Expert Workplace Injury Care & Workers' Comp Support at ER of Lufkin" — authoritative, informative, uses real data and credible sources, includes actionable advice, and provides genuine value to healthcare administrators and marketing professionals.
+OUR SERVICES (reference these naturally when relevant):
+- SEO & Local Search optimization for healthcare
+- Google Ads and Meta/Facebook Ads management
+- Google Business Profile optimization
+- Social media marketing for clinics
+- Website design & development (HIPAA-compliant)
+- Content & copywriting services
+- Email drip campaigns for patient retention
+- Analytics & reporting dashboards
+- Brand identity design
+- Strategy & planning
+- Healthcare marketing automation software
+- Custom software solutions for reporting, dashboards, and workflow systems
 
-CRITICAL RULES:
-1. Write EXACTLY 900-1000 words of body content.
-2. Output clean HTML only. No markdown. No \`\`\` code blocks.
+YOU MUST follow ALL of these SEO rules to hit a 100/100 Rank Math score:
+
+CONTENT RULES:
+1. Write EXACTLY 900-1,200 words of body content.
+2. Output clean HTML only. No markdown. No code blocks.
 3. Use semantic HTML: <h2>, <h3>, <p>, <ul>, <li>, <strong>, <em>, <blockquote>.
-4. Do NOT wrap the entire output in any container tag. Start directly with the first <h2> or <p>.
-5. The focus keyword is "${seo.focusKeyword}". Use it in:
-   - At least TWO headings (H2 or H3)
-   - Naturally throughout the body text (aim for 1-1.5% keyword density)
-   - The opening paragraph
-   - The closing paragraph
-6. Include ONE internal link and ONE external link. Place them NATURALLY where the text is most relevant — DO NOT put all links in the first paragraph.
-7. Cite real statistics or facts from credible healthcare sources.
-8. Write with authority and expertise. Use real-world examples.
-9. Include a clear call-to-action in the final section.
-10. Structure: Introduction → 3-4 main sections with H2 headings → Conclusion with CTA.`,
-    prompt: `Write a complete blog post about: "${seo.blogTitle}"
+4. Do NOT wrap output in a container tag. Start directly with the first <p>.
+5. Focus keyword: "${seo.focusKeyword}". Use it:
+   - In the FIRST SENTENCE of the article
+   - In at least ONE <h2> heading
+   - In at least ONE <h3> heading
+   - In the closing paragraph
+   - At about 1% keyword density across the post (NO keyword stuffing)
+6. Supporting keywords to weave in naturally: ${supportingKeywords.join(', ')}
+7. Include a TABLE OF CONTENTS after the intro paragraph using an <ul> with anchor links to each H2 section.
+8. Use SHORT paragraphs (2-3 sentences max) and bullet lists for scannability.
 
+LINK RULES:
+9. Include at least 2 INTERNAL links to thenextgenhealth.com service pages. Place them naturally in relevant sections.
+10. Include at least 2 EXTERNAL links to credible sources (.gov, .edu, CDC, NIH, CMS, WHO, or peer-reviewed journals preferred). Use normal links (not nofollow).
+11. Do NOT cluster all links in one paragraph — spread them across the article.
+
+STRUCTURE:
+12. Introduction (include focus keyword in first sentence) → Table of Contents → 3-4 main sections with H2 headings (each with H3 sub-sections) → Conclusion with clear CTA.
+13. Cite real statistics or facts from credible healthcare/marketing sources.
+14. Write with authority and real-world examples.
+15. Include a clear call-to-action in the final section directing readers to contact or explore our services.`,
+    prompt: `Write a complete blog post.
+
+Title: "${seo.blogTitle}"
 Focus Keyword: "${seo.focusKeyword}"
+Supporting Keywords: ${supportingKeywords.join(', ')}
 
-INTERNAL LINKS (use exactly 1, place naturally in the body where relevant):
-${internalLinks.map((l) => `- <a href="${SITE_URL}${l.url}">${l.label}</a> — use when discussing ${l.label}`).join('\n')}
+INTERNAL LINKS (use at least 2, place naturally throughout the body):
+${internalLinks.map((l) => `- <a href="${SITE_URL}${l.url}">${l.label}</a> — link when discussing ${l.label}`).join('\n')}
 
-EXTERNAL LINKS (use exactly 1, place naturally in the body where relevant):
+EXTERNAL LINKS (use at least 2, place naturally as credible source citations):
 ${externalLinks.map((l) => `- <a href="${l.url}" target="_blank" rel="noopener noreferrer">${l.name}</a> — cite when referencing data or authority`).join('\n')}
 
-Write 900-1000 words. Output clean HTML only. Start with the first <p> tag (the introduction). Include H2 and H3 headings throughout.`,
+REMEMBER:
+- 900-1,200 words
+- Focus keyword in first sentence, at least 1 H2, at least 1 H3, closing paragraph
+- Table of Contents after intro
+- Short paragraphs and bullet lists
+- At least 2 internal + 2 external links spread throughout
+- Clean HTML only, start with <p> tag`,
     temperature: 0.75,
   });
 
@@ -230,16 +300,16 @@ Write 900-1000 words. Output clean HTML only. Start with the first <p> tag (the 
     .replace(/^[\s\n]*/, '')
     .trim();
 
-  // ── STEP 3: Generate the cover image ────────────────────────────────
+  // ── STEP 5: Generate the cover image (real photo, no cartoons) ──────
   const imageUrl = await generateBlogImage(seo.focusKeyword, seo.blogTitle);
 
-  // If we have an image, prepend it as a figure at the top of the content
+  // If we have an image, prepend it as a figure with keyword-rich alt text
   if (imageUrl) {
     const imageHtml = `<figure style="margin: 0 0 2rem 0;"><img src="${imageUrl}" alt="${seo.focusKeyword} - ${seo.blogTitle}" style="width: 100%; height: auto; border-radius: 12px;" /><figcaption style="text-align: center; font-size: 0.875rem; color: #64748b; margin-top: 0.5rem;">${seo.blogTitle}</figcaption></figure>`;
     cleanedContent = imageHtml + cleanedContent;
   }
 
-  // ── STEP 4: Generate excerpt ────────────────────────────────────────
+  // ── Generate excerpt ────────────────────────────────────────────────
   const { text: excerpt } = await generateText({
     model: openai('gpt-4o-mini'),
     system: 'Generate a 1-2 sentence blog excerpt. Plain text only, no HTML. Include the focus keyword naturally.',
@@ -257,6 +327,7 @@ Write 900-1000 words. Output clean HTML only. Start with the first <p> tag (the 
     seoTitle: seo.seoTitle,
     metaDesc: seo.metaDescription,
     focusKeyword: seo.focusKeyword,
+    supportingKeywords: supportingKeywords,
     topic,
   };
 }
