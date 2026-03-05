@@ -306,19 +306,23 @@ REMEMBER:
     .replace(/^[\s\n]*/, '')
     .trim();
 
-  // ── SEO Validation Loop (auto-rewrite until checks pass, max 3 retries) ──
+  // ── SEO Validation Loop (auto-rewrite until checks pass AND score >= 85, max 3 retries) ──
   let seoCheck: SeoCheckResult = runSeoChecks({
     focusKeyword: seo.focusKeyword,
+    isKeywordUniqueToDomain: true,
     title: seo.blogTitle,
     seoTitle: seo.seoTitle,
     metaDesc: seo.metaDescription,
     htmlContent: cleanedContent,
     type: 'blog',
+    siteUrl: SITE_URL,
   });
 
-  for (let attempt = 1; attempt <= 3 && !seoCheck.passed; attempt++) {
-    console.log(`[Blog SEO] Retry ${attempt}/3 — failures:`, seoCheck.failures);
-    const fixInstructions = buildFixPrompt(seoCheck.failures, seoCheck.metrics);
+  const MIN_SEO_SCORE = 85;
+
+  for (let attempt = 1; attempt <= 3 && (!seoCheck.passed || seoCheck.totalScore < MIN_SEO_SCORE); attempt++) {
+    console.log(`[Blog SEO] Retry ${attempt}/3 — score: ${seoCheck.totalScore}/100, failures:`, seoCheck.failures);
+    const fixInstructions = buildFixPrompt(seoCheck);
 
     // Fix meta fields if needed
     const hasMetaIssues = seoCheck.failures.some(
@@ -345,8 +349,15 @@ REMEMBER:
     if (contentIssues.length > 0) {
       const { text: fixedHtml } = await generateText({
         model: openai('gpt-4o-mini'),
-        system: 'Rewrite this blog post to fix the listed SEO issues. Output clean HTML only — no markdown, no code fences. Keep the same topic and heading structure. Start directly with a <p> tag.',
-        prompt: `Rewrite to fix SEO issues. Focus Keyword: "${seo.focusKeyword}"\nSupporting Keywords: ${supportingKeywords.join(', ')}\n\n${fixInstructions}\n\nCurrent content:\n${cleanedContent}\n\nIMPORTANT:\n- Fix ALL listed issues\n- Focus keyword in first paragraph, at least 1 H2, closing paragraph\n- Short sentences (max 20 words avg)\n- Use transition words in 30%+ of sentences\n- 0.8%-1.2% keyword density\n- 900-1200 words\n- Clean HTML only`,
+        system: `Rewrite this blog post to fix the listed SEO issues. Output clean HTML only — no markdown, no code fences. Keep the same topic and heading structure. Start directly with a <p> tag.
+
+CRITICAL RULES:
+- Every paragraph must be 150 words or fewer. Break long paragraphs into 2-3 sentence blocks.
+- At least 30% of sentences MUST start with transition words (However, Furthermore, Moreover, Additionally, Therefore, Consequently, Meanwhile, Specifically, In addition, For example, Similarly, Notably, As a result, Next, Finally).
+- Use ACTIVE voice in 90%+ sentences.
+- Target Flesch Reading Ease of 55-65 (clear professional prose).
+- Keep average sentence length under 18 words.`,
+        prompt: `Rewrite to fix SEO issues. Focus Keyword: "${seo.focusKeyword}"\nSupporting Keywords: ${supportingKeywords.join(', ')}\n\n${fixInstructions}\n\nCurrent content:\n${cleanedContent}\n\nIMPORTANT:\n- Fix ALL listed issues\n- Focus keyword in first paragraph, at least 1 H2, closing paragraph\n- Short sentences (max 18 words avg)\n- Use transition words in 30%+ of sentences\n- 0.8%-1.2% keyword density\n- 900-1200 words\n- No paragraph longer than 150 words\n- Clean HTML only\n- Maintain all existing internal and external links`,
         temperature: 0.6,
       });
       cleanedContent = fixedHtml.replace(/```html\n?|\n?```/g, '').replace(/^[\s\n]*/, '').trim();
@@ -355,18 +366,20 @@ REMEMBER:
     // Re-check after fixes
     seoCheck = runSeoChecks({
       focusKeyword: seo.focusKeyword,
+      isKeywordUniqueToDomain: true,
       title: seo.blogTitle,
       seoTitle: seo.seoTitle,
       metaDesc: seo.metaDescription,
       htmlContent: cleanedContent,
       type: 'blog',
+      siteUrl: SITE_URL,
     });
   }
 
-  if (!seoCheck.passed) {
-    console.warn('[Blog SEO] Final validation has remaining issues:', seoCheck.failures);
+  if (!seoCheck.passed || seoCheck.totalScore < MIN_SEO_SCORE) {
+    console.warn(`[Blog SEO] Final validation: score ${seoCheck.totalScore}/100 (min ${MIN_SEO_SCORE}), remaining issues:`, seoCheck.failures);
   } else {
-    console.log('[Blog SEO] All checks passed ✓', seoCheck.metrics);
+    console.log(`[Blog SEO] All checks passed ✓ Score: ${seoCheck.totalScore}/100`, seoCheck.metrics);
   }
 
   // ── STEP 5: Generate the cover image (real photo, no cartoons) ──────
@@ -409,6 +422,7 @@ REMEMBER:
     socialMeta,
     seoMetrics: seoCheck.metrics,
     seoValidationPassed: seoCheck.passed,
+    seoScore: seoCheck.totalScore,
   };
 }
 
@@ -431,6 +445,19 @@ export async function POST(request: NextRequest) {
 
     // Generate the blog post
     const blogData = await generateBlogPost(topic);
+
+    // ── STRICT SEO GATING: Reject posts below 85/100 ──────────────────
+    if (!blogData.seoValidationPassed || blogData.seoScore < 85) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: `Blog failed SEO validation (score: ${blogData.seoScore}/100, minimum: 85). The AI could not fix all issues after 3 retries.`,
+          seoScore: blogData.seoScore,
+          seoMetrics: blogData.seoMetrics,
+        },
+        { status: 422 }
+      );
+    }
 
     // Save to database
     const post = await prisma.post.create({
@@ -461,6 +488,7 @@ export async function POST(request: NextRequest) {
             metaDesc: blogData.metaDesc,
             autoPublish,
             seoValidationPassed: blogData.seoValidationPassed,
+            seoScore: blogData.seoScore,
             seoMetrics: blogData.seoMetrics,
             socialMeta: blogData.socialMeta,
           },
@@ -497,6 +525,7 @@ export async function POST(request: NextRequest) {
         publishedAt: post.publishedAt,
         status: post.publishedAt ? 'published' : 'draft',
         seoValidationPassed: blogData.seoValidationPassed,
+        seoScore: blogData.seoScore,
         seoMetrics: blogData.seoMetrics,
       },
     });

@@ -149,6 +149,22 @@ export function transitionWordPercentage(text: string): number {
   return Math.round((withTransition.length / sentences.length) * 100);
 }
 
+export function maxParagraphWordCount(html: string): number {
+  const paragraphs = html.match(/<p[^>]*>([\s\S]*?)<\/p>/gi) || [];
+  let maxWords = 0;
+  for (const p of paragraphs) {
+    const plain = stripHtml(p);
+    const wc = splitWords(plain).length;
+    if (wc > maxWords) maxWords = wc;
+  }
+  return maxWords;
+}
+
+export function longParagraphCount(html: string, threshold = 150): number {
+  const paragraphs = html.match(/<p[^>]*>([\s\S]*?)<\/p>/gi) || [];
+  return paragraphs.filter(p => splitWords(stripHtml(p)).length > threshold).length;
+}
+
 export function calculatePassiveVoicePercentage(text: string): number {
   const sentences = splitSentences(text);
   if (sentences.length === 0) return 0;
@@ -263,6 +279,9 @@ export interface MasterSeoReport {
     keywordInH2: boolean;
     keywordInFirstParagraph: boolean;
     hasAnaphora: boolean;
+    maxParagraphWords: number;
+    longParagraphs: number;
+    hasPowerWordInTitle: boolean;
   };
 
   // Outputs
@@ -328,6 +347,10 @@ export function runMasterSeoValidation(params: {
   if (wc > maxWords) failures.push(`Word count too high (${wc} words, max ${maxWords})`);
   
   if (twPct < 25) failures.push(`Not enough transition words (${twPct}%, need 25%+)`);
+  
+  const maxParaWords = maxParagraphWordCount(htmlContent);
+  const longParas = longParagraphCount(htmlContent, 150);
+  if (longParas > 0) failures.push(`${longParas} paragraph(s) exceed 150 words (longest: ${maxParaWords} words). Break them up into shorter paragraphs.`);
 
   // 3. The 100-Point Scoring System
   let totalScore = 0;
@@ -427,7 +450,10 @@ export function runMasterSeoValidation(params: {
       keywordInTitle: kwInH1,
       keywordInH2: kwInH2,
       keywordInFirstParagraph: kwInFirst,
-      hasAnaphora: anaphora
+      hasAnaphora: anaphora,
+      maxParagraphWords: maxParagraphWordCount(htmlContent),
+      longParagraphs: longParagraphCount(htmlContent, 150),
+      hasPowerWordInTitle: POWER_WORDS.some(pw => seoTitle.toLowerCase().includes(pw)),
     },
     slug: generatedSlug,
     socialMeta: generateSocialMeta({
@@ -478,6 +504,11 @@ export function buildMasterFixPrompt(report: MasterSeoReport): string {
   lines.push(`  Avg sentence length: ${report.metrics.avgSentenceLength} words`);
   lines.push(`  Transition word %: ${report.metrics.transitionWordPct}%`);
   lines.push(`  Passive voice %: ${report.metrics.passiveVoicePct}%`);
+  lines.push(`  Longest paragraph: ${report.metrics.maxParagraphWords} words`);
+  lines.push(`  Long paragraphs (>150 words): ${report.metrics.longParagraphs}`);
+  lines.push(`  Power word in title: ${report.metrics.hasPowerWordInTitle ? 'Yes' : 'No'}`);
+  lines.push('');
+  lines.push('IMPORTANT: Maintain all current external links and internal links. Rewrite the content to achieve 100/100 compliance.');
   
   return lines.join('\n');
 }

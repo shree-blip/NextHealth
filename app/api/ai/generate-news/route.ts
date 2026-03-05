@@ -341,20 +341,21 @@ REMEMBER:
     .replace(/^[\s\n]*/, '')
     .trim();
 
-  // Count citations (external links to trusted sources)
-  const citationMatches = cleanedContent.match(/<a[^>]+href=["']https?:\/\/[^"']+["'][^>]*>/gi) || [];
-  const externalCitations = citationMatches.filter(link => 
-    !link.includes('thenextgenhealth.com') && 
-    (link.includes('.gov') || link.includes('.edu') || link.includes('cdc.') || link.includes('nih.') || 
-     link.includes('cms.gov') || link.includes('who.int') || link.includes('beckershospital') || 
-     link.includes('fiercehealthcare') || link.includes('modernhealthcare'))
-  ).length;
+  // Count citations (ALL external links, not just narrow subset)
+  function countExternalCitations(html: string): number {
+    const allLinks = html.match(/<a[^>]+href=["']https?:\/\/[^"']+["'][^>]*>/gi) || [];
+    return allLinks.filter(link => !link.includes('thenextgenhealth.com')).length;
+  }
+
+  const externalCitations = countExternalCitations(cleanedContent);
 
   // Check for medical disclaimer
   const hasDisclaimer = cleanedContent.toLowerCase().includes('medical disclaimer') || 
                         cleanedContent.toLowerCase().includes('informational purposes only');
 
-  // ── Healthcare News Validation Loop (auto-rewrite until checks pass, max 3 retries) ──
+  // ── Healthcare News Validation Loop (auto-rewrite until checks pass AND score >= 85, max 3 retries) ──
+  const MIN_NEWS_SCORE = 85;
+
   let validationReport: HealthcareNewsValidationReport = runHealthcareNewsValidation({
     focusKeyword: seo.focusKeyword,
     isKeywordUniqueToDomain: true,
@@ -376,8 +377,8 @@ REMEMBER:
     isJTICertified: false
   });
 
-  for (let attempt = 1; attempt <= 3 && !validationReport.passed; attempt++) {
-    console.log(`[Healthcare News] Retry ${attempt}/3 — failures:`, validationReport.failures);
+  for (let attempt = 1; attempt <= 3 && (!validationReport.passed || validationReport.totalScore < MIN_NEWS_SCORE); attempt++) {
+    console.log(`[Healthcare News] Retry ${attempt}/3 — score: ${validationReport.totalScore}/100, failures:`, validationReport.failures);
     const fixInstructions = buildHealthcareFixPrompt(validationReport);
 
     // Fix meta fields if needed
@@ -406,21 +407,57 @@ REMEMBER:
     if (contentIssues.length > 0 || hasHealthIssues) {
       const { text: fixedHtml } = await generateText({
         model: openai('gpt-4o-mini'),
-        system: 'Rewrite this healthcare news article to fix ALL listed issues including SEO, YMYL healthcare compliance, and citation requirements. Output clean HTML only — no markdown, no code fences. Keep the same topic and heading structure. Start directly with a <p> tag.',
-        prompt: `Rewrite to fix ALL issues. Focus Keyword: "${seo.focusKeyword}"\nAuthor: ${seo.authorName}\nSupporting Keywords: ${supportingKeywords.join(', ')}\n\n${fixInstructions}\n\nCurrent content:\n${cleanedContent}\n\nCRITICAL HEALTHCARE REQUIREMENTS:\n- Include AT LEAST 3 external citations to credible sources (.gov, .edu, CDC, NIH, medical journals)\n- Include medical disclaimer paragraph at end: "<p><em>Medical Disclaimer: This content is for informational purposes only and does not constitute medical advice. Always consult with qualified healthcare professionals for diagnosis and treatment decisions.</em></p>"\n- Avoid ALL clickbait patterns in headlines\n- Author with medical credentials: ${seo.authorName}\n\nSTANDARD SEO REQUIREMENTS:\n- Fix ALL listed issues\n- Focus keyword in first paragraph, at least 1 H2, closing paragraph\n- Short sentences (max 20 words avg)\n- Use transition words in 30%+ of sentences\n- 0.8%-1.2% keyword density\n- 500-900 words\n- Journalistic news reporting style with medical authority\n- Clean HTML only`,
+        system: `Rewrite this healthcare news article to fix ALL listed issues including SEO, YMYL healthcare compliance, and citation requirements. Output clean HTML only — no markdown, no code fences. Keep the same topic and heading structure. Start directly with a <p> tag.
+
+CRITICAL RULES:
+- Every paragraph must be 150 words or fewer. Break long paragraphs into 2-3 sentence blocks.
+- At least 30% of sentences MUST start with transition words (However, Furthermore, Moreover, Additionally, Therefore, Consequently, Meanwhile, Specifically, In addition, For example, Similarly, Notably, As a result, Next, Finally).
+- Use ACTIVE voice in 90%+ sentences.
+- Target Flesch Reading Ease of 55-65 (clear professional prose).
+- Keep average sentence length under 18 words.
+- MUST include at least 3 external citations to credible healthcare sources.
+- MUST include medical disclaimer paragraph at end before CTA.`,
+        prompt: `Rewrite to fix ALL issues. Focus Keyword: "${seo.focusKeyword}"
+Author: ${seo.authorName}
+Supporting Keywords: ${supportingKeywords.join(', ')}
+
+${fixInstructions}
+
+EXTERNAL SOURCES TO CITE (use at least 3 of these as inline citations):
+- <a href="${primarySource.url}" target="_blank" rel="noopener noreferrer">${primarySource.name}</a>
+- <a href="${secondarySource.url}" target="_blank" rel="noopener noreferrer">${secondarySource.name}</a>
+- <a href="${tertiarySource.url}" target="_blank" rel="noopener noreferrer">${tertiarySource.name}</a>
+
+INTERNAL LINKS (use at least 2):
+${internalLinks.map((l) => `- <a href="${SITE_URL}${l.url}">${l.label}</a>`).join('\n')}
+
+Current content:
+${cleanedContent}
+
+CRITICAL HEALTHCARE REQUIREMENTS:
+- Include AT LEAST 3 external citations to credible sources (.gov, .edu, CDC, NIH, medical journals)
+- Include medical disclaimer paragraph at end: "<p><em>Medical Disclaimer: This content is for informational purposes only and does not constitute medical advice. Always consult with qualified healthcare professionals for diagnosis and treatment decisions.</em></p>"
+- Avoid ALL clickbait patterns in headlines
+- Author with medical credentials: ${seo.authorName}
+
+STANDARD SEO REQUIREMENTS:
+- Fix ALL listed issues
+- Focus keyword in first paragraph, at least 1 H2, closing paragraph
+- Short sentences (max 18 words avg)
+- Use transition words in 30%+ of sentences
+- 0.8%-1.2% keyword density
+- 500-900 words
+- No paragraph longer than 150 words
+- Journalistic news reporting style with medical authority
+- Maintain all existing links and add missing ones
+- Clean HTML only`,
         temperature: 0.6,
       });
       cleanedContent = fixedHtml.replace(/```html\n?|\n?```/g, '').replace(/^[\s\n]*/, '').trim();
     }
 
     // Recount citations and disclaimer after fixes
-    const updatedCitationMatches = cleanedContent.match(/<a[^>]+href=["']https?:\/\/[^"']+["'][^>]*>/gi) || [];
-    const updatedCitations = updatedCitationMatches.filter(link => 
-      !link.includes('thenextgenhealth.com') && 
-      (link.includes('.gov') || link.includes('.edu') || link.includes('cdc.') || link.includes('nih.') || 
-       link.includes('cms.gov') || link.includes('who.int') || link.includes('beckershospital') || 
-       link.includes('fiercehealthcare') || link.includes('modernhealthcare'))
-    ).length;
+    const updatedCitations = countExternalCitations(cleanedContent);
     const updatedHasDisclaimer = cleanedContent.toLowerCase().includes('medical disclaimer') || 
                                  cleanedContent.toLowerCase().includes('informational purposes only');
 
@@ -447,8 +484,8 @@ REMEMBER:
     });
   }
 
-  if (!validationReport.passed) {
-    console.warn('[Healthcare News] Final validation has remaining issues:', validationReport.failures);
+  if (!validationReport.passed || validationReport.totalScore < MIN_NEWS_SCORE) {
+    console.warn(`[Healthcare News] Final validation: score ${validationReport.totalScore}/100 (min ${MIN_NEWS_SCORE}), remaining issues:`, validationReport.failures);
     if (validationReport.healthFailures.length > 0) {
       console.error('[Healthcare News] YMYL Health Failures:', validationReport.healthFailures);
     }
@@ -456,7 +493,7 @@ REMEMBER:
       console.error('[Healthcare News] Clickbait Flags:', validationReport.clickbaitFlags);
     }
   } else {
-    console.log('[Healthcare News] All checks passed ✓ Score:', validationReport.totalScore);
+    console.log(`[Healthcare News] All checks passed ✓ Score: ${validationReport.totalScore}/100`);
   }
 
   // ── STEP 5: Generate the cover image (real photo, no cartoons) ──────
@@ -528,6 +565,20 @@ export async function POST(request: NextRequest) {
     // Generate the news article
     const newsData = await generateNewsArticle(topic);
 
+    // ── STRICT SEO GATING: Reject articles below 85/100 ──────────────
+    if (!newsData.seoValidationPassed || newsData.validationScore < 85) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: `News article failed healthcare SEO validation (score: ${newsData.validationScore}/100, minimum: 85). The AI could not fix all issues after 3 retries.`,
+          seoScore: newsData.validationScore,
+          seoMetrics: newsData.seoMetrics,
+          healthcareMetadata: newsData.healthcareMetadata,
+        },
+        { status: 422 }
+      );
+    }
+
     // Save to database
     const article = await (prisma.newsArticle as any).create({
       data: {
@@ -562,7 +613,9 @@ export async function POST(request: NextRequest) {
             source: newsData.source,
             autoPublish,
             seoValidationPassed: newsData.seoValidationPassed,
+            validationScore: newsData.validationScore,
             seoMetrics: newsData.seoMetrics,
+            healthcareMetadata: newsData.healthcareMetadata,
             socialMeta: newsData.socialMeta,
           },
           output: `Article ID: ${article.id} | Slug: ${article.slug}`,
@@ -600,7 +653,9 @@ export async function POST(request: NextRequest) {
         publishedAt: article.publishedAt,
         status: article.publishedAt ? 'published' : 'draft',
         seoValidationPassed: newsData.seoValidationPassed,
+        validationScore: newsData.validationScore,
         seoMetrics: newsData.seoMetrics,
+        healthcareMetadata: newsData.healthcareMetadata,
       },
     });
   } catch (error) {
