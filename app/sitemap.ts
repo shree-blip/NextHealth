@@ -189,11 +189,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       orderBy: { publishedAt: 'desc' },
     });
     
-    blogPosts = posts.map(post => ({
+    blogPosts = posts.map((post, index) => ({
       url: `${SITE_URL}/blog/${post.slug}`,
       lastModified: post.updatedAt || post.publishedAt || new Date(),
       changeFrequency: 'weekly' as const,
-      priority: 0.7,
+      priority: index < 10 ? 0.8 : 0.7,
     }));
   } catch (error) {
     console.error('Sitemap blog posts fetch error:', error);
@@ -208,11 +208,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       orderBy: { publishedAt: 'desc' },
     });
     
-    newsArticles = articles.map((article: any) => ({
+    newsArticles = articles.map((article: any, index: number) => ({
       url: `${SITE_URL}/news/${article.slug}`,
       lastModified: article.updatedAt || article.publishedAt || new Date(),
       changeFrequency: 'weekly' as const,
-      priority: 0.7,
+      priority: index < 10 ? 0.8 : 0.7,
     }));
   } catch (error) {
     console.error('Sitemap news articles fetch error:', error);
