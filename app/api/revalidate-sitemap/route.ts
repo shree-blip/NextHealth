@@ -15,8 +15,10 @@ export async function POST(request: Request) {
     // Revalidate sitemap and blog pages
     revalidatePath('/sitemap.xml');
     revalidatePath('/blog');
+    revalidatePath('/news');
     if (slug) {
       revalidatePath(`/blog/${slug}`);
+      revalidatePath(`/news/${slug}`);
     }
     
     return NextResponse.json({ 
