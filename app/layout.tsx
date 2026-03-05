@@ -1,5 +1,6 @@
 import type {Metadata} from 'next';
 import { Inter, JetBrains_Mono } from 'next/font/google';
+import Script from 'next/script';
 import './globals.css';
 import ScrollToTop from '@/components/ScrollToTop';
 import { SitePreferencesProvider } from '@/components/SitePreferencesProvider';
@@ -30,6 +31,21 @@ export const metadata: Metadata = {
 export default function RootLayout({children}: {children: React.ReactNode}) {
   return (
     <html lang="en" className={`${inter.variable} ${jetbrainsMono.variable} theme-light overflow-y-scroll`}>
+      <head>
+        {/* Google tag (gtag.js) */}
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-YNRRWLKFB4"
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-YNRRWLKFB4');
+          `}
+        </Script>
+      </head>
       <body suppressHydrationWarning className="antialiased selection:bg-emerald-500/30 overflow-x-hidden">
         <LocalBusinessSchema />
         <SitePreferencesProvider>
