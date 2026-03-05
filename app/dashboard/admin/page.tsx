@@ -54,6 +54,7 @@ import BackgroundTaskNotification, { BackgroundTask } from '@/components/Backgro
 import { useSitePreferences } from '@/components/SitePreferencesProvider';
 import AdminSettings from '@/components/AdminSettings';
 import { useAdminTranslation } from '@/hooks/useAdminTranslation';
+import AdminSelect from '@/components/AdminSelect';
 import Image from 'next/image';
 
 // Modal Component
@@ -232,15 +233,17 @@ function StaffManagementSection({
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => openEditModal(listedUser)}
-                          className="p-2 text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg"
+                          className="p-2 text-blue-500 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
                           aria-label={`Edit ${listedUser.name}`}
+                          title="Edit"
                         >
                           <Edit className="h-4 w-4" />
                         </button>
                         <button
                           onClick={() => requestDeleteUser(listedUser)}
-                          className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg"
+                          className="p-2 text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
                           aria-label={`Delete ${listedUser.name}`}
+                          title="Delete"
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>
@@ -522,17 +525,16 @@ function StaffManagementSection({
               required
             />
           </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">Role</label>
-            <select
-              value={createForm.role}
-              onChange={(e) => setCreateForm((prev) => ({ ...prev, role: e.target.value }))}
-              className="w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 bg-white dark:bg-slate-800"
-            >
-              <option value="client">Client</option>
-              <option value="admin">Admin</option>
-            </select>
-          </div>
+          <AdminSelect
+            label="Role"
+            value={createForm.role}
+            onChange={(value) => setCreateForm((prev) => ({ ...prev, role: value }))}
+            options={[
+              { value: 'client', label: 'Client' },
+              { value: 'admin', label: 'Admin' },
+            ]}
+            required
+          />
 
           <div className="flex gap-3 pt-2">
             <button
@@ -545,7 +547,7 @@ function StaffManagementSection({
             <button
               type="button"
               onClick={() => setShowCreateModal(false)}
-              className="px-4 py-2 rounded-xl bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-white hover:bg-slate-300 dark:hover:bg-slate-600"
+              className="px-4 py-2 rounded-xl bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-slate-100 hover:bg-slate-300 dark:hover:bg-slate-600 font-medium"
             >
               Cancel
             </button>
@@ -573,17 +575,16 @@ function StaffManagementSection({
               className="w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 bg-white dark:bg-slate-800"
             />
           </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">Role</label>
-            <select
-              value={editForm.role}
-              onChange={(e) => setEditForm((prev) => ({ ...prev, role: e.target.value }))}
-              className="w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 bg-white dark:bg-slate-800"
-            >
-              <option value="client">Client</option>
-              <option value="admin">Admin</option>
-            </select>
-          </div>
+          <AdminSelect
+            label="Role"
+            value={editForm.role}
+            onChange={(value) => setEditForm((prev) => ({ ...prev, role: value }))}
+            options={[
+              { value: 'client', label: 'Client' },
+              { value: 'admin', label: 'Admin' },
+            ]}
+            required
+          />
           <div>
             <label className="block text-sm font-medium mb-1">New Password (optional)</label>
             <input
@@ -605,7 +606,7 @@ function StaffManagementSection({
             </button>
             <button
               onClick={() => setShowEditModal(false)}
-              className="px-4 py-2 rounded-xl bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-white hover:bg-slate-300 dark:hover:bg-slate-600"
+              className="px-4 py-2 rounded-xl bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-slate-100 hover:bg-slate-300 dark:hover:bg-slate-600 font-medium"
             >
               Cancel
             </button>
@@ -1666,18 +1667,17 @@ function AdminDashboardContent() {
             placeholder="john@example.com"
           />
         </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">Role</label>
-          <select
-            value={newClientRole}
-            onChange={(e) => setNewClientRole(e.target.value)}
-            className="w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 bg-white dark:bg-slate-800"
-          >
-            <option value="client">Client</option>
-            <option value="admin">Admin</option>
-          </select>
-          <p className="text-xs text-slate-500 mt-1">Select whether this user is a Client or Admin</p>
-        </div>
+        <AdminSelect
+          label="Role"
+          value={newClientRole}
+          onChange={(value) => setNewClientRole(value)}
+          options={[
+            { value: 'client', label: 'Client' },
+            { value: 'admin', label: 'Admin' },
+          ]}
+          placeholder="Select a role"
+        />
+        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Select whether this user is a Client or Admin</p>
         <div>
           <label className="block text-sm font-medium mb-1">Password</label>
           <input
@@ -1700,7 +1700,7 @@ function AdminDashboardContent() {
           <button
             onClick={() => setShowAddClientModal(false)}
             disabled={actionFeedback.loading}
-            className="px-4 py-2 bg-slate-200 dark:bg-slate-700 rounded-lg"
+            className="px-4 py-2 bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-slate-100 rounded-lg font-medium hover:bg-slate-300 dark:hover:bg-slate-600"
           >
             Cancel
           </button>
@@ -1721,22 +1721,21 @@ function AdminDashboardContent() {
             placeholder="Downtown Medical Center"
           />
         </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">Type</label>
-          <select
-            value={newClinicType}
-            onChange={(e) => setNewClinicType(e.target.value)}
-            className="w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 bg-white dark:bg-slate-800"
-          >
-            <option value="">Select type...</option>
-            <option value="ER">Emergency Room (ER)</option>
-            <option value="Urgent Care">Urgent Care</option>
-            <option value="Wellness">Wellness Center</option>
-            <option value="MedSpa">MedSpa</option>
-            <option value="Dental">Dental Practice</option>
-            <option value="Specialty">Specialty Clinic</option>
-          </select>
-        </div>
+        <AdminSelect
+          label="Type"
+          value={newClinicType}
+          onChange={(value) => setNewClinicType(value)}
+          options={[
+            { value: '', label: 'Select type...' },
+            { value: 'ER', label: 'Emergency Room (ER)' },
+            { value: 'Urgent Care', label: 'Urgent Care' },
+            { value: 'Wellness', label: 'Wellness Center' },
+            { value: 'MedSpa', label: 'MedSpa' },
+            { value: 'Dental', label: 'Dental Practice' },
+            { value: 'Specialty', label: 'Specialty Clinic' },
+          ]}
+          required
+        />
         <div>
           <label className="block text-sm font-medium mb-1">Location</label>
           <input
@@ -1747,20 +1746,19 @@ function AdminDashboardContent() {
             placeholder="Houston, TX"
           />
         </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">Assign to Client (Optional)</label>
-          <select
-            value={newClinicAssignedUser}
-            onChange={(e) => setNewClinicAssignedUser(e.target.value)}
-            className="w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 bg-white dark:bg-slate-800"
-          >
-            <option value="">Leave Unassigned</option>
-            {users.filter(u => u.role === 'client').map(u => (
-              <option key={u.id} value={u.id}>{u.name} ({u.email})</option>
-            ))}
-          </select>
-          <p className="text-xs text-slate-500 mt-1">You can assign this clinic to a client immediately, or leave it unassigned</p>
-        </div>
+        <AdminSelect
+          label="Assign to Client (Optional)"
+          value={newClinicAssignedUser}
+          onChange={(value) => setNewClinicAssignedUser(value)}
+          options={[
+            { value: '', label: 'Leave Unassigned' },
+            ...users.filter(u => u.role === 'client').map(u => ({
+              value: u.id,
+              label: `${u.name} (${u.email})`
+            }))
+          ]}
+        />
+        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">You can assign this clinic to a client immediately, or leave it unassigned</p>
         <div className="flex gap-3 pt-2">
           <button
             onClick={handleAddClinic}
@@ -1771,7 +1769,7 @@ function AdminDashboardContent() {
           </button>
           <button
             onClick={() => setShowAddClinicModal(false)}
-            className="px-4 py-2 bg-slate-200 dark:bg-slate-700 rounded-lg"
+            className="px-4 py-2 bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-slate-100 rounded-lg font-medium hover:bg-slate-300 dark:hover:bg-slate-600"
           >
             Cancel
           </button>
@@ -1792,21 +1790,20 @@ function AdminDashboardContent() {
               className="w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 bg-white dark:bg-slate-800"
             />
           </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">Type</label>
-            <select
+            <AdminSelect
+              label="Type"
               value={editingClinic.type}
-              onChange={(e) => setEditingClinic({ ...editingClinic, type: e.target.value })}
-              className="w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 bg-white dark:bg-slate-800"
-            >
-              <option value="ER">Emergency Room (ER)</option>
-              <option value="Urgent Care">Urgent Care</option>
-              <option value="Wellness">Wellness Center</option>
-              <option value="MedSpa">MedSpa</option>
-              <option value="Dental">Dental Practice</option>
-              <option value="Specialty">Specialty Clinic</option>
-            </select>
-          </div>
+              onChange={(value) => setEditingClinic({ ...editingClinic, type: value })}
+              options={[
+                { value: 'ER', label: 'Emergency Room (ER)' },
+                { value: 'Urgent Care', label: 'Urgent Care' },
+                { value: 'Wellness', label: 'Wellness Center' },
+                { value: 'MedSpa', label: 'MedSpa' },
+                { value: 'Dental', label: 'Dental Practice' },
+                { value: 'Specialty', label: 'Specialty Clinic' },
+              ]}
+              required
+            />
           <div>
             <label className="block text-sm font-medium mb-1">Location</label>
             <input
@@ -1843,39 +1840,33 @@ function AdminDashboardContent() {
             )}
 
             {gmbState.accounts.length > 0 && (
-              <div>
-                <label className="block text-xs font-medium mb-1">Business Account</label>
-                <select
+                <AdminSelect
+                  label="Business Account"
                   value={gmbState.selectedAccount}
-                  onChange={(e) => handleAccountChange(e.target.value)}
-                  className="w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-800"
-                >
-                  <option value="">Select account...</option>
-                  {gmbState.accounts.map((account) => (
-                    <option key={account.name} value={account.name}>
-                      {account.accountName || account.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+                  onChange={(value) => handleAccountChange(value)}
+                  options={[
+                    { value: '', label: 'Select account...' },
+                    ...gmbState.accounts.map((account) => ({
+                      value: account.name,
+                      label: account.accountName || account.name
+                    }))
+                  ]}
+                />
             )}
 
             {gmbState.selectedAccount && (
-              <div>
-                <label className="block text-xs font-medium mb-1">Location</label>
-                <select
-                  value={gmbState.selectedLocation}
-                  onChange={(e) => setGmbState(prev => ({ ...prev, selectedLocation: e.target.value }))}
-                  className="w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-800"
-                >
-                  <option value="">Select location...</option>
-                  {gmbState.locations.map((location) => (
-                    <option key={location.name} value={location.name}>
-                      {location.title || location.name}{location.address ? ` — ${location.address}` : ''}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <AdminSelect
+                label="Location"
+                value={gmbState.selectedLocation}
+                onChange={(value) => setGmbState(prev => ({ ...prev, selectedLocation: value }))}
+                options={[
+                  { value: '', label: 'Select location...' },
+                  ...gmbState.locations.map((location) => ({
+                    value: location.name,
+                    label: `${location.title || location.name}${location.address ? ` — ${location.address}` : ''}`
+                  }))
+                ]}
+              />
             )}
 
             <div className="flex gap-2">
@@ -2803,7 +2794,7 @@ function ContentForSection(props: {
                     <td className="px-4 py-4 text-sm text-slate-600 dark:text-slate-400">{client.createdAt ? new Date(client.createdAt).toLocaleDateString() : 'N/A'}</td>
                     <td className="px-4 py-4 flex items-center gap-2">
                       <span className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 px-3 py-1 rounded-full">Active</span>
-                      <button onClick={() => onDeleteClient(client.id)} className="p-1 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded">
+                      <button onClick={() => onDeleteClient(client.id)} className="p-1 text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded transition-colors" title="Delete">
                         <Trash2 className="h-4 w-4" />
                       </button>
                     </td>
@@ -2859,10 +2850,10 @@ function ContentForSection(props: {
                     <td className="px-4 py-4">{c.appointments}</td>
                     <td className="px-4 py-4">
                       <div className="flex items-center gap-2">
-                        <button onClick={() => onEditClinic(c)} className="p-2 text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg">
+                        <button onClick={() => onEditClinic(c)} className="p-2 text-blue-500 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors" title="Edit">
                           <Edit className="h-4 w-4" />
                         </button>
-                        <button onClick={() => onDeleteClinic(c.id)} className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg">
+                        <button onClick={() => onDeleteClinic(c.id)} className="p-2 text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors" title="Delete">
                           <Trash2 className="h-4 w-4" />
                         </button>
                       </div>

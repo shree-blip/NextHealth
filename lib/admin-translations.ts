@@ -41,10 +41,16 @@ export const adminTranslations: Record<AdminLanguage, Record<string, string>> = 
     'Change Role': 'Change Role',
     'Status': 'Status',
     'No users found': 'No users found',
+    'Role': 'Role',
     'Admin': 'Admin',
     'Client': 'Client',
     'Make Admin': 'Make Admin',
     'Make Client': 'Make Client',
+    'Edit User': 'Edit User',
+    'Create User': 'Create User',
+    'New Password (optional)': 'New Password (optional)',
+    'Leave blank to keep current password': 'Leave blank to keep current password',
+    'Save Changes': 'Save Changes',
     
     // Blog Management
     'Blog Posts': 'Blog Posts',
@@ -56,8 +62,10 @@ export const adminTranslations: Record<AdminLanguage, Record<string, string>> = 
     'Post Content': 'Post Content',
     'Cover Image': 'Cover Image',
     'Publish': 'Publish',
+    'Save & Publish': 'Save & Publish',
     'Save': 'Save',
     'Cancel': 'Cancel',
+    'Delete': 'Delete',
     
     // News Management
     'News Articles': 'News Articles',
@@ -67,6 +75,22 @@ export const adminTranslations: Record<AdminLanguage, Record<string, string>> = 
     'Article Title': 'Article Title',
     'Article Slug': 'Article Slug',
     'Article Content': 'Article Content',
+    
+    // Clinic Management
+    'Clinic Management': 'Clinic Management',
+    'Clinic Name': 'Clinic Name',
+    'Clinic Type': 'Clinic Type',
+    'Select type...': 'Select type...',
+    'Emergency Room (ER)': 'Emergency Room (ER)',
+    'Urgent Care': 'Urgent Care',
+    'Wellness Center': 'Wellness Center',
+    'MedSpa': 'MedSpa',
+    'Dental Practice': 'Dental Practice',
+    'Specialty Clinic': 'Specialty Clinic',
+    'Assigned Manager': 'Assigned Manager',
+    'Select account...': 'Select account...',
+    'Leave Unassigned': 'Leave Unassigned',
+    'No clinics found': 'No clinics found',
     
     // Settings
     'Theme': 'Theme',
@@ -79,13 +103,16 @@ export const adminTranslations: Record<AdminLanguage, Record<string, string>> = 
     'Français': 'Français',
     'Deutsch': 'Deutsch',
     
-    // Messages
+    // Messages & Actions
     'Successfully updated': 'Successfully updated',
     'Error updating': 'Error updating',
     'Are you sure?': 'Are you sure?',
     'This action cannot be undone': 'This action cannot be undone',
-    'Delete': 'Delete',
     'Confirm': 'Confirm',
+    'Close': 'Close',
+    'Edit': 'Edit',
+    'Search': 'Search',
+    'Filter': 'Filter',
   },
   es: {
     // Navigation
@@ -127,10 +154,16 @@ export const adminTranslations: Record<AdminLanguage, Record<string, string>> = 
     'Change Role': 'Cambiar Rol',
     'Status': 'Estado',
     'No users found': 'No se encontraron usuarios',
+    'Role': 'Rol',
     'Admin': 'Admin',
     'Client': 'Cliente',
     'Make Admin': 'Hacer Admin',
     'Make Client': 'Hacer Cliente',
+    'Edit User': 'Editar Usuario',
+    'Create User': 'Crear Usuario',
+    'New Password (optional)': 'Nueva Contraseña (opcional)',
+    'Leave blank to keep current password': 'Deja en blanco para mantener la contraseña actual',
+    'Save Changes': 'Guardar Cambios',
     
     // Blog Management
     'Blog Posts': 'Publicaciones del Blog',
@@ -142,8 +175,10 @@ export const adminTranslations: Record<AdminLanguage, Record<string, string>> = 
     'Post Content': 'Contenido de Publicación',
     'Cover Image': 'Imagen de Portada',
     'Publish': 'Publicar',
+    'Save & Publish': 'Guardar y Publicar',
     'Save': 'Guardar',
     'Cancel': 'Cancelar',
+    'Delete': 'Eliminar',
     
     // News Management
     'News Articles': 'Artículos de Noticias',
@@ -153,6 +188,22 @@ export const adminTranslations: Record<AdminLanguage, Record<string, string>> = 
     'Article Title': 'Título del Artículo',
     'Article Slug': 'Slug del Artículo',
     'Article Content': 'Contenido del Artículo',
+    
+    // Clinic Management
+    'Clinic Management': 'Gestión de Clínicas',
+    'Clinic Name': 'Nombre de la Clínica',
+    'Clinic Type': 'Tipo de Clínica',
+    'Select type...': 'Seleccionar tipo...',
+    'Emergency Room (ER)': 'Sala de Emergencias (ER)',
+    'Urgent Care': 'Cuidado de Urgencia',
+    'Wellness Center': 'Centro de Bienestar',
+    'MedSpa': 'MedSpa',
+    'Dental Practice': 'Práctica Dental',
+    'Specialty Clinic': 'Clínica Especializada',
+    'Assigned Manager': 'Gerente Asignado',
+    'Select account...': 'Seleccionar cuenta...',
+    'Leave Unassigned': 'Dejar Sin Asignar',
+    'No clinics found': 'No se encontraron clínicas',
     
     // Settings
     'Theme': 'Tema',
@@ -165,13 +216,16 @@ export const adminTranslations: Record<AdminLanguage, Record<string, string>> = 
     'Français': 'Français',
     'Deutsch': 'Deutsch',
     
-    // Messages
+    // Messages & Actions
     'Successfully updated': 'Actualizado correctamente',
     'Error updating': 'Error al actualizar',
     'Are you sure?': '¿Estás seguro?',
     'This action cannot be undone': 'Esta acción no se puede deshacer',
-    'Delete': 'Eliminar',
     'Confirm': 'Confirmar',
+    'Close': 'Cerrar',
+    'Edit': 'Editar',
+    'Search': 'Buscar',
+    'Filter': 'Filtrar',
   },
   fr: {
     // Navigation
@@ -213,10 +267,16 @@ export const adminTranslations: Record<AdminLanguage, Record<string, string>> = 
     'Change Role': 'Changer de Rôle',
     'Status': 'Statut',
     'No users found': 'Aucun utilisateur trouvé',
+    'Role': 'Rôle',
     'Admin': 'Admin',
     'Client': 'Client',
     'Make Admin': 'Faire Admin',
     'Make Client': 'Faire Client',
+    'Edit User': 'Modifier l\'Utilisateur',
+    'Create User': 'Créer Utilisateur',
+    'New Password (optional)': 'Nouveau Mot de Passe (optionnel)',
+    'Leave blank to keep current password': 'Laissez vide pour conserver le mot de passe actuel',
+    'Save Changes': 'Enregistrer les Modifications',
     
     // Blog Management
     'Blog Posts': 'Articles de Blog',
@@ -228,8 +288,10 @@ export const adminTranslations: Record<AdminLanguage, Record<string, string>> = 
     'Post Content': 'Contenu de la Publication',
     'Cover Image': 'Image de Couverture',
     'Publish': 'Publier',
+    'Save & Publish': 'Enregistrer et Publier',
     'Save': 'Enregistrer',
     'Cancel': 'Annuler',
+    'Delete': 'Supprimer',
     
     // News Management
     'News Articles': 'Articles d\'Actualité',
@@ -239,6 +301,22 @@ export const adminTranslations: Record<AdminLanguage, Record<string, string>> = 
     'Article Title': 'Titre de l\'Article',
     'Article Slug': 'Slug de l\'Article',
     'Article Content': 'Contenu de l\'Article',
+    
+    // Clinic Management
+    'Clinic Management': 'Gestion des Cliniques',
+    'Clinic Name': 'Nom de la Clinique',
+    'Clinic Type': 'Type de Clinique',
+    'Select type...': 'Sélectionner le type...',
+    'Emergency Room (ER)': 'Salle d\'Urgence (ER)',
+    'Urgent Care': 'Soins d\'Urgence',
+    'Wellness Center': 'Centre de Bien-être',
+    'MedSpa': 'MedSpa',
+    'Dental Practice': 'Cabinet Dentaire',
+    'Specialty Clinic': 'Clinique Spécialisée',
+    'Assigned Manager': 'Gestionnaire Assigné',
+    'Select account...': 'Sélectionner le compte...',
+    'Leave Unassigned': 'Laisser Non Assigné',
+    'No clinics found': 'Aucune clinique trouvée',
     
     // Settings
     'Theme': 'Thème',
@@ -251,13 +329,16 @@ export const adminTranslations: Record<AdminLanguage, Record<string, string>> = 
     'Français': 'Français',
     'Deutsch': 'Deutsch',
     
-    // Messages
+    // Messages & Actions
     'Successfully updated': 'Mise à jour réussie',
     'Error updating': 'Erreur lors de la mise à jour',
     'Are you sure?': 'Êtes-vous sûr?',
     'This action cannot be undone': 'Cette action ne peut pas être annulée',
-    'Delete': 'Supprimer',
     'Confirm': 'Confirmer',
+    'Close': 'Fermer',
+    'Edit': 'Modifier',
+    'Search': 'Rechercher',
+    'Filter': 'Filtrer',
   },
   de: {
     // Navigation
@@ -299,10 +380,16 @@ export const adminTranslations: Record<AdminLanguage, Record<string, string>> = 
     'Change Role': 'Rolle ändern',
     'Status': 'Status',
     'No users found': 'Keine Benutzer gefunden',
+    'Role': 'Rolle',
     'Admin': 'Admin',
     'Client': 'Kunde',
     'Make Admin': 'Admin machen',
     'Make Client': 'Kunde machen',
+    'Edit User': 'Benutzer bearbeiten',
+    'Create User': 'Benutzer erstellen',
+    'New Password (optional)': 'Neues Passwort (optional)',
+    'Leave blank to keep current password': 'Lassen Sie leer, um das aktuelle Passwort zu behalten',
+    'Save Changes': 'Änderungen Speichern',
     
     // Blog Management
     'Blog Posts': 'Blog-Beiträge',
@@ -314,8 +401,10 @@ export const adminTranslations: Record<AdminLanguage, Record<string, string>> = 
     'Post Content': 'Beitragsinhalt',
     'Cover Image': 'Titelbild',
     'Publish': 'Veröffentlichen',
+    'Save & Publish': 'Speichern und Veröffentlichen',
     'Save': 'Speichern',
     'Cancel': 'Stornieren',
+    'Delete': 'Löschen',
     
     // News Management
     'News Articles': 'Nachrichtenartikel',
@@ -325,6 +414,22 @@ export const adminTranslations: Record<AdminLanguage, Record<string, string>> = 
     'Article Title': 'Artikeltitel',
     'Article Slug': 'Artikel-Slug',
     'Article Content': 'Artikelinhalt',
+    
+    // Clinic Management
+    'Clinic Management': 'Klinkverwaltung',
+    'Clinic Name': 'Klinikname',
+    'Clinic Type': 'Kliniktyp',
+    'Select type...': 'Typ auswählen...',
+    'Emergency Room (ER)': 'Notfallraum (ER)',
+    'Urgent Care': 'Dringende Pflege',
+    'Wellness Center': 'Wellness-Zentrum',
+    'MedSpa': 'MedSpa',
+    'Dental Practice': 'Zahnarztpraxis',
+    'Specialty Clinic': 'Fachklinik',
+    'Assigned Manager': 'Zugewiesener Manager',
+    'Select account...': 'Konto auswählen...',
+    'Leave Unassigned': 'Nicht zugewiesen lassen',
+    'No clinics found': 'Keine Kliniken gefunden',
     
     // Settings
     'Theme': 'Design',
@@ -337,13 +442,16 @@ export const adminTranslations: Record<AdminLanguage, Record<string, string>> = 
     'Français': 'Français',
     'Deutsch': 'Deutsch',
     
-    // Messages
+    // Messages & Actions
     'Successfully updated': 'Erfolgreich aktualisiert',
     'Error updating': 'Fehler beim Aktualisieren',
     'Are you sure?': 'Bist du sicher?',
     'This action cannot be undone': 'Diese Aktion kann nicht rückgängig gemacht werden',
-    'Delete': 'Löschen',
     'Confirm': 'Bestätigen',
+    'Close': 'Schließen',
+    'Edit': 'Bearbeiten',
+    'Search': 'Suchen',
+    'Filter': 'Filtern',
   },
 };
 
