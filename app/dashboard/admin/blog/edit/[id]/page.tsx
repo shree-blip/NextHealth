@@ -9,6 +9,7 @@ import {
   CoverImageCard,
   SEOCard,
   ContentEditorCard,
+  PublishDateCard,
   inputCls,
   labelCls,
 } from '@/components/EditPostLayout';
@@ -216,7 +217,13 @@ export default function EditBlogPost() {
           }
         />
 
-        {/* ── 4. Content Editor ──────────────────────────── */}
+        {/* ── 4. Publish Status ─────────────────────────── */}
+        <PublishDateCard
+          publishedAt={form.publishedAt}
+          onDateChange={(v) => setForm((p) => ({ ...p, publishedAt: v }))}
+        />
+
+        {/* ── 5. Content Editor ──────────────────────────── */}
         <ContentEditorCard
           content={form.content}
           onChange={(v) => setForm((p) => ({ ...p, content: v }))}

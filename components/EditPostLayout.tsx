@@ -275,6 +275,53 @@ export function ContentEditorCard({
   );
 }
 
+/* ── PublishDateCard ─────────────────────────────────────── */
+export function PublishDateCard({
+  publishedAt,
+  onDateChange,
+}: {
+  publishedAt: string;
+  onDateChange: (date: string) => void;
+}) {
+  const isPublished = !!publishedAt;
+  const formattedDate = publishedAt
+    ? new Date(publishedAt).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+      })
+    : 'Not published yet';
+
+  return (
+    <Card title="Publish Status">
+      <div className="space-y-3">
+        <div>
+          <label className={labelCls}>Publication Date</label>
+          <input
+            type="datetime-local"
+            value={publishedAt}
+            onChange={(e) => onDateChange(e.target.value)}
+            className={inputCls}
+          />
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            {isPublished ? `Published on ${formattedDate}` : formattedDate}
+          </p>
+        </div>
+        {isPublished && (
+          <div className="pt-2 border-t border-slate-200 dark:border-slate-700">
+            <div className="inline-flex items-center gap-1.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 px-3 py-1.5 rounded-lg font-medium text-sm">
+              <span className="w-2 h-2 bg-emerald-500 rounded-full" />
+              Published
+            </div>
+          </div>
+        )}
+      </div>
+    </Card>
+  );
+}
+
 /* ── PageHeader ──────────────────────────────────────────── */
 export function PageHeader({
   title,
@@ -298,7 +345,7 @@ export function PageHeader({
   onCancel: () => void;
 }) {
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+    <div className="sticky top-20 z-40 bg-slate-50 dark:bg-slate-950 py-4 mb-6 border-b border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row sm:items-center justify-between gap-4 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8">
       {/* Left: back + title */}
       <div className="flex items-center gap-3">
         <Link
@@ -381,7 +428,7 @@ export function EditPostShell({
   return (
     <>
       <Navbar />
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 py-8">
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 py-8 pt-20">
         <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8">
           {children}
         </div>

@@ -9,6 +9,7 @@ import {
   CoverImageCard,
   SEOCard,
   ContentEditorCard,
+  PublishDateCard,
   inputCls,
   labelCls,
 } from '@/components/EditPostLayout';
@@ -256,7 +257,13 @@ export default function EditNewsArticle() {
           onRemove={() => setForm((p) => ({ ...p, coverImage: '' }))}
         />
 
-        {/* ── 5. Content Editor ──────────────────────────── */}
+        {/* ── 5. Publish Status ─────────────────────────── */}
+        <PublishDateCard
+          publishedAt={form.publishedAt}
+          onDateChange={(v) => setForm((p) => ({ ...p, publishedAt: v }))}
+        />
+
+        {/* ── 6. Content Editor ──────────────────────────── */}
         <ContentEditorCard
           content={form.content}
           onChange={(v) => setForm((p) => ({ ...p, content: v }))}
