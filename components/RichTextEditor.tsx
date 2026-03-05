@@ -278,7 +278,7 @@ export default function RichTextEditor({
   return (
     <div className="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden bg-white dark:bg-slate-900">
       {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-1 p-2 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800">
+      <div className="flex flex-wrap items-center gap-1 p-2 border-b border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800/80">
         {/* Undo/Redo */}
         <ToolbarButton onClick={() => execCommand('undo')} title="Undo">
           <Undo className="h-4 w-4" />
@@ -292,7 +292,7 @@ export default function RichTextEditor({
         {/* Font/Heading Dropdown */}
         <select
           onChange={(e) => handleHeading(e.target.value)}
-          className="px-2 py-1 text-sm bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg focus:outline-none focus:border-emerald-500"
+          className="px-2 py-1 text-sm bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 border border-slate-200 dark:border-slate-600 rounded-lg focus:outline-none focus:border-emerald-500"
           defaultValue=""
         >
           <option value="" disabled>Format</option>
@@ -308,7 +308,7 @@ export default function RichTextEditor({
         {/* Font Size */}
         <select
           onChange={(e) => handleFontSize(e.target.value)}
-          className="px-2 py-1 text-sm bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg focus:outline-none focus:border-emerald-500"
+          className="px-2 py-1 text-sm bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 border border-slate-200 dark:border-slate-600 rounded-lg focus:outline-none focus:border-emerald-500"
           defaultValue="3"
         >
           <option value="1">Small</option>
@@ -396,21 +396,21 @@ export default function RichTextEditor({
         suppressContentEditableWarning
         onInput={handleInput}
         onKeyDown={handleKeyDown}
-        className="p-4 focus:outline-none prose dark:prose-invert max-w-none rich-text-editor-content"
-        style={{ minHeight, color: 'inherit' }}
+        className="p-4 focus:outline-none prose dark:prose-invert max-w-none rich-text-editor-content bg-white dark:bg-slate-900"
+        style={{ minHeight }}
         data-placeholder={placeholder}
       />
 
       {/* Image/Link Helper Area */}
-      <div className="border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 p-4">
+      <div className="border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 p-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="flex items-start gap-3">
-            <div className="p-3 bg-white dark:bg-slate-900 rounded-lg border-2 border-dashed border-emerald-500/30 flex-1">
+            <div className="p-3 bg-white dark:bg-slate-900 rounded-lg border-2 border-dashed border-emerald-500/30 dark:border-emerald-500/20 flex-1">
               <div className="flex items-center gap-2 mb-2">
                 <ImageIcon className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-                <span className="font-medium text-sm">Insert Image</span>
+                <span className="font-medium text-sm text-slate-900 dark:text-slate-100">Insert Image</span>
               </div>
-              <p className="text-xs text-slate-500 mb-2">
+              <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">
                 Click the <strong>Image button</strong> above to upload an image or paste URL. ALT text will be auto-generated.
               </p>
               <button
@@ -423,12 +423,12 @@ export default function RichTextEditor({
             </div>
           </div>
           <div className="flex items-start gap-3">
-            <div className="p-3 bg-white dark:bg-slate-900 rounded-lg border-2 border-dashed border-blue-500/30 flex-1">
+            <div className="p-3 bg-white dark:bg-slate-900 rounded-lg border-2 border-dashed border-blue-500/30 dark:border-blue-500/20 flex-1">
               <div className="flex items-center gap-2 mb-2">
                 <LinkIcon className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                <span className="font-medium text-sm">Insert Link</span>
+                <span className="font-medium text-sm text-slate-900 dark:text-slate-100">Insert Link</span>
               </div>
-              <p className="text-xs text-slate-500 mb-2">
+              <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">
                 Select text, then click the <strong>Link button</strong> above to create inbound or outbound links.
               </p>
               <button
@@ -449,39 +449,39 @@ export default function RichTextEditor({
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setShowLinkModal(false)} />
           <div className="relative bg-white dark:bg-slate-900 rounded-2xl p-6 w-full max-w-md shadow-xl border border-slate-200 dark:border-slate-700 z-10">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold flex items-center gap-2">
+              <h3 className="text-lg font-bold flex items-center gap-2 text-slate-900 dark:text-slate-100">
                 <LinkIcon className="h-5 w-5" />
                 Insert Link
               </h3>
-              <button type="button" onClick={() => setShowLinkModal(false)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg">
+              <button type="button" onClick={() => setShowLinkModal(false)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-500 dark:text-slate-400">
                 <X className="h-5 w-5" />
               </button>
             </div>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-1">Link URL *</label>
+                <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Link URL *</label>
                 <input
                   type="url"
                   value={linkUrl}
                   onChange={(e) => setLinkUrl(e.target.value)}
                   placeholder="https://example.com"
-                  className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 focus:outline-none focus:border-emerald-500"
+                  className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-emerald-500"
                   autoFocus
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Link Text (optional)</label>
+                <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Link Text (optional)</label>
                 <input
                   type="text"
                   value={linkText}
                   onChange={(e) => setLinkText(e.target.value)}
                   placeholder="Click here"
-                  className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 focus:outline-none focus:border-emerald-500"
+                  className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-emerald-500"
                 />
-                <p className="text-xs text-slate-500 mt-1">If empty, selected text or URL will be used</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">If empty, selected text or URL will be used</p>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-2">Open link in:</label>
+                <label className="block text-sm font-medium mb-2 text-slate-700 dark:text-slate-300">Open link in:</label>
                 <div className="flex gap-3">
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
@@ -491,7 +491,7 @@ export default function RichTextEditor({
                       onChange={() => setLinkTarget('_blank')}
                       className="text-emerald-600 focus:ring-emerald-500"
                     />
-                    <span className="text-sm flex items-center gap-1">
+                    <span className="text-sm flex items-center gap-1 text-slate-700 dark:text-slate-300">
                       New tab <ExternalLink className="h-3 w-3" />
                     </span>
                   </label>
@@ -503,7 +503,7 @@ export default function RichTextEditor({
                       onChange={() => setLinkTarget('_self')}
                       className="text-emerald-600 focus:ring-emerald-500"
                     />
-                    <span className="text-sm">Same tab</span>
+                    <span className="text-sm text-slate-700 dark:text-slate-300">Same tab</span>
                   </label>
                 </div>
               </div>
@@ -539,18 +539,18 @@ export default function RichTextEditor({
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setShowImageModal(false)} />
           <div className="relative bg-white dark:bg-slate-900 rounded-2xl p-6 w-full max-w-md shadow-xl border border-slate-200 dark:border-slate-700 z-10">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold flex items-center gap-2">
+              <h3 className="text-lg font-bold flex items-center gap-2 text-slate-900 dark:text-slate-100">
                 <ImageIcon className="h-5 w-5" />
                 Insert Image
               </h3>
-              <button type="button" onClick={() => setShowImageModal(false)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg">
+              <button type="button" onClick={() => setShowImageModal(false)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-500 dark:text-slate-400">
                 <X className="h-5 w-5" />
               </button>
             </div>
             <div className="space-y-4">
               {/* Upload option */}
               <div>
-                <label className="block text-sm font-medium mb-2">Upload Image</label>
+                <label className="block text-sm font-medium mb-2 text-slate-700 dark:text-slate-300">Upload Image</label>
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -564,10 +564,10 @@ export default function RichTextEditor({
                   className="w-full p-4 border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-lg hover:border-emerald-500 transition-colors text-left"
                 >
                   <div className="flex items-center gap-3">
-                    <Upload className="h-8 w-8 text-slate-400" />
+                    <Upload className="h-8 w-8 text-slate-400 dark:text-slate-500" />
                     <div>
-                      <p className="font-medium text-sm">Click to upload</p>
-                      <p className="text-xs text-slate-500">PNG, JPG, GIF up to 10MB</p>
+                      <p className="font-medium text-sm text-slate-700 dark:text-slate-300">Click to upload</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">PNG, JPG, GIF up to 10MB</p>
                     </div>
                   </div>
                 </button>
@@ -591,30 +591,30 @@ export default function RichTextEditor({
 
               {/* URL option */}
               <div>
-                <label className="block text-sm font-medium mb-1">Image URL</label>
+                <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Image URL</label>
                 <input
                   type="url"
                   value={imageUrl}
                   onChange={(e) => {
                     setImageUrl(e.target.value);
-                    setImageFile(null); // Clear file if URL is entered
+                    setImageFile(null);
                   }}
                   placeholder="https://example.com/image.jpg"
-                  className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 focus:outline-none focus:border-emerald-500"
+                  className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-emerald-500"
                 />
               </div>
 
               {/* ALT text */}
               <div>
-                <label className="block text-sm font-medium mb-1">Alt Text *</label>
+                <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Alt Text *</label>
                 <input
                   type="text"
                   value={imageAlt}
                   onChange={(e) => setImageAlt(e.target.value)}
                   placeholder="Describe the image for accessibility"
-                  className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 focus:outline-none focus:border-emerald-500"
+                  className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-emerald-500"
                 />
-                <p className="text-xs text-slate-500 mt-1">
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                   Auto-generated from blog title. Edit if needed for better SEO & accessibility.
                 </p>
               </div>
@@ -649,7 +649,7 @@ export default function RichTextEditor({
       <style jsx>{`
         [contenteditable]:empty:before {
           content: attr(data-placeholder);
-          color: #9ca3af;
+          color: #94a3b8;
           pointer-events: none;
         }
         [contenteditable] h1 {
@@ -667,11 +667,17 @@ export default function RichTextEditor({
           font-weight: bold;
           margin: 0.83em 0;
         }
+        [contenteditable] h4 {
+          font-size: 1em;
+          font-weight: bold;
+          margin: 0.83em 0;
+        }
         [contenteditable] blockquote {
           border-left: 4px solid #10b981;
           padding-left: 1em;
           margin: 1em 0;
-          color: #64748b;
+          color: #475569;
+          font-style: italic;
         }
         [contenteditable] pre {
           background: #1e293b;
@@ -685,10 +691,14 @@ export default function RichTextEditor({
           padding: 0.2em 0.4em;
           border-radius: 0.25em;
           font-family: monospace;
+          font-size: 0.9em;
         }
         [contenteditable] ul, [contenteditable] ol {
           padding-left: 1.5em;
           margin: 1em 0;
+        }
+        [contenteditable] li {
+          margin: 0.25em 0;
         }
         [contenteditable] img {
           max-width: 100%;
@@ -704,57 +714,116 @@ export default function RichTextEditor({
         [contenteditable] a:hover {
           color: #1d4ed8;
         }
-        /* Dark mode link styling */
-        .dark [contenteditable] a,
-        .theme-dark [contenteditable] a {
+        [contenteditable] p {
+          margin: 0.5em 0;
+          line-height: 1.7;
+        }
+        /* Dark mode overrides via :where to keep specificity manageable */
+        :global(.dark) [contenteditable] a,
+        :global(.theme-dark) [contenteditable] a {
           color: #60a5fa;
         }
-        .dark [contenteditable] a:hover,
-        .theme-dark [contenteditable] a:hover {
+        :global(.dark) [contenteditable] a:hover,
+        :global(.theme-dark) [contenteditable] a:hover {
           color: #93c5fd;
+        }
+        :global(.dark) [contenteditable] blockquote,
+        :global(.theme-dark) [contenteditable] blockquote {
+          color: #94a3b8;
+        }
+        :global(.dark) [contenteditable] code,
+        :global(.theme-dark) [contenteditable] code {
+          background: #334155;
+          color: #e2e8f0;
         }
       `}</style>
       <style jsx global>{`
+        /* ── Rich Text Editor: Light Mode ─────────────────────── */
         .rich-text-editor-content {
           color: #0f172a;
+          line-height: 1.7;
+          font-size: 1rem;
         }
         .rich-text-editor-content a {
-          color: #2563eb;
+          color: #2563eb !important;
           text-decoration: underline;
         }
         .rich-text-editor-content a:hover {
-          color: #1d4ed8;
+          color: #1d4ed8 !important;
         }
+
+        /* ── Rich Text Editor: Dark Mode ──────────────────────── */
         .dark .rich-text-editor-content,
-        .theme-dark .rich-text-editor-content {
+        .theme-dark .rich-text-editor-content,
+        html.theme-dark .rich-text-editor-content {
           color: #e2e8f0 !important;
         }
-        .dark .rich-text-editor-content *,
-        .theme-dark .rich-text-editor-content * {
-          color: inherit !important;
+        .dark .rich-text-editor-content h1,
+        .dark .rich-text-editor-content h2,
+        .dark .rich-text-editor-content h3,
+        .dark .rich-text-editor-content h4,
+        .dark .rich-text-editor-content p,
+        .dark .rich-text-editor-content li,
+        .dark .rich-text-editor-content span,
+        .dark .rich-text-editor-content strong,
+        .dark .rich-text-editor-content em,
+        .dark .rich-text-editor-content div,
+        .theme-dark .rich-text-editor-content h1,
+        .theme-dark .rich-text-editor-content h2,
+        .theme-dark .rich-text-editor-content h3,
+        .theme-dark .rich-text-editor-content h4,
+        .theme-dark .rich-text-editor-content p,
+        .theme-dark .rich-text-editor-content li,
+        .theme-dark .rich-text-editor-content span,
+        .theme-dark .rich-text-editor-content strong,
+        .theme-dark .rich-text-editor-content em,
+        .theme-dark .rich-text-editor-content div,
+        html.theme-dark .rich-text-editor-content h1,
+        html.theme-dark .rich-text-editor-content h2,
+        html.theme-dark .rich-text-editor-content h3,
+        html.theme-dark .rich-text-editor-content h4,
+        html.theme-dark .rich-text-editor-content p,
+        html.theme-dark .rich-text-editor-content li,
+        html.theme-dark .rich-text-editor-content span,
+        html.theme-dark .rich-text-editor-content strong,
+        html.theme-dark .rich-text-editor-content em,
+        html.theme-dark .rich-text-editor-content div {
+          color: #e2e8f0 !important;
         }
         .dark .rich-text-editor-content a,
-        .theme-dark .rich-text-editor-content a {
+        .theme-dark .rich-text-editor-content a,
+        html.theme-dark .rich-text-editor-content a {
           color: #60a5fa !important;
           text-decoration: underline;
         }
         .dark .rich-text-editor-content a:hover,
-        .theme-dark .rich-text-editor-content a:hover {
+        .theme-dark .rich-text-editor-content a:hover,
+        html.theme-dark .rich-text-editor-content a:hover {
           color: #93c5fd !important;
         }
         .dark .rich-text-editor-content pre,
-        .theme-dark .rich-text-editor-content pre {
+        .theme-dark .rich-text-editor-content pre,
+        html.theme-dark .rich-text-editor-content pre {
           color: #e2e8f0 !important;
           background: #1e293b !important;
         }
         .dark .rich-text-editor-content code,
-        .theme-dark .rich-text-editor-content code {
+        .theme-dark .rich-text-editor-content code,
+        html.theme-dark .rich-text-editor-content code {
           color: #e2e8f0 !important;
           background: #334155 !important;
         }
         .dark .rich-text-editor-content blockquote,
-        .theme-dark .rich-text-editor-content blockquote {
+        .theme-dark .rich-text-editor-content blockquote,
+        html.theme-dark .rich-text-editor-content blockquote {
           color: #94a3b8 !important;
+        }
+
+        /* ── Placeholder in dark mode ────────────────────────── */
+        .dark .rich-text-editor-content:empty:before,
+        .theme-dark .rich-text-editor-content:empty:before,
+        html.theme-dark .rich-text-editor-content:empty:before {
+          color: #64748b !important;
         }
       `}</style>
     </div>
