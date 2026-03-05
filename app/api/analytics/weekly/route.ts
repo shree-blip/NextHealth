@@ -1,9 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getCanonicalWeekData } from '@/lib/analytics-week';
+import { getAuthenticatedDbUser } from '@/lib/auth';
 
 // GET - Fetch weekly analytics for a specific clinic
 export async function GET(request: NextRequest) {
+  const user = await getAuthenticatedDbUser(request);
+  if (!user) {
+    return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+  }
+
   try {
     const { searchParams } = new URL(request.url);
     const clinicId = searchParams.get('clinicId');
@@ -48,9 +54,32 @@ export async function GET(request: NextRequest) {
 
 // POST - Create or update weekly analytics
 export async function POST(request: NextRequest) {
+  const user = await getAuthenticatedDbUser(request);
+  if (!user) {
+    return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+  }
+
   try {
     const body = await request.json();
-    const { clinicId, year, weekNumber, ...data } = body;
+    const { clinicId, year, weekNumber } = body;
+
+    // Allowlist of safe analytics fields (prevents field injection via spread)
+    const ALLOWED_FIELDS = [
+      'blogsPublished', 'avgRanking', 'totalTraffic', 'callsRequested',
+      'websiteVisits', 'directionClicks', 'metaImpressions', 'metaClicks',
+      'metaCTR', 'metaCPC', 'metaConversions', 'metaCostPerConversion',
+      'metaAdSpend', 'googleImpressions', 'googleClicks', 'googleCTR',
+      'googleCPC', 'googleConversions', 'googleCVR', 'googleCostPerConversion',
+      'googleTotalCost', 'socialPosts', 'socialViews', 'patientCount',
+      'digitalConversion', 'conversionRate', 'dailyPatientAvg',
+    ] as const;
+
+    const safeData: Record<string, number> = {};
+    for (const field of ALLOWED_FIELDS) {
+      if (body[field] !== undefined) {
+        safeData[field] = Number(body[field]) || 0;
+      }
+    }
 
     console.log('[Analytics API POST] Received data for:', { clinicId, year, weekNumber });
 
@@ -91,7 +120,7 @@ export async function POST(request: NextRequest) {
           data: {
             weekLabel: canonical.weekLabel,
             month: canonical.month,
-            ...data,
+            ...safeData,
             updatedAt: new Date(),
           },
         })
@@ -102,7 +131,7 @@ export async function POST(request: NextRequest) {
             month: canonical.month,
             weekNumber: numericWeekNumber,
             weekLabel: canonical.weekLabel,
-            ...data,
+            ...safeData,
           },
         });
 
@@ -119,6 +148,11 @@ export async function POST(request: NextRequest) {
 
 // DELETE - Delete a specific analytics record
 export async function DELETE(request: NextRequest) {
+  const user = await getAuthenticatedDbUser(request);
+  if (!user) {
+    return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+  }
+
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');

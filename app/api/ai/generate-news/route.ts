@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { generateText } from 'ai';
 import { openai } from '@ai-sdk/openai';
 import OpenAI from 'openai';
@@ -367,8 +367,19 @@ REMEMBER:
 }
 
 // ── POST: Generate a news article (manual trigger or cron) ─────────
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
+    // Auth: allow cron (via CRON_SECRET) or authenticated admin
+    const authHeader = request.headers.get('authorization');
+    const cronSecret = process.env.CRON_SECRET;
+    const isCron = cronSecret && authHeader === `Bearer ${cronSecret}`;
+
+    if (!isCron) {
+      const { requireAdmin } = await import('@/lib/auth');
+      const auth = await requireAdmin(request);
+      if ('response' in auth) return auth.response;
+    }
+
     const body = await request.json().catch(() => ({}));
     const { topic, autoPublish = false } = body as { topic?: string; autoPublish?: boolean };
 

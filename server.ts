@@ -30,7 +30,11 @@ const db = {
 
 const normalizeRole = (role?: string) => (String(role || '').toLowerCase() === 'admin' ? 'admin' : 'client');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-key-for-dev';
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  console.error('FATAL: JWT_SECRET environment variable is not set.');
+  process.exit(1);
+}
 
 // Stripe Setup
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_placeholder', {
@@ -103,8 +107,9 @@ app.prepare().then(() => {
         }
       }
 
-      // Determine role (mock logic: if email contains admin, make them admin)
-      if (email.includes('admin') || email === 'shree@focusyourfinance.com') {
+      // Determine role based on admin email allowlist
+      const ADMIN_EMAILS = ['shree@focusyourfinance.com'];
+      if (ADMIN_EMAILS.includes(email.toLowerCase())) {
         role = 'admin';
       }
 
@@ -200,20 +205,21 @@ app.prepare().then(() => {
       return res.status(400).json({ error: 'Email and password required' });
     }
 
-    // Auto-detect role from email (for new users)
-    const detectedRole = (email.includes('admin') || email === 'shree@focusyourfinance.com') ? 'admin' : 'client';
+    // Auto-detect role from admin email allowlist
+    const ADMIN_EMAILS_LOGIN = ['shree@focusyourfinance.com'];
+    const detectedRole = ADMIN_EMAILS_LOGIN.includes(email.toLowerCase()) ? 'admin' : 'client';
 
     try {
       // Find user from database
       let user = await prisma.user.findUnique({ where: { email } });
       
       if (!user) {
-        return res.status(401).json({ error: 'No account found with this email. Please contact your administrator.' });
+        return res.status(401).json({ error: 'Invalid credentials' });
       }
 
       // Verify password
       if (user.password !== password) {
-        return res.status(401).json({ error: 'Invalid password' });
+        return res.status(401).json({ error: 'Invalid credentials' });
       }
 
       // Update in-memory cache
@@ -309,7 +315,7 @@ app.prepare().then(() => {
       if (!user) return res.status(401).json({ error: 'User not found' });
 
       res.json({
-        currentPassword: user.password,
+        hasPassword: !!user.password,
         role: normalizeRole(user.role),
       });
     } catch (e) {
@@ -357,7 +363,6 @@ app.prepare().then(() => {
 
       res.json({
         message: 'Password updated successfully',
-        currentPassword: newPassword,
       });
     } catch (e) {
       console.error('Update password error:', e);

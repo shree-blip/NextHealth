@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import jwt from 'jsonwebtoken';
-const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-key-for-dev';
+
+function getJwtSecret(): string {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) throw new Error('JWT_SECRET is not set.');
+  return secret;
+}
 
 export async function PATCH(req: NextRequest) {
   try {
@@ -13,7 +18,7 @@ export async function PATCH(req: NextRequest) {
 
     let decoded: any;
     try {
-      decoded = jwt.verify(token, JWT_SECRET);
+      decoded = jwt.verify(token, getJwtSecret());
     } catch {
       return NextResponse.json({ error: 'Invalid or expired token' }, { status: 401 });
     }

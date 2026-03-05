@@ -2,8 +2,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { writeFile, mkdir } from 'fs/promises';
 import { join } from 'path';
 import { existsSync } from 'fs';
+import { getAuthenticatedDbUser } from '@/lib/auth';
+import { sanitizeFilename } from '@/lib/sanitize';
 
 export async function POST(req: NextRequest) {
+  const user = await getAuthenticatedDbUser(req);
+  if (!user) {
+    return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+  }
+
   try {
     const formData = await req.formData();
     const file = formData.get('file') as File;
@@ -30,7 +37,8 @@ export async function POST(req: NextRequest) {
 
     // Generate unique filename
     const timestamp = Date.now();
-    const extension = file.name.split('.').pop();
+    const rawExtension = (file.name.split('.').pop() || 'png');
+    const extension = sanitizeFilename(rawExtension);
     const filename = `avatar-${timestamp}.${extension}`;
     const filepath = join(uploadsDir, filename);
 

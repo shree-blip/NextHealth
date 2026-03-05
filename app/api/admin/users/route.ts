@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { requireAdmin } from '@/lib/auth';
+import { hashPassword } from '@/lib/password';
 
 export async function GET(req: NextRequest) {
   const auth = await requireAdmin(req);
@@ -66,7 +67,7 @@ export async function POST(req: NextRequest) {
       data: {
         name,
         email,
-        password,
+        password: await hashPassword(password),
         role: userRole,
       },
       select: {
@@ -142,7 +143,7 @@ export async function PATCH(req: NextRequest) {
     }
 
     if (typeof password === 'string' && password.trim()) {
-      updateData.password = password;
+      updateData.password = await hashPassword(password);
     }
 
     if (Object.keys(updateData).length === 0) {

@@ -3,7 +3,16 @@ import jwt from 'jsonwebtoken';
 import prisma from '@/lib/prisma';
 
 const APP_URL = process.env.APP_URL || 'http://localhost:3000';
-const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-key-for-dev';
+
+function getJwtSecret(): string {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    throw new Error('JWT_SECRET environment variable is not set.');
+  }
+  return secret;
+}
+
+const ADMIN_EMAILS = ['shree@focusyourfinance.com'];
 
 function normalizeRole(role?: string) {
   if (role === 'super_admin') return 'super_admin';
@@ -91,7 +100,7 @@ export async function GET(req: NextRequest) {
       throw new Error('Google account email is unavailable');
     }
 
-    const inferredRole = email.toLowerCase().includes('admin') || email.toLowerCase() === 'shree@focusyourfinance.com'
+    const inferredRole = ADMIN_EMAILS.includes(email.toLowerCase())
       ? 'admin'
       : 'client';
 
@@ -110,7 +119,7 @@ export async function GET(req: NextRequest) {
     const userRole = normalizeRole(user.role);
     const token = jwt.sign(
       { id: user.id, email: user.email, name: user.name, role: userRole },
-      JWT_SECRET,
+      getJwtSecret(),
       { expiresIn: '7d' }
     );
 

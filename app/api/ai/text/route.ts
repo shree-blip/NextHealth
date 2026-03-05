@@ -2,23 +2,23 @@ import { NextRequest, NextResponse } from 'next/server';
 import { generateText } from 'ai';
 import { openai } from '@ai-sdk/openai';
 import { prisma } from '@/lib/prisma';
+import { getAuthenticatedDbUser } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
-    const { prompt, tone, userId } = body;
-
-    // TODO: Replace this with your actual authentication logic
-    // Currently accepting userId from the request body
-    // In production, extract userId from JWT token or session
-    if (!userId) {
+    const user = await getAuthenticatedDbUser(req);
+    if (!user) {
       return NextResponse.json(
-        { error: 'User ID is required. Please authenticate.' },
+        { error: 'Not authenticated. Please log in.' },
         { status: 401 }
       );
     }
+    const userId = user.id;
+
+    const body = await req.json();
+    const { prompt, tone } = body;
 
     if (!prompt || typeof prompt !== 'string') {
       return NextResponse.json(

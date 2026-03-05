@@ -1343,13 +1343,14 @@ function SettingsView({ role, setToast }: { role: 'client' | 'admin'; setToast: 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
+    // Password settings loaded (password is never sent to the client)
     fetch('/api/auth/password')
       .then((res) => res.json())
-      .then((data) => {
-        if (data?.currentPassword) setCurrentPassword(data.currentPassword);
+      .then(() => {
+        // hasPassword field available if needed
       })
       .catch(() => {
-        setToast({ type: 'error', message: 'Failed to load current password.' });
+        setToast({ type: 'error', message: 'Failed to load password settings.' });
       });
   }, [setToast]);
 
@@ -1371,7 +1372,7 @@ function SettingsView({ role, setToast }: { role: 'client' | 'admin'; setToast: 
       }
 
       setToast({ type: 'success', message: 'Password updated and saved successfully.' });
-      setCurrentPassword(data.currentPassword || newPassword);
+      setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
     } catch (error: any) {

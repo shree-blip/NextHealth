@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 // import { updateUserSubscriptionAfterPayment } from '@/lib/subscription-utils'; // Uncomment when ready
 import prisma from '@/lib/prisma';
+import { getAuthenticatedDbUser } from '@/lib/auth';
 
 // Lazy-initialize Stripe to avoid build-time crash when env var is missing
 function getStripe() {
@@ -26,30 +27,16 @@ interface PaymentPayload {
     zipCode: string;
     country: string;
   };
-  card: {
-    number: string;
-    expiry: string;
-    cvc: string;
-  };
+  // NOTE: Raw card data removed. Use Stripe Elements / Checkout on the frontend.
+  // This route should receive a Stripe PaymentMethod ID, not raw card numbers.
+  paymentMethodId?: string;
 }
 
-async function getAuthenticatedUser(req: NextRequest) {
-  try {
-    const token = req.cookies.get('authToken')?.value;
-    if (!token) return null;
-
-    // Verify token and get user
-    const response = await fetch('http://localhost:3000/api/auth/verify', {
-      headers: { Cookie: `authToken=${token}` },
-    });
-    
-    if (!response.ok) return null;
-    
-    return await response.json();
-  } catch (err) {
-    console.error('Auth verification error:', err);
-    return null;
-  }
+/**
+ * Get authenticated user from JWT cookie (no SSRF).
+ */
+async function getAuthenticatedPaymentUser(req: NextRequest) {
+  return getAuthenticatedDbUser(req);
 }
 
 async function savePaymentToDB(
@@ -96,7 +83,7 @@ async function savePaymentToDB(
 export async function POST(req: NextRequest) {
   try {
     // Authenticate user
-    const user = await getAuthenticatedUser(req);
+    const user = await getAuthenticatedPaymentUser(req);
     if (!user) {
       return NextResponse.json(
         { message: 'Unauthorized' },
@@ -107,7 +94,7 @@ export async function POST(req: NextRequest) {
     const payload: PaymentPayload = await req.json();
 
     // Validate payload
-    if (!payload.planId || !payload.amount || !payload.billing || !payload.card) {
+    if (!payload.planId || !payload.amount || !payload.billing) {
       return NextResponse.json(
         { message: 'Missing required fields' },
         { status: 400 }
@@ -165,30 +152,18 @@ export async function POST(req: NextRequest) {
         });
       }
 
-      // Create payment method
-      const paymentMethod = await stripe.paymentMethods.create({
-        type: 'card',
-        card: {
-          number: payload.card.number,
-          exp_month: parseInt(payload.card.expiry.split('/')[0]),
-          exp_year: parseInt('20' + payload.card.expiry.split('/')[1]),
-          cvc: payload.card.cvc,
-        },
-        billing_details: {
-          name: payload.billing.fullName,
-          email: payload.billing.email,
-          address: {
-            line1: payload.billing.address,
-            city: payload.billing.city,
-            state: payload.billing.state,
-            postal_code: payload.billing.zipCode,
-            country: payload.billing.country,
-          },
-        },
-      });
+      // Use PaymentMethod created by Stripe Elements on the frontend
+      // This avoids handling raw card data server-side (PCI compliance)
+      let paymentMethodId = payload.paymentMethodId;
+      if (!paymentMethodId) {
+        return NextResponse.json(
+          { message: 'PaymentMethod ID is required. Use Stripe Elements to collect card details securely.' },
+          { status: 400 }
+        );
+      }
 
       // Attach payment method to customer
-      await stripe.paymentMethods.attach(paymentMethod.id, {
+      await stripe.paymentMethods.attach(paymentMethodId, {
         customer: customer.id,
       });
 
@@ -197,7 +172,7 @@ export async function POST(req: NextRequest) {
         amount: Math.round(payload.amount * 100), // Convert to cents
         currency: 'usd',
         customer: customer.id,
-        payment_method: paymentMethod.id,
+        payment_method: paymentMethodId,
         off_session: true,
         confirm: true,
         description: `${planMap[payload.planId] || payload.planId} - Tax: $${payload.taxAmount}`,
@@ -215,7 +190,7 @@ export async function POST(req: NextRequest) {
       } as Stripe.Charge;
 
       // Detach payment method after use (for security)
-      await stripe.paymentMethods.detach(paymentMethod.id);
+      await stripe.paymentMethods.detach(paymentMethodId);
     } catch (stripeErr: any) {
       console.error('Stripe error:', stripeErr);
       return NextResponse.json(

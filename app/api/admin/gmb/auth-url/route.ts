@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { requireAdmin } from '@/lib/auth';
 
 /**
  * Endpoint to generate GMB OAuth URL without redirecting.
@@ -6,6 +7,9 @@ import { NextRequest, NextResponse } from 'next/server';
  * Useful for client-side OAuth flow handling.
  */
 export async function GET(req: NextRequest) {
+  const auth = await requireAdmin(req);
+  if ('response' in auth) return auth.response;
+
   try {
     const clinicId = req.nextUrl.searchParams.get('clinicId');
     
@@ -34,8 +38,7 @@ export async function GET(req: NextRequest) {
     console.error('[GMB Auth URL] Error:', error);
     return NextResponse.json(
       {
-        error: error?.message || 'Failed to generate GMB auth URL',
-        details: process.env.NODE_ENV === 'development' ? error?.toString() : undefined,
+        error: 'Failed to generate GMB auth URL',
       },
       { status: 500 }
     );

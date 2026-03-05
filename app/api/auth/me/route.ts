@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import jwt from 'jsonwebtoken';
-const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-key-for-dev';
+
+function getJwtSecret(): string {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) throw new Error('JWT_SECRET is not set.');
+  return secret;
+}
 
 export async function GET(req: NextRequest) {
   const noCacheHeaders = {
@@ -15,7 +20,7 @@ export async function GET(req: NextRequest) {
     const token = req.cookies.get('auth_token')?.value;
     if (token) {
       try {
-        const decoded = jwt.verify(token, JWT_SECRET) as any;
+        const decoded = jwt.verify(token, getJwtSecret()) as any;
         // Look up user in database
         try {
           const dbUser = await prisma.user.findUnique({ where: { id: decoded.id } });

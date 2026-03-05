@@ -1,24 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { getAuthenticatedDbUser } from '@/lib/auth';
 
 export async function POST(req: NextRequest) {
   try {
-    // Get user from auth token
-    const token = req.cookies.get('authToken')?.value;
-    if (!token) {
+    // Get user from auth cookie (JWT-based, no SSRF)
+    const user = await getAuthenticatedDbUser(req);
+    if (!user) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
-
-    // Verify token and get user
-    const verifyResponse = await fetch('http://localhost:3000/api/auth/verify', {
-      headers: { Cookie: `authToken=${token}` },
-    });
-
-    if (!verifyResponse.ok) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const user = await verifyResponse.json();
 
     const { email, address, city, state, zipCode, country } = await req.json();
 
@@ -82,22 +72,11 @@ export async function POST(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   try {
-    // Get user from auth token
-    const token = req.cookies.get('authToken')?.value;
-    if (!token) {
+    // Get user from auth cookie (JWT-based, no SSRF)
+    const user = await getAuthenticatedDbUser(req);
+    if (!user) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
-
-    // Verify token and get user
-    const verifyResponse = await fetch('http://localhost:3000/api/auth/verify', {
-      headers: { Cookie: `authToken=${token}` },
-    });
-
-    if (!verifyResponse.ok) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const user = await verifyResponse.json();
 
     // Fetch user's billing details
     const userData = await prisma.user.findUnique({

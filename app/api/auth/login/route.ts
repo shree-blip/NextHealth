@@ -1,14 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import jwt from 'jsonwebtoken';
+import { hashPassword, verifyPassword } from '@/lib/password';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-key-for-dev';
+function getJwtSecret(): string {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    throw new Error('JWT_SECRET environment variable is not set.');
+  }
+  return secret;
+}
 
 // Admin emails – add more as needed
 const ADMIN_EMAILS = ['shree@focusyourfinance.com'];
 
 function isAdminEmail(email: string): boolean {
-  return ADMIN_EMAILS.includes(email.toLowerCase()) || email.toLowerCase().includes('admin');
+  return ADMIN_EMAILS.includes(email.toLowerCase());
 }
 
 export async function POST(req: NextRequest) {
@@ -38,10 +45,11 @@ export async function POST(req: NextRequest) {
         // No account exists — only auto-create if signing up (role explicitly provided)
         if (providedRole) {
           console.log(`[LOGIN] Creating new user: ${email} with role: ${role}`);
+          const hashedPw = await hashPassword(password);
           user = await prisma.user.create({
             data: {
               email,
-              password: password,
+              password: hashedPw,
               name: providedName || email.split('@')[0],
               role,
             },
@@ -49,22 +57,29 @@ export async function POST(req: NextRequest) {
           console.log(`[LOGIN] User created successfully: ${user.id}`);
         } else {
           console.log(`[LOGIN] No providedRole, returning no account error`);
-          return NextResponse.json({ error: 'No account found with this email. Please contact your administrator.' }, { status: 401 });
+          return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
         }
       } else {
         console.log(`[LOGIN] User found: ${user.id}, verifying password`);
-        // User exists — verify password
-        if (user.password !== password) {
+        // User exists — verify password (supports both bcrypt and legacy plaintext)
+        const passwordValid = await verifyPassword(password, user.password || '');
+        if (!passwordValid) {
           console.log(`[LOGIN] Invalid password for: ${email}`);
-          return NextResponse.json({ error: 'Invalid password' }, { status: 401 });
+          return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
         }
         console.log(`[LOGIN] Password verified successfully`);
+
+        // Auto-upgrade legacy plaintext passwords to bcrypt
+        if (user.password && !user.password.startsWith('$2a$') && !user.password.startsWith('$2b$')) {
+          const upgraded = await hashPassword(password);
+          await prisma.user.update({ where: { id: user.id }, data: { password: upgraded } });
+          console.log(`[LOGIN] Password upgraded to bcrypt for: ${email}`);
+        }
       }
     } catch (dbError) {
       console.error('[LOGIN] Database error during login:', dbError);
       return NextResponse.json({ 
-        error: 'Database connection failed. Please try again later.',
-        details: process.env.NODE_ENV === 'development' ? String(dbError) : undefined
+        error: 'Database connection failed. Please try again later.'
       }, { status: 500 });
     }
 
@@ -73,7 +88,7 @@ export async function POST(req: NextRequest) {
     // Create JWT token (works in serverless environments like Vercel)
     const token = jwt.sign(
       { id: user.id, email: user.email, name: user.name, role: uiRole },
-      JWT_SECRET,
+      getJwtSecret(),
       { expiresIn: '7d' }
     );
 

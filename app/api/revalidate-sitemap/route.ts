@@ -1,5 +1,6 @@
 import { revalidatePath } from 'next/cache';
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { getAuthenticatedDbUser } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -7,7 +8,12 @@ export const dynamic = 'force-dynamic';
  * Revalidate the sitemap after blog post changes
  * Triggered when posts are published/unpublished
  */
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+  const user = await getAuthenticatedDbUser(request);
+  if (!user) {
+    return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+  }
+
   try {
     const body = await request.json().catch(() => ({}));
     const slug = typeof body?.slug === 'string' ? body.slug : null;

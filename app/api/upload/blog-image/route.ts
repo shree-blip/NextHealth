@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getAuthenticatedDbUser } from '@/lib/auth';
+import { sanitizeFilename } from '@/lib/sanitize';
 
 export async function POST(req: NextRequest) {
+  const user = await getAuthenticatedDbUser(req);
+  if (!user) {
+    return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+  }
+
   try {
     const formData = await req.formData();
     const file = formData.get('file') as File;
@@ -28,7 +35,7 @@ export async function POST(req: NextRequest) {
         
         const timestamp = Date.now();
         const randomStr = Math.random().toString(36).substring(2, 8);
-        const extension = file.name.split('.').pop() || 'jpg';
+        const extension = sanitizeFilename(file.name.split('.').pop() || 'jpg');
         const filename = `blog-${timestamp}-${randomStr}.${extension}`;
         
         const blob = await put(filename, file, {

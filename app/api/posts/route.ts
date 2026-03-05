@@ -1,5 +1,7 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { requireAdmin } from '@/lib/auth';
+import { sanitizeHtml } from '@/lib/sanitize';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -21,14 +23,17 @@ export async function GET(request: Request) {
   return NextResponse.json(posts);
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+  const auth = await requireAdmin(request);
+  if ('response' in auth) return auth.response;
+
   const body = await request.json();
   const post = await prisma.post.create({
     data: {
       title: body.title,
       slug: body.slug,
       excerpt: body.excerpt || null,
-      content: body.content,
+      content: body.content ? sanitizeHtml(body.content) : '',
       coverImage: body.coverImage || null,
       coverImageAlt: body.coverImageAlt || null,
       seoTitle: body.seoTitle || null,

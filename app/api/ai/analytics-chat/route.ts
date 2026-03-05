@@ -5,7 +5,11 @@ import jwt from 'jsonwebtoken';
 export const dynamic = 'force-dynamic';
 export const fetchCache = 'force-no-store';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-key-for-dev';
+function getJwtSecret(): string {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) throw new Error('JWT_SECRET is not set.');
+  return secret;
+}
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY || '';
 
@@ -19,7 +23,7 @@ async function getAuthUser(req: NextRequest) {
   const token = req.cookies.get('auth_token')?.value;
   if (!token) return null;
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as any;
+    const decoded = jwt.verify(token, getJwtSecret()) as any;
     const user = await prisma.user.findUnique({ where: { id: decoded.id } });
     return user;
   } catch {

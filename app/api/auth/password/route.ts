@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import jwt from 'jsonwebtoken';
-const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-key-for-dev';
+import { hashPassword, verifyPassword } from '@/lib/password';
+
+function getJwtSecret(): string {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) throw new Error('JWT_SECRET is not set.');
+  return secret;
+}
 
 async function getAuthenticatedUser(req: NextRequest) {
   try {
@@ -9,7 +15,7 @@ async function getAuthenticatedUser(req: NextRequest) {
     if (!token) return null;
 
     try {
-      const decoded = jwt.verify(token, JWT_SECRET) as { id?: string };
+      const decoded = jwt.verify(token, getJwtSecret()) as { id?: string };
       if (!decoded?.id) return null;
 
       const dbUser = await prisma.user.findUnique({ where: { id: decoded.id } });
@@ -25,6 +31,9 @@ async function getAuthenticatedUser(req: NextRequest) {
   }
 }
 
+/**
+ * GET — returns whether the user has a password set (never returns the actual password).
+ */
 export async function GET(req: NextRequest) {
   try {
     const auth = await getAuthenticatedUser(req);
@@ -34,7 +43,7 @@ export async function GET(req: NextRequest) {
     }
 
     return NextResponse.json({
-      currentPassword: auth.dbUser.password,
+      hasPassword: !!auth.dbUser.password,
       role: auth.dbUser.role,
     });
   } catch (error) {
@@ -65,12 +74,14 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: 'All password fields are required' }, { status: 400 });
     }
 
-    if (auth.dbUser.password !== currentPassword) {
+    // Verify current password using bcrypt-aware comparison
+    const currentValid = await verifyPassword(currentPassword, auth.dbUser.password || '');
+    if (!currentValid) {
       return NextResponse.json({ error: 'Current password is incorrect' }, { status: 400 });
     }
 
-    if (newPassword.length < 6) {
-      return NextResponse.json({ error: 'New password must be at least 6 characters' }, { status: 400 });
+    if (newPassword.length < 8) {
+      return NextResponse.json({ error: 'New password must be at least 8 characters' }, { status: 400 });
     }
 
     if (newPassword !== confirmPassword) {
@@ -78,9 +89,10 @@ export async function PATCH(req: NextRequest) {
     }
 
     try {
+      const hashed = await hashPassword(newPassword);
       await prisma.user.update({
         where: { id: auth.dbUser.id },
-        data: { password: newPassword },
+        data: { password: hashed },
       });
     } catch (dbError) {
       console.error('Database update error:', dbError);
@@ -89,7 +101,6 @@ export async function PATCH(req: NextRequest) {
 
     return NextResponse.json({
       message: 'Password updated successfully',
-      currentPassword: newPassword,
     });
   } catch (error) {
     console.error('Update password error:', error);

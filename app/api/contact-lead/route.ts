@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { requireAdmin } from '@/lib/auth';
 
 export async function POST(req: NextRequest) {
   try {
@@ -36,6 +37,9 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET(req: NextRequest) {
+  const auth = await requireAdmin(req);
+  if ('response' in auth) return auth.response;
+
   try {
     const leads = await prisma.contactLead.findMany({
       orderBy: { createdAt: 'desc' },
@@ -51,6 +55,9 @@ export async function GET(req: NextRequest) {
 
 // PATCH endpoint for updating lead status
 export async function PATCH(req: NextRequest) {
+  const auth = await requireAdmin(req);
+  if ('response' in auth) return auth.response;
+
   try {
     const body = await req.json();
     const { id, status } = body;
