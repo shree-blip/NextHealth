@@ -3239,6 +3239,44 @@ function BlogManagementSection({
     }
   };
 
+  // ── One-Shot Blog generation handler ──────────────────────────────
+  const handleOneShotGenerate = async (autoPublish: boolean) => {
+    const taskId = addBackgroundTask('blog', `One-shot blog draft${autoPublish ? ' + publish' : ''}...`);
+    setAiCustomTopic('');
+    setAiShowPanel(false);
+    
+    try {
+      const res = await fetch('/api/ai/generate-blog-oneshot', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          topic: aiCustomTopic.trim() || undefined,
+          autoPublish,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error || 'Generation failed');
+      
+      const postsRes = await fetch('/api/posts');
+      const postsData = await postsRes.json();
+      setPosts(postsData);
+      
+      updateBackgroundTask(
+        taskId, 
+        'success', 
+        '✅ One-shot blog draft created!',
+        `"${data.post.title}" — SEO ${data.post.seoScore}/100 — ${autoPublish ? 'published' : 'saved as draft'}`
+      );
+    } catch (err) {
+      updateBackgroundTask(
+        taskId, 
+        'error', 
+        '❌ One-shot blog failed',
+        err instanceof Error ? err.message : 'Unknown error'
+      );
+    }
+  };
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
@@ -3309,6 +3347,25 @@ function BlogManagementSection({
                   >
                     <Zap className="h-4 w-4" /> Generate &amp; Publish
                   </button>
+                </div>
+
+                {/* One-Shot Draft Mode */}
+                <div className="border-t border-slate-200 dark:border-slate-700 pt-4">
+                  <p className="text-xs font-semibold text-amber-600 dark:text-amber-400 mb-2 uppercase tracking-wide">One-Shot Draft (GPT-4o, single output, no retries)</p>
+                  <div className="flex flex-wrap gap-3">
+                    <button
+                      onClick={() => handleOneShotGenerate(false)}
+                      className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm border-2 border-amber-500 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-all"
+                    >
+                      <Sparkles className="h-4 w-4" /> One-Shot Draft
+                    </button>
+                    <button
+                      onClick={() => handleOneShotGenerate(true)}
+                      className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm bg-amber-500 text-white hover:bg-amber-400 transition-all"
+                    >
+                      <Zap className="h-4 w-4" /> One-Shot &amp; Publish
+                    </button>
+                  </div>
                 </div>
 
                 {/* Info about daily automation */}
@@ -3573,6 +3630,44 @@ function NewsManagementSection({
     }
   };
 
+  // ── One-Shot News generation handler ──────────────────────────────
+  const handleOneShotGenerate = async (autoPublish: boolean) => {
+    const taskId = addBackgroundTask('news', `One-shot news draft${autoPublish ? ' + publish' : ''}...`);
+    setAiCustomTopic('');
+    setAiShowPanel(false);
+    
+    try {
+      const res = await fetch('/api/ai/generate-news-oneshot', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          topic: aiCustomTopic.trim() || undefined,
+          autoPublish,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error || 'Generation failed');
+      
+      const articlesRes = await fetch('/api/news');
+      const articlesData = await articlesRes.json();
+      setArticles(articlesData);
+      
+      updateBackgroundTask(
+        taskId, 
+        'success', 
+        '✅ One-shot news draft created!',
+        `"${data.article.title}" — SEO ${data.article.validationScore}/100 — ${autoPublish ? 'published' : 'saved as draft'}`
+      );
+    } catch (err) {
+      updateBackgroundTask(
+        taskId, 
+        'error', 
+        '❌ One-shot news failed',
+        err instanceof Error ? err.message : 'Unknown error'
+      );
+    }
+  };
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
@@ -3643,6 +3738,25 @@ function NewsManagementSection({
                   >
                     <Zap className="h-4 w-4" /> Generate &amp; Publish
                   </button>
+                </div>
+
+                {/* One-Shot Draft Mode */}
+                <div className="border-t border-slate-200 dark:border-slate-700 pt-4">
+                  <p className="text-xs font-semibold text-amber-600 dark:text-amber-400 mb-2 uppercase tracking-wide">One-Shot Draft (GPT-4o, single output, no retries)</p>
+                  <div className="flex flex-wrap gap-3">
+                    <button
+                      onClick={() => handleOneShotGenerate(false)}
+                      className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm border-2 border-amber-500 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-all"
+                    >
+                      <Sparkles className="h-4 w-4" /> One-Shot Draft
+                    </button>
+                    <button
+                      onClick={() => handleOneShotGenerate(true)}
+                      className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm bg-amber-500 text-white hover:bg-amber-400 transition-all"
+                    >
+                      <Zap className="h-4 w-4" /> One-Shot &amp; Publish
+                    </button>
+                  </div>
                 </div>
 
                 {/* Info about daily automation */}

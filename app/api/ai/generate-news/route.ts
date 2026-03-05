@@ -354,7 +354,7 @@ REMEMBER:
                         cleanedContent.toLowerCase().includes('informational purposes only');
 
   // ── Healthcare News Validation Loop (auto-rewrite until checks pass AND score >= 85, max 3 retries) ──
-  const MIN_NEWS_SCORE = 85;
+  const MIN_NEWS_SCORE = 75;
 
   let validationReport: HealthcareNewsValidationReport = runHealthcareNewsValidation({
     focusKeyword: seo.focusKeyword,
@@ -565,12 +565,12 @@ export async function POST(request: NextRequest) {
     // Generate the news article
     const newsData = await generateNewsArticle(topic);
 
-    // ── STRICT SEO GATING: Reject articles below 85/100 ──────────────
-    if (!newsData.seoValidationPassed || newsData.validationScore < 85) {
+    // ── STRICT SEO GATING: Reject articles below 75/100 ──────────────
+    if (!newsData.seoValidationPassed || newsData.validationScore < 75) {
       return NextResponse.json(
         {
           success: false,
-          error: `News article failed healthcare SEO validation (score: ${newsData.validationScore}/100, minimum: 85). The AI could not fix all issues after 3 retries.`,
+          error: `News article failed healthcare SEO validation (score: ${newsData.validationScore}/100, minimum: 75). The AI could not fix all issues after 3 retries.`,
           seoScore: newsData.validationScore,
           seoMetrics: newsData.seoMetrics,
           healthcareMetadata: newsData.healthcareMetadata,

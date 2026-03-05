@@ -318,7 +318,7 @@ REMEMBER:
     siteUrl: SITE_URL,
   });
 
-  const MIN_SEO_SCORE = 85;
+  const MIN_SEO_SCORE = 75;
 
   for (let attempt = 1; attempt <= 3 && (!seoCheck.passed || seoCheck.totalScore < MIN_SEO_SCORE); attempt++) {
     console.log(`[Blog SEO] Retry ${attempt}/3 — score: ${seoCheck.totalScore}/100, failures:`, seoCheck.failures);
@@ -446,12 +446,12 @@ export async function POST(request: NextRequest) {
     // Generate the blog post
     const blogData = await generateBlogPost(topic);
 
-    // ── STRICT SEO GATING: Reject posts below 85/100 ──────────────────
-    if (!blogData.seoValidationPassed || blogData.seoScore < 85) {
+    // ── STRICT SEO GATING: Reject posts below 75/100 ──────────────────
+    if (!blogData.seoValidationPassed || blogData.seoScore < 75) {
       return NextResponse.json(
         {
           success: false,
-          error: `Blog failed SEO validation (score: ${blogData.seoScore}/100, minimum: 85). The AI could not fix all issues after 3 retries.`,
+          error: `Blog failed SEO validation (score: ${blogData.seoScore}/100, minimum: 75). The AI could not fix all issues after 3 retries.`,
           seoScore: blogData.seoScore,
           seoMetrics: blogData.seoMetrics,
         },
