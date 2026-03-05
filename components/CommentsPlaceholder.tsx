@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { MessageCircle, Reply, Send, X, Loader2 } from 'lucide-react';
 import { useAuth } from '@/components/AuthProvider';
+import AuthModal from '@/components/AuthModal';
 
 interface ReplyItem {
   id: number;
@@ -23,6 +24,7 @@ export default function CommentsPlaceholder() {
   const { user, refreshUser } = useAuth();
   const [comments, setComments] = useState<CommentItem[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
   const [replyTo, setReplyTo] = useState<CommentItem | null>(null);
@@ -59,61 +61,19 @@ export default function CommentsPlaceholder() {
     return () => window.clearInterval(id);
   }, [slug, fetchComments]);
 
-  useEffect(() => {
-    const handleMessage = async (event: MessageEvent) => {
-      const appUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
-      const allowedOrigin = new URL(appUrl).origin;
-      const origin = event.origin;
+  const openAuthModal = (actionAfterAuth: () => void) => {
+    setError('');
+    setPendingAction(() => actionAfterAuth);
+    setIsAuthModalOpen(true);
+  };
 
-      if (!origin.endsWith('.run.app') && !origin.includes('localhost') && origin !== allowedOrigin) {
-        return;
-      }
-
-      if (event.data?.type === 'OAUTH_AUTH_ERROR') {
-        setError(event.data?.error || 'Google sign-in failed. Please try again.');
-        return;
-      }
-
-      if (event.data?.type === 'OAUTH_AUTH_SUCCESS') {
-        try {
-          if (event.data?.token) {
-            await fetch('/api/auth/token-login', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ token: event.data.token }),
-            });
-          }
-          await refreshUser();
-          if (pendingAction) pendingAction();
-          setPendingAction(null);
-        } catch (err) {
-          setError('Signed in, but failed to complete comment action. Please try again.');
-        }
-      }
-    };
-
-    window.addEventListener('message', handleMessage);
-    return () => window.removeEventListener('message', handleMessage);
-  }, [pendingAction, refreshUser]);
-
-  const openGoogleAuth = async (actionAfterAuth: () => void) => {
-    try {
-      setError('');
-      setPendingAction(() => actionAfterAuth);
-      const response = await fetch('/api/auth/url');
-      if (!response.ok) {
-        const data = await response.json().catch(() => ({ error: 'Failed to start Google sign-in' }));
-        throw new Error(data.error || 'Failed to start Google sign-in');
-      }
-      const { url } = await response.json();
-      const popup = window.open(url, 'oauth_popup', 'width=600,height=700');
-      if (!popup) {
-        throw new Error('Please allow popups to continue with Google sign-in.');
-      }
-    } catch (err: any) {
-      setPendingAction(null);
-      setError(err?.message || 'Failed to open Google sign-in.');
+  const handleAuthSuccess = async () => {
+    setIsAuthModalOpen(false);
+    await refreshUser();
+    if (pendingAction) {
+      pendingAction();
     }
+    setPendingAction(null);
   };
 
   const openNewCommentModal = () => {
@@ -125,7 +85,7 @@ export default function CommentsPlaceholder() {
     };
 
     if (!user) {
-      openGoogleAuth(launch);
+      openAuthModal(launch);
       return;
     }
 
@@ -141,7 +101,7 @@ export default function CommentsPlaceholder() {
     };
 
     if (!user) {
-      openGoogleAuth(launch);
+      openAuthModal(launch);
       return;
     }
 
@@ -169,9 +129,9 @@ export default function CommentsPlaceholder() {
         setIsSubmitting(false);
         setIsModalOpen(false);
         if (replyTo) {
-          openGoogleAuth(() => openReplyModal(replyTo));
+          openAuthModal(() => openReplyModal(replyTo));
         } else {
-          openGoogleAuth(openNewCommentModal);
+          openAuthModal(openNewCommentModal);
         }
         return;
       }
@@ -335,6 +295,17 @@ export default function CommentsPlaceholder() {
           </div>
         </div>
       )}
+
+      {/* Auth Modal */}
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => {
+          setIsAuthModalOpen(false);
+          setPendingAction(null);
+        }}
+        onSuccess={handleAuthSuccess}
+        initialMode="signup"
+      />
     </section>
   );
 }
