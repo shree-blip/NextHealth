@@ -96,6 +96,9 @@ function StaffManagementSection({
   finishActionSuccess: (successMessage: string) => void;
   finishActionError: () => void;
 }) {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeFilter, setActiveFilter] = useState<'all' | 'premium' | 'admin' | 'free'>('all');
+  const [showCreateModal, setShowCreateModal] = useState(false);
   const [createForm, setCreateForm] = useState({
     name: '',
     email: '',
@@ -134,9 +137,37 @@ function StaffManagementSection({
     return badge !== 'Free';
   };
 
-  const premiumClients = users.filter((listedUser) => isPremiumClient(listedUser));
-  const adminUsers = users.filter((listedUser) => listedUser.role === 'admin' || listedUser.role === 'super_admin');
-  const freeUsers = users.filter((listedUser) => listedUser.role === 'client' && !isPremiumClient(listedUser));
+  // Filter users by search query
+  const searchFilteredUsers = users.filter((user) => {
+    const query = searchQuery.toLowerCase();
+    return (
+      user.name?.toLowerCase().includes(query) ||
+      user.email?.toLowerCase().includes(query) ||
+      user.role?.toLowerCase().includes(query)
+    );
+  });
+
+  // Group users by type
+  const premiumClients = searchFilteredUsers.filter((listedUser) => isPremiumClient(listedUser));
+  const adminUsers = searchFilteredUsers.filter((listedUser) => listedUser.role === 'admin' || listedUser.role === 'super_admin');
+  const freeUsers = searchFilteredUsers.filter((listedUser) => listedUser.role === 'client' && !isPremiumClient(listedUser));
+
+  // Determine which users to display based on active filter
+  const getDisplayedUsers = () => {
+    switch (activeFilter) {
+      case 'premium':
+        return premiumClients;
+      case 'admin':
+        return adminUsers;
+      case 'free':
+        return freeUsers;
+      case 'all':
+      default:
+        return searchFilteredUsers;
+    }
+  };
+
+  const displayedUsers = getDisplayedUsers();
 
   const getPlanPillClasses = (label: string) => {
     if (label === 'Scale Elite') return 'bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-400';
@@ -247,6 +278,7 @@ function StaffManagementSection({
 
       setUsers((prev) => [data, ...prev]);
       setCreateForm({ name: '', email: '', password: '', role: 'client' });
+      setShowCreateModal(false);
       finishActionSuccess('User created successfully.');
     } catch (error: any) {
       finishActionError();
@@ -365,58 +397,159 @@ function StaffManagementSection({
         </div>
       )}
 
+      {/* Search and Filter Controls */}
       <div className="glass rounded-2xl p-6 border border-slate-200 dark:border-slate-700">
-        <h3 className="text-lg font-bold mb-4">Create New User</h3>
-        <form onSubmit={handleCreateUser} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <input
-            type="text"
-            value={createForm.name}
-            onChange={(e) => setCreateForm((prev) => ({ ...prev, name: e.target.value }))}
-            className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2"
-            placeholder="Full Name"
-            required
-          />
-          <input
-            type="email"
-            value={createForm.email}
-            onChange={(e) => setCreateForm((prev) => ({ ...prev, email: e.target.value }))}
-            className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2"
-            placeholder="Email Address"
-            required
-          />
-          <input
-            type="password"
-            value={createForm.password}
-            onChange={(e) => setCreateForm((prev) => ({ ...prev, password: e.target.value }))}
-            className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2"
-            placeholder="Password"
-            required
-          />
-          <select
-            value={createForm.role}
-            onChange={(e) => setCreateForm((prev) => ({ ...prev, role: e.target.value }))}
-            className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2"
+        <div className="flex flex-col lg:flex-row gap-4 justify-between items-start lg:items-center">
+          {/* Search Bar */}
+          <div className="relative flex-1 w-full lg:max-w-md">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search by name, email, or role..."
+              className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            />
+            <Users className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          </div>
+
+          {/* Filter Buttons */}
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => setActiveFilter('all')}
+              className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                activeFilter === 'all'
+                  ? 'bg-gradient-to-r from-emerald-500 to-cyan-500 text-white shadow-md shadow-emerald-600/20'
+                  : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+              }`}
+            >
+              All Users ({searchFilteredUsers.length})
+            </button>
+            <button
+              onClick={() => setActiveFilter('premium')}
+              className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                activeFilter === 'premium'
+                  ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md shadow-amber-600/20'
+                  : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+              }`}
+            >
+              Premium ({premiumClients.length})
+            </button>
+            <button
+              onClick={() => setActiveFilter('admin')}
+              className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                activeFilter === 'admin'
+                  ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-md shadow-purple-600/20'
+                  : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+              }`}
+            >
+              Admin ({adminUsers.length})
+            </button>
+            <button
+              onClick={() => setActiveFilter('free')}
+              className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                activeFilter === 'free'
+                  ? 'bg-gradient-to-r from-slate-500 to-slate-600 text-white shadow-md shadow-slate-600/20'
+                  : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+              }`}
+            >
+              Free ({freeUsers.length})
+            </button>
+          </div>
+
+          {/* Create User Button */}
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-emerald-600/20 transition-opacity hover:opacity-95 whitespace-nowrap"
           >
-            <option value="client">Client</option>
-            <option value="admin">Admin</option>
-          </select>
-          <div className="md:col-span-2">
+            <Plus className="h-4 w-4" />
+            Create User
+          </button>
+        </div>
+      </div>
+
+      {/* User Table Display */}
+      <div className="space-y-6">
+        {activeFilter === 'all' ? (
+          <>
+            {renderUserTable('Premium Clients', premiumClients)}
+            {renderUserTable('Admin Users', adminUsers)}
+            {renderUserTable('Free Users', freeUsers)}
+          </>
+        ) : activeFilter === 'premium' ? (
+          renderUserTable('Premium Clients', premiumClients)
+        ) : activeFilter === 'admin' ? (
+          renderUserTable('Admin Users', adminUsers)
+        ) : (
+          renderUserTable('Free Users', freeUsers)
+        )}
+      </div>
+
+      {/* Create User Modal */}
+      <Modal isOpen={showCreateModal} onClose={() => setShowCreateModal(false)} title="Create New User">
+        <form onSubmit={handleCreateUser} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium mb-1">Full Name</label>
+            <input
+              type="text"
+              value={createForm.name}
+              onChange={(e) => setCreateForm((prev) => ({ ...prev, name: e.target.value }))}
+              className="w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 bg-white dark:bg-slate-800"
+              placeholder="Enter full name"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">Email Address</label>
+            <input
+              type="email"
+              value={createForm.email}
+              onChange={(e) => setCreateForm((prev) => ({ ...prev, email: e.target.value }))}
+              className="w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 bg-white dark:bg-slate-800"
+              placeholder="user@example.com"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">Password</label>
+            <input
+              type="password"
+              value={createForm.password}
+              onChange={(e) => setCreateForm((prev) => ({ ...prev, password: e.target.value }))}
+              className="w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 bg-white dark:bg-slate-800"
+              placeholder="Enter password"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">Role</label>
+            <select
+              value={createForm.role}
+              onChange={(e) => setCreateForm((prev) => ({ ...prev, role: e.target.value }))}
+              className="w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 bg-white dark:bg-slate-800"
+            >
+              <option value="client">Client</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+
+          <div className="flex gap-3 pt-2">
             <button
               type="submit"
-              className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-emerald-600/20 transition-opacity hover:opacity-95"
+              className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-emerald-600/20 transition-opacity hover:opacity-95"
             >
               <Plus className="h-4 w-4" />
               Create User
             </button>
+            <button
+              type="button"
+              onClick={() => setShowCreateModal(false)}
+              className="px-4 py-2 rounded-xl bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-white hover:bg-slate-300 dark:hover:bg-slate-600"
+            >
+              Cancel
+            </button>
           </div>
         </form>
-      </div>
-
-      <div className="space-y-6">
-        {renderUserTable('Premium Clients', premiumClients)}
-        {renderUserTable('Admin Users', adminUsers)}
-        {renderUserTable('Free Users', freeUsers)}
-      </div>
+      </Modal>
 
       <Modal isOpen={showEditModal} onClose={() => setShowEditModal(false)} title="Edit User">
         <div className="space-y-4">
@@ -555,6 +688,20 @@ function AdminDashboardContent() {
   const [newClinicAssignedUser, setNewClinicAssignedUser] = useState('');
   // Analytics refresh trigger – incremented after form saves
   const [analyticsRefreshKey, setAnalyticsRefreshKey] = useState(0);
+
+  // Command Center metrics
+  const [commandCenterData, setCommandCenterData] = useState({
+    weeklyPatients: 0,
+    weeklyPatientsTrend: 0,
+    monthlyPatients: 0,
+    monthlyPatientsTrend: 0,
+    weeklyAdSpend: { meta: 0, google: 0, total: 0 },
+    monthlyAdSpend: { meta: 0, google: 0, total: 0 },
+    topClinics: [] as any[],
+    traffic: { total: 0, calls: 0, websiteVisits: 0, directionClicks: 0 },
+    alerts: [] as any[],
+    recentActivity: [] as any[],
+  });
 
   const isAdminLike = useCallback((role?: string) => role === 'admin' || role === 'super_admin', []);
 
@@ -733,6 +880,29 @@ function AdminDashboardContent() {
 
     return () => window.clearTimeout(timerId);
   }, [actionFeedback.showSuccess]);
+
+  // Fetch command center data when on Global Stats section
+  useEffect(() => {
+    if (section !== 'Global Stats' || !user) return;
+    
+    const fetchCommandCenterData = async () => {
+      try {
+        const response = await fetch('/api/admin/stats/command-center', { cache: 'no-store' });
+        if (response.ok) {
+          const data = await response.json();
+          setCommandCenterData(data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch command center data:', error);
+      }
+    };
+
+    fetchCommandCenterData();
+    
+    // Refresh every 30 seconds
+    const intervalId = setInterval(fetchCommandCenterData, 30000);
+    return () => clearInterval(intervalId);
+  }, [section, user]);
 
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' });
@@ -1434,6 +1604,8 @@ function AdminDashboardContent() {
           finishActionSuccess={finishActionSuccess}
           finishActionError={finishActionError}
           t={t}
+          commandCenterData={commandCenterData}
+          navigateToSection={navigateToSection}
         />
         </div>
       </main>
@@ -2126,25 +2298,6 @@ function NavItem({ icon: Icon, label, active = false, onClick, dark = false }: {
   );
 }
 
-function EfficiencyBar({ label, value }: { label: string, value: number }) {
-  return (
-    <div className="space-y-2">
-      <div className="flex justify-between text-sm">
-        <span className="text-slate-600 dark:text-slate-400">{label}</span>
-        <span className="font-bold">{value}%</span>
-      </div>
-      <div className="h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-        <motion.div 
-          initial={{ width: 0 }}
-          animate={{ width: `${value}%` }}
-          transition={{ duration: 1.5, ease: "easeOut" }}
-          className="h-full bg-emerald-500"
-        />
-      </div>
-    </div>
-  );
-}
-
 // render content based on selected section
 function ContentForSection(props: {
   section: string;
@@ -2176,6 +2329,8 @@ function ContentForSection(props: {
   finishActionSuccess: (successMessage: string) => void;
   finishActionError: () => void;
   t: (key: string) => string;
+  commandCenterData: any;
+  navigateToSection: (section: string) => void;
 }) {
   const {
     section,
@@ -2207,6 +2362,8 @@ function ContentForSection(props: {
     finishActionSuccess,
     finishActionError,
     t,
+    commandCenterData,
+    navigateToSection,
   } = props;
 
   switch(section) {
@@ -2357,27 +2514,210 @@ function ContentForSection(props: {
             </div>
           </div>
 
-          {/* AI Performance & Logs */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <div className="glass rounded-[2.5rem] p-8 border border-slate-200 dark:border-slate-700">
-              <div className="flex items-center gap-3 mb-6">
-                <Zap className="h-6 w-6 text-emerald-500" />
-                <h3 className="text-xl font-bold">AI Intake Efficiency</h3>
+          {/* Key Metrics Overview */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            {/* Total Patient Visits - Last Week */}
+            <div className="glass rounded-2xl p-6 border border-slate-200 dark:border-slate-700">
+              <div className="flex items-center gap-2 mb-2">
+                <Activity className="h-5 w-5 text-emerald-500" />
+                <h4 className="text-sm font-medium text-slate-600 dark:text-slate-400">Last Week</h4>
               </div>
-              <div className="space-y-6">
-                <EfficiencyBar label="Intent Recognition" value={98} />
-                <EfficiencyBar label="Insurance Verification" value={92} />
-                <EfficiencyBar label="Appointment Booking" value={89} />
+              <p className="text-3xl font-bold mb-1">{commandCenterData.weeklyPatients.toLocaleString()}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Patient Visits</p>
+              <div className="mt-3 flex items-center gap-1 text-xs">
+                <span className={commandCenterData.weeklyPatientsTrend >= 0 ? 'text-emerald-500' : 'text-red-500'}>
+                  {commandCenterData.weeklyPatientsTrend >= 0 ? '↑' : '↓'} {Math.abs(commandCenterData.weeklyPatientsTrend)}%
+                </span>
+                <span className="text-slate-500 dark:text-slate-400">vs prev week</span>
               </div>
             </div>
-            
-            <div className="glass rounded-[2.5rem] p-8 border border-slate-200 dark:border-slate-700">
-              <h3 className="text-xl font-bold mb-6">System Logs</h3>
-              <div className="font-mono text-xs text-slate-500 dark:text-slate-400 space-y-2">
-                <p><span className="text-emerald-500">[21:57:15]</span> AI Agent #42 successfully verified insurance for Client ID: 90210</p>
-                <p><span className="text-emerald-500">[21:56:42]</span> Global SEO sync completed for 124 keywords</p>
-                <p><span className="text-blue-500">[21:55:10]</span> New client &quot;Houston ER&quot; added to system</p>
-                <p><span className="text-slate-400">[21:54:05]</span> Routine security audit completed. 0 vulnerabilities found.</p>
+
+            {/* Total Patient Visits - Last Month */}
+            <div className="glass rounded-2xl p-6 border border-slate-200 dark:border-slate-700">
+              <div className="flex items-center gap-2 mb-2">
+                <Calendar className="h-5 w-5 text-blue-500" />
+                <h4 className="text-sm font-medium text-slate-600 dark:text-slate-400">Last Month</h4>
+              </div>
+              <p className="text-3xl font-bold mb-1">{commandCenterData.monthlyPatients.toLocaleString()}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Patient Visits</p>
+              <div className="mt-3 flex items-center gap-1 text-xs">
+                <span className={commandCenterData.monthlyPatientsTrend >= 0 ? 'text-emerald-500' : 'text-red-500'}>
+                  {commandCenterData.monthlyPatientsTrend >= 0 ? '↑' : '↓'} {Math.abs(commandCenterData.monthlyPatientsTrend)}%
+                </span>
+                <span className="text-slate-500 dark:text-slate-400">vs prev month</span>
+              </div>
+            </div>
+
+            {/* Total Ad Spend - Week */}
+            <div className="glass rounded-2xl p-6 border border-slate-200 dark:border-slate-700">
+              <div className="flex items-center gap-2 mb-2">
+                <DollarSign className="h-5 w-5 text-amber-500" />
+                <h4 className="text-sm font-medium text-slate-600 dark:text-slate-400">Weekly Ad Spend</h4>
+              </div>
+              <p className="text-3xl font-bold mb-1">${commandCenterData.weeklyAdSpend.total.toLocaleString()}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Meta + Google</p>
+              <div className="mt-3 flex items-center gap-1 text-xs">
+                <span className="text-slate-500 dark:text-slate-400">
+                  Meta: ${commandCenterData.weeklyAdSpend.meta.toLocaleString()} • Google: ${commandCenterData.weeklyAdSpend.google.toLocaleString()}
+                </span>
+              </div>
+            </div>
+
+            {/* Total Ad Spend - Month */}
+            <div className="glass rounded-2xl p-6 border border-slate-200 dark:border-slate-700">
+              <div className="flex items-center gap-2 mb-2">
+                <DollarSign className="h-5 w-5 text-purple-500" />
+                <h4 className="text-sm font-medium text-slate-600 dark:text-slate-400">Monthly Ad Spend</h4>
+              </div>
+              <p className="text-3xl font-bold mb-1">${commandCenterData.monthlyAdSpend.total.toLocaleString()}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Meta + Google</p>
+              <div className="mt-3 flex items-center gap-1 text-xs">
+                <span className="text-slate-500 dark:text-slate-400">
+                  Meta: ${commandCenterData.monthlyAdSpend.meta.toLocaleString()} • Google: ${commandCenterData.monthlyAdSpend.google.toLocaleString()}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Patient Visits by Clinic & Traffic Summary */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+            {/* Patient Visits by Clinic */}
+            <div className="glass rounded-2xl p-6 border border-slate-200 dark:border-slate-700">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-2">
+                  <Building2 className="h-5 w-5 text-emerald-500" />
+                  <h3 className="text-lg font-bold">Top Performing Clinics</h3>
+                </div>
+                <button 
+                  onClick={() => navigateToSection('Analytics')}
+                  className="text-xs text-emerald-500 hover:underline"
+                >
+                  View All
+                </button>
+              </div>
+              <div className="space-y-3">
+                {commandCenterData.topClinics.length > 0 ? (
+                  commandCenterData.topClinics.map((clinic: any, idx: number) => (
+                    <div key={clinic.clinicId} className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
+                      <div className="flex-1">
+                        <p className="font-medium text-sm">{clinic.name}</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">{clinic.location}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-bold text-lg">{clinic.patients.toLocaleString()}</p>
+                        <p className="text-xs">
+                          <span className={clinic.trend >= 0 ? 'text-emerald-500' : 'text-red-500'}>
+                            {clinic.trend >= 0 ? '↑' : '↓'} {Math.abs(clinic.trend)}%
+                          </span>
+                        </p>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
+                    <div className="flex-1">
+                      <p className="font-medium text-sm">No data available</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">Add weekly analytics to see clinic performance</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Traffic & GMB Summary */}
+            <div className="glass rounded-2xl p-6 border border-slate-200 dark:border-slate-700">
+              <div className="flex items-center gap-2 mb-6">
+                <Globe className="h-5 w-5 text-blue-500" />
+                <h3 className="text-lg font-bold">Traffic & GMB Summary</h3>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
+                  <p className="text-xs text-slate-600 dark:text-slate-400 mb-1">Total Traffic</p>
+                  <p className="text-2xl font-bold">{commandCenterData.traffic.total.toLocaleString()}</p>
+                </div>
+                <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
+                  <p className="text-xs text-slate-600 dark:text-slate-400 mb-1">Phone Calls</p>
+                  <p className="text-2xl font-bold">{commandCenterData.traffic.calls.toLocaleString()}</p>
+                </div>
+                <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
+                  <p className="text-xs text-slate-600 dark:text-slate-400 mb-1">Website Visits</p>
+                  <p className="text-2xl font-bold">{commandCenterData.traffic.websiteVisits.toLocaleString()}</p>
+                </div>
+                <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
+                  <p className="text-xs text-slate-600 dark:text-slate-400 mb-1">Direction Clicks</p>
+                  <p className="text-2xl font-bold">{commandCenterData.traffic.directionClicks.toLocaleString()}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Alerts & Recent Activity */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* System Alerts & Issues */}
+            <div className="glass rounded-2xl p-6 border border-slate-200 dark:border-slate-700">
+              <div className="flex items-center gap-2 mb-6">
+                <ShieldAlert className="h-5 w-5 text-amber-500" />
+                <h3 className="text-lg font-bold">System Alerts</h3>
+              </div>
+              <div className="space-y-3">
+                {commandCenterData.alerts.length > 0 ? (
+                  commandCenterData.alerts.map((alert: any, idx: number) => (
+                    <div key={idx} className="flex items-start gap-3 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-slate-700 dark:text-slate-300">{alert.message}</p>
+                        {alert.details && (
+                          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{alert.details}</p>
+                        )}
+                      </div>
+                      <span className={`text-xs px-2 py-1 rounded-full ${
+                        alert.type === 'warning'
+                          ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'
+                          : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+                      }`}>
+                        {alert.type === 'warning' ? '⚠️' : '❌'}
+                      </span>
+                    </div>
+                  ))
+                ) : (
+                  <div className="flex items-start gap-3 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-slate-700 dark:text-slate-300">All systems operational</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">No alerts or issues detected</p>
+                    </div>
+                    <span className="text-xs px-2 py-1 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 rounded-full">OK</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Recent Admin Activity */}
+            <div className="glass rounded-2xl p-6 border border-slate-200 dark:border-slate-700">
+              <div className="flex items-center gap-2 mb-6">
+                <Activity className="h-5 w-5 text-purple-500" />
+                <h3 className="text-lg font-bold">Recent Activity</h3>
+              </div>
+              <div className="space-y-3 max-h-[300px] overflow-y-auto">
+                {commandCenterData.recentActivity.length > 0 ? (
+                  commandCenterData.recentActivity.map((activity: any, idx: number) => (
+                    <div key={idx} className="flex items-start gap-3 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-slate-700 dark:text-slate-300">{activity.action}</p>
+                        <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
+                          {activity.name} {activity.details && `• ${activity.details}`}
+                        </p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                          {new Date(activity.timestamp).toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="flex items-start gap-3 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
+                    <div className="flex-1">
+                      <p className="text-sm text-slate-600 dark:text-slate-400">No recent activity</p>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
