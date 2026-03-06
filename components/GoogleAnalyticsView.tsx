@@ -139,20 +139,23 @@ export default function GoogleAnalyticsView({ clinicId, isDark = false, isClient
     if (loading) {
       return (
         <div className={`rounded-2xl p-10 border text-center ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
-          <Loader2 className="h-8 w-8 animate-spin text-blue-500 mx-auto mb-3" />
-          <p className={`text-sm font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Loading Google integration data...</p>
+          <div className="h-14 w-14 rounded-2xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center mx-auto mb-4">
+            <Loader2 className="h-7 w-7 animate-spin text-blue-500" />
+          </div>
+          <p className={`text-sm font-semibold ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>Loading Google integration data...</p>
+          <p className={`text-xs mt-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Checking connection status</p>
         </div>
       );
     }
     if (isClient) {
       return (
         <div className={`rounded-2xl p-10 border text-center ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
-          <div className="h-14 w-14 rounded-2xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center mx-auto mb-4">
-            <Search className="h-7 w-7 text-blue-400" />
+          <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/20 flex items-center justify-center mx-auto mb-5 shadow-sm">
+            <Search className="h-8 w-8 text-blue-400" />
           </div>
           <p className={`text-lg font-bold mb-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>Google Analytics Not Connected</p>
-          <p className={`text-sm max-w-md mx-auto ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-            Your administrator hasn&apos;t connected Google Analytics or Search Console yet. Once configured, your live analytics data will appear here automatically.
+          <p className={`text-sm max-w-md mx-auto leading-relaxed ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+            Your administrator hasn&apos;t connected Google Analytics or Search Console for this clinic yet. Once they&apos;ve configured the integration, your live analytics data will appear here automatically.
           </p>
         </div>
       );
@@ -163,9 +166,11 @@ export default function GoogleAnalyticsView({ clinicId, isDark = false, isClient
   if (loading) {
     return (
       <div className={`rounded-2xl p-10 border text-center ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
-        <Loader2 className="h-8 w-8 animate-spin text-emerald-500 mx-auto mb-3" />
-        <p className={`text-sm font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Fetching analytics data...</p>
-        <p className={`text-xs mt-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>This may take a few seconds</p>
+        <div className="h-14 w-14 rounded-2xl bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center mx-auto mb-4">
+          <Loader2 className="h-7 w-7 animate-spin text-emerald-500" />
+        </div>
+        <p className={`text-sm font-semibold ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>Fetching analytics data...</p>
+        <p className={`text-xs mt-1.5 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Pulling the latest data from Google — this may take a few seconds</p>
       </div>
     );
   }
@@ -173,15 +178,46 @@ export default function GoogleAnalyticsView({ clinicId, isDark = false, isClient
   if (error) {
     return (
       <div className={`rounded-2xl p-8 border text-center ${isDark ? 'bg-red-900/20 border-red-800' : 'bg-red-50 border-red-200'}`}>
-        <p className={`text-sm font-semibold mb-2 ${isDark ? 'text-red-400' : 'text-red-600'}`}>Failed to load analytics data</p>
-        <p className={`text-xs mb-3 ${isDark ? 'text-red-400/70' : 'text-red-500'}`}>{error}</p>
+        <div className="h-12 w-12 rounded-2xl bg-red-100 dark:bg-red-900/30 flex items-center justify-center mx-auto mb-4">
+          <Zap className="h-6 w-6 text-red-500" />
+        </div>
+        <p className={`text-sm font-bold mb-1.5 ${isDark ? 'text-red-400' : 'text-red-700'}`}>Failed to load analytics data</p>
+        <p className={`text-xs mb-4 max-w-sm mx-auto ${isDark ? 'text-red-400/70' : 'text-red-500'}`}>{error}</p>
         <button
           onClick={fetchData}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-sm font-semibold hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors"
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-sm font-bold hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors"
         >
           <RefreshCw className="h-4 w-4" />
           Retry
         </button>
+      </div>
+    );
+  }
+
+  // Empty data state — integration is configured but no data yet
+  if (ga4Data.length === 0 && scData.length === 0) {
+    return (
+      <div className={`rounded-2xl p-10 border text-center ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
+        <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-900/30 dark:to-emerald-800/20 flex items-center justify-center mx-auto mb-5 shadow-sm">
+          <BarChart3 className="h-8 w-8 text-emerald-400" />
+        </div>
+        <p className={`text-lg font-bold mb-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>No Data Yet</p>
+        <p className={`text-sm max-w-md mx-auto leading-relaxed mb-5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+          Your Google integration is configured but no analytics data has been synced yet. Click &quot;Sync Now&quot; to pull the latest data from Google, or wait for the next automatic sync.
+        </p>
+        {!isClient && (
+          <button
+            onClick={handleSync}
+            disabled={syncing}
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold transition-all shadow-sm hover:shadow-md disabled:opacity-60"
+          >
+            {syncing ? (
+              <><Loader2 className="h-4 w-4 animate-spin" /> Syncing...</>
+            ) : (
+              <><RefreshCw className="h-4 w-4" /> Sync Now</>
+            )}
+          </button>
+        )}
       </div>
     );
   }
@@ -259,26 +295,28 @@ export default function GoogleAnalyticsView({ clinicId, isDark = false, isClient
         <div className="flex items-center justify-between">
           <div>
             <h2 className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>
-              📊 Google Analytics & Search Console
+              Google Analytics & Search Console
             </h2>
-            {lastSyncTime && (
-              <p className={`text-xs mt-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
-                Last synced at {lastSyncTime}
-              </p>
-            )}
+            <p className={`text-sm mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+              {lastSyncTime ? `Last synced at ${lastSyncTime}` : '30-day performance overview'}
+              {ga4PropertyId && <span className="mx-1.5">·</span>}
+              {ga4PropertyId && <span className="font-medium">GA4</span>}
+              {searchConsoleSite && <span className="mx-1.5">·</span>}
+              {searchConsoleSite && <span className="font-medium">Search Console</span>}
+            </p>
           </div>
           {!isClient && (
             <button
               onClick={handleSync}
               disabled={syncing}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all ${
                 syncing
                   ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 cursor-wait'
                   : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm hover:shadow-md'
               } disabled:opacity-70`}
             >
               {syncing ? (
-                <><Loader2 className="h-4 w-4 animate-spin" /> Syncing Data...</>
+                <><Loader2 className="h-4 w-4 animate-spin" /> Syncing...</>
               ) : (
                 <><RefreshCw className="h-4 w-4" /> Sync Now</>
               )}
