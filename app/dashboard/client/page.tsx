@@ -432,8 +432,8 @@ function ClientDashboard() {
       />
 
       {/* Sidebar */}
-      <aside className="w-64 border-r border-slate-100 dark:border-slate-800 flex flex-col p-6 hidden lg:flex dark:bg-slate-900/50">
-        <nav className="space-y-2 flex-grow mt-4">
+      <aside className="w-64 border-r border-slate-200/60 dark:border-slate-800/60 flex flex-col px-4 py-6 hidden lg:flex bg-white/40 dark:bg-slate-900/40 backdrop-blur-sm">
+        <nav className="space-y-1 flex-grow mt-4">
           <NavItem icon={BarChart3} label="Overview" active={activeView === 'overview'} onClick={() => setActiveView('overview')} />
           <NavItem icon={TrendingUp} label="Analytics" active={activeView === 'analytics'} onClick={() => { setAnalyticsTabLoading(true); setActiveView('analytics'); }} />
           <NavItem icon={Activity} label="GA4 Analytics" active={activeView === 'ga4-analytics'} onClick={() => setActiveView('ga4-analytics')} />
@@ -465,30 +465,30 @@ function ClientDashboard() {
 
       {/* Main Content */}
       <main className="flex-grow p-8 overflow-y-auto">
-        <header className="flex items-center justify-between mb-12">
+        <header className="flex items-center justify-between mb-10">
           <div>
-            <h1 className="text-[20px] font-bold mb-1">{dashboardTitle}</h1>
-            <p className="text-slate-500 dark:text-slate-400">{dashboardSubtitle}</p>
+            <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white mb-1">{dashboardTitle}</h1>
+            <p className="text-sm text-slate-500 dark:text-slate-400">{dashboardSubtitle}</p>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <div className="relative hidden md:block">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
               <input 
                 type="text" 
                 placeholder="Search patients..." 
-                className="bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl py-2 pl-10 pr-4 text-sm focus:outline-none focus:border-emerald-500 dark:text-slate-200"
+                className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border border-slate-200/60 dark:border-slate-700/60 rounded-2xl py-2.5 pl-10 pr-4 text-sm focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/10 dark:text-slate-200 transition-all shadow-sm"
               />
             </div>
-            <button className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 relative">
-              <Bell className="h-5 w-5" />
-              <div className="absolute top-2 right-2 w-2 h-2 bg-emerald-500 rounded-full" />
+            <button className="p-2.5 rounded-2xl bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border border-slate-200/60 dark:border-slate-700/60 relative hover:shadow-md transition-all">
+              <Bell className="h-5 w-5 text-slate-600 dark:text-slate-300" />
+              <div className="absolute top-2 right-2 w-2 h-2 bg-emerald-500 rounded-full ring-2 ring-white dark:ring-slate-800" />
             </button>
             
             {/* User Menu Dropdown */}
             <div className="relative">
               <button 
                 onClick={() => setUserMenuOpen(!userMenuOpen)}
-                className="h-10 w-10 rounded-full bg-emerald-500 flex items-center justify-center text-black font-bold uppercase hover:bg-emerald-400 transition-colors"
+                className="h-10 w-10 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white font-bold text-sm uppercase hover:shadow-lg hover:shadow-emerald-500/20 transition-all active:scale-95"
               >
                 {user.name.substring(0, 2)}
               </button>
@@ -642,25 +642,32 @@ function ClientDashboard() {
             >
               {myClinics.length > 1 && (
                 <div className="mb-6">
-                  <label className="block text-xs font-bold uppercase tracking-wider mb-2 text-slate-500 dark:text-slate-400">Select Clinic</label>
-                  <select
-                    value={selectedGoogleClinicId}
-                    onChange={(e) => setSelectedGoogleClinicId(e.target.value)}
-                    className="w-full max-w-sm rounded-xl border p-3 text-sm font-medium transition-colors border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-200 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
-                  >
-                    {myClinics.map((c: any) => (
-                      <option key={c.id} value={c.id}>{c.name}</option>
-                    ))}
-                  </select>
+                  <label className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider mb-2.5 text-slate-500 dark:text-slate-400">
+                    <Building2 className="h-3.5 w-3.5" /> Select Clinic
+                  </label>
+                  <div className="relative max-w-sm">
+                    <select
+                      value={selectedGoogleClinicId}
+                      onChange={(e) => setSelectedGoogleClinicId(e.target.value)}
+                      className="w-full appearance-none rounded-2xl border border-slate-200/60 dark:border-slate-700/60 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm py-3 pl-4 pr-10 text-sm font-semibold text-slate-900 dark:text-slate-200 shadow-sm transition-all hover:shadow-md focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/10"
+                    >
+                      {myClinics.map((c: any) => (
+                        <option key={c.id} value={c.id}>{c.name}</option>
+                      ))}
+                    </select>
+                    <MapPin className="absolute right-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+                  </div>
                 </div>
               )}
               {selectedGoogleClinicId ? (
                 <GA4AnalyticsTab clinicId={selectedGoogleClinicId} />
               ) : myClinics.length === 0 ? (
-                <div className="rounded-2xl p-10 border text-center bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
-                  <Activity className="h-8 w-8 text-slate-400 mx-auto mb-4" />
-                  <p className="text-lg font-bold mb-2">No Clinics Found</p>
-                  <p className="text-sm text-slate-500 dark:text-slate-400">You need to be assigned to a clinic to view GA4 data.</p>
+                <div className="rounded-3xl p-10 border border-slate-200/60 dark:border-slate-700/60 text-center bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm">
+                  <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-orange-400 to-amber-500 flex items-center justify-center mx-auto mb-5 shadow-lg shadow-orange-500/20">
+                    <Activity className="h-8 w-8 text-white" />
+                  </div>
+                  <p className="text-lg font-extrabold text-slate-900 dark:text-white mb-2">No Clinics Found</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 max-w-sm mx-auto">You need to be assigned to a clinic to view GA4 data.</p>
                 </div>
               ) : null}
             </motion.div>
@@ -673,25 +680,32 @@ function ClientDashboard() {
             >
               {myClinics.length > 1 && (
                 <div className="mb-6">
-                  <label className="block text-xs font-bold uppercase tracking-wider mb-2 text-slate-500 dark:text-slate-400">Select Clinic</label>
-                  <select
-                    value={selectedGoogleClinicId}
-                    onChange={(e) => setSelectedGoogleClinicId(e.target.value)}
-                    className="w-full max-w-sm rounded-xl border p-3 text-sm font-medium transition-colors border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-200 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
-                  >
-                    {myClinics.map((c: any) => (
-                      <option key={c.id} value={c.id}>{c.name}</option>
-                    ))}
-                  </select>
+                  <label className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider mb-2.5 text-slate-500 dark:text-slate-400">
+                    <Building2 className="h-3.5 w-3.5" /> Select Clinic
+                  </label>
+                  <div className="relative max-w-sm">
+                    <select
+                      value={selectedGoogleClinicId}
+                      onChange={(e) => setSelectedGoogleClinicId(e.target.value)}
+                      className="w-full appearance-none rounded-2xl border border-slate-200/60 dark:border-slate-700/60 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm py-3 pl-4 pr-10 text-sm font-semibold text-slate-900 dark:text-slate-200 shadow-sm transition-all hover:shadow-md focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-500/10"
+                    >
+                      {myClinics.map((c: any) => (
+                        <option key={c.id} value={c.id}>{c.name}</option>
+                      ))}
+                    </select>
+                    <MapPin className="absolute right-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+                  </div>
                 </div>
               )}
               {selectedGoogleClinicId ? (
                 <SearchConsoleTab clinicId={selectedGoogleClinicId} />
               ) : myClinics.length === 0 ? (
-                <div className="rounded-2xl p-10 border text-center bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
-                  <Globe className="h-8 w-8 text-slate-400 mx-auto mb-4" />
-                  <p className="text-lg font-bold mb-2">No Clinics Found</p>
-                  <p className="text-sm text-slate-500 dark:text-slate-400">You need to be assigned to a clinic to view Search Console data.</p>
+                <div className="rounded-3xl p-10 border border-slate-200/60 dark:border-slate-700/60 text-center bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm">
+                  <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-purple-400 to-indigo-500 flex items-center justify-center mx-auto mb-5 shadow-lg shadow-purple-500/20">
+                    <Globe className="h-8 w-8 text-white" />
+                  </div>
+                  <p className="text-lg font-extrabold text-slate-900 dark:text-white mb-2">No Clinics Found</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 max-w-sm mx-auto">You need to be assigned to a clinic to view Search Console data.</p>
                 </div>
               ) : null}
             </motion.div>
@@ -1284,19 +1298,22 @@ function ClientGoogleSection({ clinics }: { clinics: any[] }) {
         </div>
         {clinics.length > 1 && (
           <div className="mt-5 mb-4">
-            <label className={`block text-xs font-bold uppercase tracking-wider mb-2 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-              Select Clinic
+            <label className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider mb-2.5 text-slate-500 dark:text-slate-400">
+              <Building2 className="h-3.5 w-3.5" /> Select Clinic
             </label>
-            <select
-              value={selectedClinicId}
-              onChange={(e) => setSelectedClinicId(e.target.value)}
-              className={`w-full max-w-sm rounded-xl border p-3 text-sm font-medium transition-colors ${isDark ? 'border-slate-700 bg-slate-800 text-slate-200 focus:border-emerald-500' : 'border-slate-200 bg-white text-slate-900 focus:border-emerald-500'} focus:outline-none focus:ring-2 focus:ring-emerald-500/20`}
-            >
-              <option value="">Choose a clinic...</option>
-              {clinics.map((c: any) => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
-            </select>
+            <div className="relative max-w-sm">
+              <select
+                value={selectedClinicId}
+                onChange={(e) => setSelectedClinicId(e.target.value)}
+                className="w-full appearance-none rounded-2xl border border-slate-200/60 dark:border-slate-700/60 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm py-3 pl-4 pr-10 text-sm font-semibold text-slate-900 dark:text-slate-200 shadow-sm transition-all hover:shadow-md focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/10"
+              >
+                <option value="">Choose a clinic...</option>
+                {clinics.map((c: any) => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+              <MapPin className="absolute right-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+            </div>
           </div>
         )}
       </div>
@@ -1319,24 +1336,31 @@ function ClientGoogleSection({ clinics }: { clinics: any[] }) {
 
 /* ─── Helper Components ─── */
 function NavItem({ icon: Icon, label, active = false, onClick, badge }: { icon: any; label: string; active?: boolean; onClick?: () => void; badge?: string }) {
-  // Determine badge color based on plan name or status
   const getBadgeClasses = (badgeText?: string) => {
     if (!badgeText) return 'bg-slate-200 dark:bg-slate-600 text-slate-900 dark:text-white';
-    if (badgeText === 'Coming Soon') return 'bg-slate-200 dark:bg-slate-600 text-slate-900 dark:text-white';
-    if (badgeText === 'Scale Elite') return 'bg-amber-100 dark:bg-amber-500/20 text-amber-800 dark:text-amber-400';
-    if (badgeText === 'Growth Pro') return 'bg-blue-100 dark:bg-blue-500/20 text-blue-800 dark:text-blue-400';
-    if (badgeText === 'Starter Care') return 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-400';
+    if (badgeText === 'Coming Soon') return 'bg-slate-200/80 dark:bg-slate-600/80 text-slate-500 dark:text-slate-400';
+    if (badgeText === 'Scale Elite') return 'bg-gradient-to-r from-amber-100 to-orange-100 dark:from-amber-500/20 dark:to-orange-500/20 text-amber-800 dark:text-amber-400';
+    if (badgeText === 'Growth Pro') return 'bg-gradient-to-r from-blue-100 to-indigo-100 dark:from-blue-500/20 dark:to-indigo-500/20 text-blue-800 dark:text-blue-400';
+    if (badgeText === 'Starter Care') return 'bg-gradient-to-r from-emerald-100 to-teal-100 dark:from-emerald-500/20 dark:to-teal-500/20 text-emerald-800 dark:text-emerald-400';
+    if (badgeText === 'Premium' || badgeText === 'Premium Only') return 'bg-gradient-to-r from-purple-100 to-indigo-100 dark:from-purple-500/20 dark:to-indigo-500/20 text-purple-800 dark:text-purple-400';
     return 'bg-slate-200 dark:bg-slate-600 text-slate-900 dark:text-white';
   };
 
   return (
     <button
       onClick={onClick}
-      className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all text-left ${
-        active ? 'bg-emerald-500 text-black font-bold' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-800'
+      className={`group relative w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl transition-all text-left ${
+        active
+          ? 'bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm shadow-md shadow-emerald-500/10 border border-slate-200/60 dark:border-slate-700/60 text-slate-900 dark:text-white font-bold'
+          : 'text-slate-500 hover:text-slate-900 hover:bg-white/60 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-800/60'
       }`}
     >
-      <Icon className="h-5 w-5" />
+      {active && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 rounded-r-full bg-gradient-to-b from-emerald-400 to-teal-500" />}
+      <div className={`flex items-center justify-center h-8 w-8 rounded-xl transition-colors ${
+        active ? 'bg-gradient-to-br from-emerald-400 to-teal-500 text-white shadow-sm shadow-emerald-500/20' : 'text-current group-hover:bg-slate-100 dark:group-hover:bg-slate-700/60'
+      }`}>
+        <Icon className="h-4 w-4" />
+      </div>
       <span className="text-sm flex-grow">{label}</span>
       {badge && (
         <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap ${getBadgeClasses(badge)}`}>{badge}</span>
@@ -1347,11 +1371,14 @@ function NavItem({ icon: Icon, label, active = false, onClick, badge }: { icon: 
 
 function StatCard({ label, value, change, negative = false }: { label: string; value: string; change: string; negative?: boolean }) {
   return (
-    <div className="glass rounded-3xl p-6 border border-slate-200 dark:border-slate-700">
-      <div className="text-sm text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-2">{label}</div>
-      <div className="text-3xl font-bold mb-2">{value}</div>
-      <div className={`text-xs font-bold ${negative ? 'text-red-500' : 'text-emerald-500'}`}>
-        {change} <span className="text-slate-500 dark:text-slate-400 font-normal ml-1">vs last month</span>
+    <div className="group relative overflow-hidden rounded-3xl p-6 border border-slate-200/60 dark:border-slate-700/60 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm hover:shadow-lg transition-all">
+      <div className={`absolute inset-0 bg-gradient-to-br opacity-0 group-hover:opacity-100 transition-opacity ${negative ? 'from-red-500/5 to-rose-500/5' : 'from-emerald-500/5 to-teal-500/5'}`} />
+      <div className="relative z-10">
+        <div className="text-[11px] text-slate-500 dark:text-slate-400 uppercase tracking-wider font-medium mb-2">{label}</div>
+        <div className="text-3xl font-black text-slate-900 dark:text-white mb-2">{value}</div>
+        <div className={`inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full ${negative ? 'text-red-600 bg-red-50 dark:text-red-400 dark:bg-red-500/10' : 'text-emerald-600 bg-emerald-50 dark:text-emerald-400 dark:bg-emerald-500/10'}`}>
+          {change} <span className="text-slate-500 dark:text-slate-400 font-normal ml-1">vs last month</span>
+        </div>
       </div>
     </div>
   );
