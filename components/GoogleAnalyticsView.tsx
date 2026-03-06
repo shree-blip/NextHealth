@@ -44,9 +44,10 @@ interface SCRow {
 interface GoogleAnalyticsViewProps {
   clinicId: string;
   isDark?: boolean;
+  isClient?: boolean;
 }
 
-export default function GoogleAnalyticsView({ clinicId, isDark = false }: GoogleAnalyticsViewProps) {
+export default function GoogleAnalyticsView({ clinicId, isDark = false, isClient = false }: GoogleAnalyticsViewProps) {
   const [ga4Data, setGa4Data] = useState<GA4Row[]>([]);
   const [scData, setScData] = useState<SCRow[]>([]);
   const [ga4PropertyId, setGa4PropertyId] = useState<string | null>(null);
@@ -59,7 +60,10 @@ export default function GoogleAnalyticsView({ clinicId, isDark = false }: Google
     try {
       setLoading(true);
       setError(null);
-      const res = await fetch(`/api/admin/gmb/analytics-data?clinicId=${clinicId}&days=30`);
+      const endpoint = isClient
+        ? `/api/client/analytics-data?clinicId=${clinicId}&days=30`
+        : `/api/admin/gmb/analytics-data?clinicId=${clinicId}&days=30`;
+      const res = await fetch(endpoint);
       const json = await res.json();
       if (!res.ok) throw new Error(json.error);
       setGa4Data(json.ga4Data || []);
@@ -71,7 +75,7 @@ export default function GoogleAnalyticsView({ clinicId, isDark = false }: Google
     } finally {
       setLoading(false);
     }
-  }, [clinicId]);
+  }, [clinicId, isClient]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -94,6 +98,15 @@ export default function GoogleAnalyticsView({ clinicId, isDark = false }: Google
   };
 
   if (!ga4PropertyId && !searchConsoleSite) {
+    if (isClient) {
+      return (
+        <div className={`rounded-2xl p-8 border text-center ${isDark ? 'bg-slate-800 border-slate-700 text-slate-400' : 'bg-white border-slate-200 text-slate-500'}`}>
+          <Search className="h-10 w-10 mx-auto mb-3 opacity-40" />
+          <p className="text-lg font-semibold mb-1">Google Analytics Not Configured</p>
+          <p className="text-sm">Your admin has not yet connected Google Analytics or Search Console for this clinic.</p>
+        </div>
+      );
+    }
     return null; // no analytics sources configured
   }
 
@@ -187,14 +200,16 @@ export default function GoogleAnalyticsView({ clinicId, isDark = false }: Google
         <h2 className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>
           📊 Google Analytics & Search Console
         </h2>
-        <button
-          onClick={handleSync}
-          disabled={syncing}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 disabled:opacity-50 transition"
-        >
-          {syncing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-          {syncing ? 'Syncing...' : 'Sync Now'}
-        </button>
+        {!isClient && (
+          <button
+            onClick={handleSync}
+            disabled={syncing}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 disabled:opacity-50 transition"
+          >
+            {syncing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+            {syncing ? 'Syncing...' : 'Sync Now'}
+          </button>
+        )}
       </div>
 
       {/* ═══ KPI Cards ═══ */}

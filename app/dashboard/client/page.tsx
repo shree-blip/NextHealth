@@ -40,6 +40,7 @@ import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import ClientAnalyticsView from '@/components/ClientAnalyticsView';
+import GoogleAnalyticsView from '@/components/GoogleAnalyticsView';
 import PremiumAnalyticsChat from '@/components/PremiumAnalyticsChat';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -613,6 +614,11 @@ function ClientDashboard() {
                 refreshTrigger={analyticsRefreshKey}
                 onLoadingStateChange={setAnalyticsTabLoading}
               />
+
+              {/* Google Analytics & Search Console (live data) */}
+              {myClinics.length > 0 && (
+                <ClientGoogleSection clinics={myClinics} />
+              )}
             </motion.div>
           ) : activeView === 'ai-chat' ? (
             <motion.div
@@ -1162,6 +1168,48 @@ function OverviewView({
         </>
       )}
     </>
+  );
+}
+
+/* ─── Google Analytics Section for Client Dashboard ─── */
+function ClientGoogleSection({ clinics }: { clinics: any[] }) {
+  const { theme } = useSitePreferences();
+  const isDark = theme === 'dark';
+  const [selectedClinicId, setSelectedClinicId] = useState('');
+
+  // Auto-select the first clinic if there's only one
+  useEffect(() => {
+    if (clinics.length === 1 && !selectedClinicId) {
+      setSelectedClinicId(clinics[0].id);
+    }
+  }, [clinics, selectedClinicId]);
+
+  return (
+    <div className="mt-10 space-y-4">
+      <div className={`pt-6 border-t ${isDark ? 'border-slate-700' : 'border-slate-200'}`}>
+        <h2 className={`text-2xl font-black mb-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
+          📊 Google Analytics & Search Console
+        </h2>
+        <p className={`text-sm mb-4 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+          Live data from your connected Google Analytics and Search Console properties.
+        </p>
+        {clinics.length > 1 && (
+          <select
+            value={selectedClinicId}
+            onChange={(e) => setSelectedClinicId(e.target.value)}
+            className={`w-64 rounded-xl border p-2.5 text-sm font-medium ${isDark ? 'border-slate-700 bg-slate-800 text-slate-200' : 'border-slate-200 bg-white text-slate-900'}`}
+          >
+            <option value="">Select a clinic...</option>
+            {clinics.map((c: any) => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
+          </select>
+        )}
+      </div>
+      {selectedClinicId && (
+        <GoogleAnalyticsView clinicId={selectedClinicId} isDark={isDark} isClient />
+      )}
+    </div>
   );
 }
 
