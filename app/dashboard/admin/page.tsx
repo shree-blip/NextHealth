@@ -68,7 +68,7 @@ function Modal({ isOpen, onClose, title, children }: { isOpen: boolean; onClose:
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.95 }}
-        className="relative bg-white dark:bg-slate-900 rounded-2xl p-6 w-full max-w-md shadow-xl border border-slate-200 dark:border-slate-700 z-10"
+        className="relative bg-white dark:bg-slate-900 rounded-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-xl border border-slate-200 dark:border-slate-700 z-10"
       >
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-bold">{title}</h3>
@@ -1163,7 +1163,6 @@ function AdminDashboardContent() {
           name: editingClinic.name,
           type: editingClinic.type,
           location: editingClinic.location,
-          assignedUsers: editingClinic.clientAssignments?.map((ca: any) => ca.userId) || [],
         }),
       });
 
@@ -1173,13 +1172,11 @@ function AdminDashboardContent() {
         throw new Error(data.error || 'Failed to update clinic');
       }
 
-      alert('✅ Clinic updated successfully');
-      setEditingClinic(null);
-      setShowEditClinicModal(false);
+      setGmbState(prev => ({ ...prev, message: 'Clinic details saved successfully!' }));
       fetchAdminData();
     } catch (error) {
       console.error('Error updating clinic:', error);
-      alert(`❌ Failed to update clinic: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setGmbState(prev => ({ ...prev, error: `Failed to save: ${error instanceof Error ? error.message : 'Unknown error'}` }));
     }
   };
 
@@ -1844,166 +1841,234 @@ function AdminDashboardContent() {
             />
           </div>
 
-          <div className="border border-slate-200 dark:border-slate-700 rounded-xl p-3 space-y-3">
-            <div className="flex items-center justify-between">
-              <p className="text-sm font-semibold">Google Business Profile (GMB)</p>
-              <button
-                onClick={handleGmbConnect}
-                disabled={gmbState.connecting || gmbState.loading}
-                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-500 text-white text-xs font-bold disabled:opacity-50 transition-colors"
-              >
-                <Link2 className="h-3.5 w-3.5" />
-                {gmbState.connection ? 'Reconnect Google' : 'Connect Google'}
-              </button>
-            </div>
-
-            <p className="text-[11px] text-slate-500 dark:text-slate-400">
-              Required scopes: business.manage, analytics.readonly, webmasters.readonly, openid, email, profile.
-            </p>
-
-            {gmbState.connection && (
-              <div className="text-xs text-slate-600 dark:text-slate-300 space-y-1">
-                <p><span className="font-semibold">Google Account:</span> {gmbState.connection.googleEmail || '—'}</p>
-                <p><span className="font-semibold">Status:</span> {gmbState.connection.connectionStatus || '—'} • {gmbState.connection.syncStatus || 'idle'}</p>
-                <p><span className="font-semibold">Last Sync:</span> {gmbState.connection.lastSyncedAt ? new Date(gmbState.connection.lastSyncedAt).toLocaleString() : 'Never'}</p>
+          {/* ═══ Google Integrations ═══ */}
+          <div className="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden">
+            {/* Header with connection status badge */}
+            <div className="flex items-center justify-between px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700">
+              <div className="flex items-center gap-2">
+                <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.27-4.74 3.27-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+                <span className="text-sm font-bold">Google Integrations</span>
               </div>
-            )}
 
-            {gmbState.accounts.length > 0 && (
-                <AdminSelect
-                  label="Business Account"
-                  value={gmbState.selectedAccount}
-                  onChange={(value) => handleAccountChange(value)}
-                  options={[
-                    { value: '', label: 'Select account...' },
-                    ...gmbState.accounts.map((account) => ({
-                      value: account.name,
-                      label: account.accountName || account.name
-                    }))
-                  ]}
-                />
-            )}
-
-            {gmbState.selectedAccount && (
-              <AdminSelect
-                label="Location"
-                value={gmbState.selectedLocation}
-                onChange={(value) => setGmbState(prev => ({ ...prev, selectedLocation: value }))}
-                options={[
-                  { value: '', label: 'Select location...' },
-                  ...gmbState.locations.map((location) => ({
-                    value: location.name,
-                    label: `${location.title || location.name}${location.address ? ` — ${location.address}` : ''}`
-                  }))
-                ]}
-              />
-            )}
-
-            <div className="flex gap-2">
-              <button
-                onClick={handleSaveGmbSelection}
-                disabled={!gmbState.selectedAccount || !gmbState.selectedLocation || gmbState.loading}
-                className="flex-1 px-3 py-2 rounded-lg bg-emerald-500 text-black text-xs font-bold hover:bg-emerald-400 disabled:opacity-50"
-              >
-                Save Account & Location
-              </button>
-              <button
-                onClick={handleManualGmbSync}
-                disabled={!gmbState.connection?.businessLocationId || gmbState.syncing}
-                className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-200 dark:bg-slate-700 text-xs font-bold hover:bg-slate-300 dark:hover:bg-slate-600 disabled:opacity-50"
-              >
-                <RefreshCw className={`h-3.5 w-3.5 ${gmbState.syncing ? 'animate-spin' : ''}`} />
-                Sync Now
-              </button>
+              {/* Connection status badge */}
+              {gmbState.connection ? (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400">
+                  <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                  Connected
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400">
+                  <span className="h-2 w-2 rounded-full bg-slate-400" />
+                  Not Connected
+                </span>
+              )}
             </div>
 
-            {gmbState.message && (
-              <p className="text-xs text-emerald-600 dark:text-emerald-400">{gmbState.message}</p>
-            )}
-            {gmbState.error && (
-              <p className="text-xs text-red-600 dark:text-red-400">{gmbState.error}</p>
-            )}
+            <div className="p-4 space-y-4">
+              {/* Connected account info */}
+              {gmbState.connection && (
+                <div className="flex items-start justify-between">
+                  <div className="text-xs space-y-0.5">
+                    <p className="font-semibold text-slate-900 dark:text-white">{gmbState.connection.googleEmail}</p>
+                    {gmbState.connection.locationName && (
+                      <p className="text-slate-500 dark:text-slate-400">📍 {gmbState.connection.locationName}</p>
+                    )}
+                    <p className="text-slate-400 dark:text-slate-500">
+                      Last sync: {gmbState.connection.lastSyncedAt ? new Date(gmbState.connection.lastSyncedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : 'Never'}
+                    </p>
+                  </div>
+                  <button
+                    onClick={handleGmbConnect}
+                    disabled={gmbState.connecting || gmbState.loading}
+                    className="text-xs text-blue-500 hover:text-blue-600 font-semibold disabled:opacity-50"
+                  >
+                    Reconnect
+                  </button>
+                </div>
+              )}
+
+              {!gmbState.connection && (
+                <div className="text-center py-3">
+                  <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">
+                    Connect your Google account to enable Business Profile, Analytics, and Search Console.
+                  </p>
+                  <button
+                    onClick={handleGmbConnect}
+                    disabled={gmbState.connecting || gmbState.loading}
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-500 hover:bg-blue-600 text-white text-sm font-bold disabled:opacity-50 transition-colors"
+                  >
+                    {gmbState.connecting ? (
+                      <RefreshCw className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Link2 className="h-4 w-4" />
+                    )}
+                    {gmbState.connecting ? 'Connecting...' : 'Connect Google Account'}
+                  </button>
+                </div>
+              )}
+
+              {/* ── Section 1: Business Profile ── */}
+              {gmbState.connection && (
+                <div className="space-y-3 pt-3 border-t border-slate-100 dark:border-slate-700/50">
+                  <p className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Business Profile</p>
+
+                  {gmbState.accounts.length > 0 && (
+                    <AdminSelect
+                      label="Business Account"
+                      value={gmbState.selectedAccount}
+                      onChange={(value) => handleAccountChange(value)}
+                      options={[
+                        { value: '', label: 'Select account...' },
+                        ...gmbState.accounts.map((account) => ({
+                          value: account.name,
+                          label: account.accountName || account.name
+                        }))
+                      ]}
+                    />
+                  )}
+
+                  {gmbState.selectedAccount && (
+                    <AdminSelect
+                      label="Location"
+                      value={gmbState.selectedLocation}
+                      onChange={(value) => setGmbState(prev => ({ ...prev, selectedLocation: value }))}
+                      options={[
+                        { value: '', label: 'Select location...' },
+                        ...gmbState.locations.map((location) => ({
+                          value: location.name,
+                          label: `${location.title || location.name}${location.address ? ` — ${location.address}` : ''}`
+                        }))
+                      ]}
+                    />
+                  )}
+
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleSaveGmbSelection}
+                      disabled={!gmbState.selectedAccount || !gmbState.selectedLocation || gmbState.loading}
+                      className="flex-1 px-3 py-2 rounded-lg bg-emerald-500 text-black text-xs font-bold hover:bg-emerald-400 disabled:opacity-50 transition-colors"
+                    >
+                      {gmbState.loading ? 'Saving...' : 'Save Business Profile'}
+                    </button>
+                    <button
+                      onClick={handleManualGmbSync}
+                      disabled={!gmbState.connection?.businessLocationId || gmbState.syncing}
+                      className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-200 dark:bg-slate-700 text-xs font-bold hover:bg-slate-300 dark:hover:bg-slate-600 disabled:opacity-50 transition-colors"
+                    >
+                      <RefreshCw className={`h-3.5 w-3.5 ${gmbState.syncing ? 'animate-spin' : ''}`} />
+                      Sync
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* ── Section 2: Google Analytics (GA4) ── */}
+              <div className="space-y-3 pt-3 border-t border-slate-100 dark:border-slate-700/50">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Google Analytics (GA4)</p>
+                  {gmbState.selectedGA4Property && (
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 font-semibold">Configured</span>
+                  )}
+                </div>
+
+                {!gmbState.connection ? (
+                  <p className="text-xs text-slate-400 dark:text-slate-500 italic">Connect Google account first to configure GA4.</p>
+                ) : gmbState.ga4Properties.length > 0 ? (
+                  <AdminSelect
+                    label="GA4 Property"
+                    value={gmbState.selectedGA4Property}
+                    onChange={(value) => setGmbState(prev => ({ ...prev, selectedGA4Property: value }))}
+                    options={[
+                      { value: '', label: 'Select GA4 property...' },
+                      ...gmbState.ga4Properties.map((p) => ({
+                        value: p.propertyId,
+                        label: `${p.displayName} (${p.account})`
+                      }))
+                    ]}
+                  />
+                ) : (
+                  <p className="text-xs text-slate-400 dark:text-slate-500">No GA4 properties found for this Google account. Ensure the account has access to a GA4 property.</p>
+                )}
+              </div>
+
+              {/* ── Section 3: Search Console ── */}
+              <div className="space-y-3 pt-3 border-t border-slate-100 dark:border-slate-700/50">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Search Console</p>
+                  {gmbState.selectedSCSite && (
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 font-semibold">Configured</span>
+                  )}
+                </div>
+
+                {!gmbState.connection ? (
+                  <p className="text-xs text-slate-400 dark:text-slate-500 italic">Connect Google account first to configure Search Console.</p>
+                ) : gmbState.scSites.length > 0 ? (
+                  <AdminSelect
+                    label="Search Console Site"
+                    value={gmbState.selectedSCSite}
+                    onChange={(value) => setGmbState(prev => ({ ...prev, selectedSCSite: value }))}
+                    options={[
+                      { value: '', label: 'Select site...' },
+                      ...gmbState.scSites.map((s) => ({
+                        value: s.siteUrl,
+                        label: s.siteUrl
+                      }))
+                    ]}
+                  />
+                ) : (
+                  <p className="text-xs text-slate-400 dark:text-slate-500">No Search Console sites found for this Google account. Verify site ownership in Google Search Console.</p>
+                )}
+              </div>
+
+              {/* Save Analytics Sources button */}
+              {gmbState.connection && (gmbState.ga4Properties.length > 0 || gmbState.scSites.length > 0) && (
+                <button
+                  onClick={async () => {
+                    setGmbState(prev => ({ ...prev, analyticsSaving: true, error: '', message: '' }));
+                    try {
+                      const res = await fetch('/api/admin/gmb/select-analytics', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          clinicId: editingClinic?.id,
+                          ga4PropertyId: gmbState.selectedGA4Property,
+                          searchConsoleSite: gmbState.selectedSCSite,
+                        }),
+                      });
+                      const data = await res.json();
+                      if (!res.ok) throw new Error(data.error);
+                      setGmbState(prev => ({ ...prev, analyticsSaving: false, message: 'Analytics sources saved successfully!' }));
+                    } catch (err: any) {
+                      setGmbState(prev => ({ ...prev, analyticsSaving: false, error: err?.message || 'Failed to save analytics sources' }));
+                    }
+                  }}
+                  disabled={gmbState.analyticsSaving}
+                  className="w-full px-3 py-2 rounded-lg bg-purple-500 hover:bg-purple-600 text-white text-xs font-bold disabled:opacity-50 transition-colors"
+                >
+                  {gmbState.analyticsSaving ? 'Saving...' : 'Save Analytics Configuration'}
+                </button>
+              )}
+
+              {/* Status messages */}
+              {gmbState.message && (
+                <p className="text-xs text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg px-3 py-2">✅ {gmbState.message}</p>
+              )}
+              {gmbState.error && (
+                <p className="text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded-lg px-3 py-2">❌ {gmbState.error}</p>
+              )}
+            </div>
           </div>
-
-          {/* GA4 & Search Console Analytics Sources */}
-          {gmbState.connection && (
-            <div className="border border-slate-200 dark:border-slate-700 rounded-xl p-3 space-y-3">
-              <p className="text-sm font-semibold">📊 Analytics Sources (GA4 & Search Console)</p>
-
-              {gmbState.ga4Properties.length > 0 && (
-                <AdminSelect
-                  label="GA4 Property"
-                  value={gmbState.selectedGA4Property}
-                  onChange={(value) => setGmbState(prev => ({ ...prev, selectedGA4Property: value }))}
-                  options={[
-                    { value: '', label: 'Select GA4 property...' },
-                    ...gmbState.ga4Properties.map((p) => ({
-                      value: p.propertyId,
-                      label: `${p.displayName} (${p.account})`
-                    }))
-                  ]}
-                />
-              )}
-
-              {gmbState.scSites.length > 0 && (
-                <AdminSelect
-                  label="Search Console Site"
-                  value={gmbState.selectedSCSite}
-                  onChange={(value) => setGmbState(prev => ({ ...prev, selectedSCSite: value }))}
-                  options={[
-                    { value: '', label: 'Select site...' },
-                    ...gmbState.scSites.map((s) => ({
-                      value: s.siteUrl,
-                      label: s.siteUrl
-                    }))
-                  ]}
-                />
-              )}
-
-              {gmbState.ga4Properties.length === 0 && gmbState.scSites.length === 0 && !gmbState.loading && (
-                <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                  No GA4 properties or Search Console sites found. Make sure the connected Google account has access to Google Analytics and Search Console.
-                </p>
-              )}
-
-              <button
-                onClick={async () => {
-                  setGmbState(prev => ({ ...prev, analyticsSaving: true }));
-                  try {
-                    const res = await fetch('/api/admin/gmb/select-analytics', {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({
-                        clinicId: editingClinic?.id,
-                        ga4PropertyId: gmbState.selectedGA4Property,
-                        searchConsoleSite: gmbState.selectedSCSite,
-                      }),
-                    });
-                    const data = await res.json();
-                    if (!res.ok) throw new Error(data.error);
-                    setGmbState(prev => ({ ...prev, analyticsSaving: false, message: 'Analytics sources saved!' }));
-                  } catch (err: any) {
-                    setGmbState(prev => ({ ...prev, analyticsSaving: false, error: err?.message || 'Failed to save analytics sources' }));
-                  }
-                }}
-                disabled={gmbState.analyticsSaving || (!gmbState.selectedGA4Property && !gmbState.selectedSCSite)}
-                className="w-full px-3 py-2 rounded-lg bg-purple-500 hover:bg-purple-600 text-white text-xs font-bold disabled:opacity-50 transition-colors"
-              >
-                {gmbState.analyticsSaving ? 'Saving...' : 'Save Analytics Sources'}
-              </button>
-            </div>
-          )}
 
           <div className="flex gap-3 pt-2">
             <button
               onClick={handleEditClinic}
-              className="flex-1 bg-emerald-500 text-black font-bold py-2 rounded-lg hover:bg-emerald-400"
+              className="flex-1 bg-emerald-500 text-black font-bold py-2.5 rounded-xl hover:bg-emerald-400 transition-colors"
             >
-              Save Changes
+              Save Clinic Details
             </button>
             <button
               onClick={() => setShowEditClinicModal(false)}
-              className="px-4 py-2 bg-slate-200 dark:bg-slate-700 rounded-lg"
+              className="px-6 py-2.5 bg-slate-200 dark:bg-slate-700 rounded-xl font-semibold hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors"
             >
               Cancel
             </button>

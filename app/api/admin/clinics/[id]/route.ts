@@ -43,15 +43,13 @@ export async function PATCH(
       // Get current assignments
       const currentAssignments = clinic.clientAssignments.map((ca) => ca.userId);
 
-      // Remove old assignments not in new list
+      // Remove old assignments not in new list (use deleteMany to avoid "not found" errors)
       for (const userId of currentAssignments) {
         if (!assignedUsers.includes(userId)) {
-          await prisma.clientClinic.delete({
+          await prisma.clientClinic.deleteMany({
             where: {
-              userId_clinicId: {
-                userId,
-                clinicId,
-              },
+              userId,
+              clinicId,
             },
           });
         }
