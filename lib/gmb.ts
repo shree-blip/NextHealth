@@ -268,12 +268,39 @@ async function gmbApiRequest(connectionId: string, url: string, init: RequestIni
     response = await makeRequest(accessToken);
   }
 
-  const data = await response.json();
-  if (!response.ok) {
-    throw new Error(data?.error?.message || data?.error || 'Google API request failed');
+  // Handle 429 rate limit with one automatic retry after a short delay
+  if (response.status === 429) {
+    const retryAfter = parseInt(response.headers.get('Retry-After') || '5', 10);
+    const waitMs = Math.min(retryAfter * 1000, 30_000);
+    await new Promise(resolve => setTimeout(resolve, waitMs));
+    response = await makeRequest(accessToken);
   }
 
-  return data;
+  // Robust response parsing — handle non-JSON gracefully
+  const contentType = response.headers.get('content-type') || '';
+  let data: any = null;
+
+  if (contentType.includes('application/json')) {
+    try { data = await response.json(); } catch { data = null; }
+  } else {
+    const rawBody = await response.text().catch(() => '');
+    if (!response.ok) {
+      if (rawBody.includes('<!DOCTYPE') || rawBody.includes('<html')) {
+        throw new Error(
+          `Google API returned HTML instead of JSON (${response.status}). Is the My Business API enabled for this project?`
+        );
+      }
+      throw new Error(`Google API error (${response.status}): ${rawBody.slice(0, 200)}`);
+    }
+    // Try to parse text as JSON as a fallback
+    try { data = JSON.parse(rawBody); } catch { data = {}; }
+  }
+
+  if (!response.ok) {
+    throw new Error(data?.error?.message || data?.error || `Google API error (${response.status})`);
+  }
+
+  return data ?? {};
 }
 
 export async function upsertOAuthConnection(params: {

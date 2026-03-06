@@ -15,6 +15,8 @@ export async function GET(req: NextRequest) {
 
     const clinicId = req.nextUrl.searchParams.get('clinicId');
     const days = parseInt(req.nextUrl.searchParams.get('days') || '30', 10);
+    const startDate = req.nextUrl.searchParams.get('startDate');  // YYYY-MM-DD
+    const endDate = req.nextUrl.searchParams.get('endDate');      // YYYY-MM-DD
 
     if (!clinicId) {
       return NextResponse.json({ error: 'clinicId is required' }, { status: 400 });
@@ -41,16 +43,18 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    const since = new Date();
-    since.setDate(since.getDate() - days);
+    const since = startDate ? new Date(startDate + 'T00:00:00Z') : new Date(Date.now() - days * 86400000);
+    const until = endDate ? new Date(endDate + 'T23:59:59Z') : new Date();
+
+    const dateFilter = { gte: since, lte: until };
 
     const [ga4Data, scData] = await Promise.all([
       prisma.gA4Data.findMany({
-        where: { gmbConnectionId: connection.id, date: { gte: since } },
+        where: { gmbConnectionId: connection.id, date: dateFilter },
         orderBy: { date: 'asc' },
       }),
       prisma.searchConsoleData.findMany({
-        where: { gmbConnectionId: connection.id, date: { gte: since } },
+        where: { gmbConnectionId: connection.id, date: dateFilter },
         orderBy: { date: 'asc' },
       }),
     ]);

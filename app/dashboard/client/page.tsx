@@ -35,6 +35,7 @@ import {
   Eye,
   EyeOff,
   Sparkles,
+  Globe,
 } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -42,6 +43,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import ClientAnalyticsView from '@/components/ClientAnalyticsView';
 import GoogleAnalyticsView from '@/components/GoogleAnalyticsView';
+import GA4AnalyticsTab from '@/components/GA4AnalyticsTab';
+import SearchConsoleTab from '@/components/SearchConsoleTab';
 import PremiumAnalyticsChat from '@/components/PremiumAnalyticsChat';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -125,7 +128,7 @@ export default function ClientDashboardPage() {
 function ClientDashboard() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const CLIENT_VIEWS = ['overview', 'membership', 'analytics', 'ai-chat', 'profile', 'settings', 'billing'] as const;
+  const CLIENT_VIEWS = ['overview', 'membership', 'analytics', 'ga4-analytics', 'search-console', 'ai-chat', 'profile', 'settings', 'billing'] as const;
   type ClientView = typeof CLIENT_VIEWS[number];
   const [user, setUser] = useState<any>(null);
   const [myClinics, setMyClinics] = useState<any[]>([]);
@@ -133,6 +136,7 @@ function ClientDashboard() {
   const [authLoading, setAuthLoading] = useState(true);
   const [clinicsLoading, setClinicsLoading] = useState(false);
   const [analyticsTabLoading, setAnalyticsTabLoading] = useState(false);
+  const [selectedGoogleClinicId, setSelectedGoogleClinicId] = useState('');
   const [selectedPlanForBilling, setSelectedPlanForBilling] = useState<{ id: string; name: string; price: number } | null>(null);
 
   // Subscription state
@@ -274,6 +278,13 @@ function ClientDashboard() {
     }
   }, [activeView]);
 
+  // Auto-select first clinic for GA4/SC tabs
+  useEffect(() => {
+    if (myClinics.length > 0 && !selectedGoogleClinicId) {
+      setSelectedGoogleClinicId(myClinics[0].id);
+    }
+  }, [myClinics, selectedGoogleClinicId]);
+
   const handleLogout = async () => {
     setShowLogoutConfirm(false);
     setUserMenuOpen(false);
@@ -378,13 +389,17 @@ function ClientDashboard() {
       ? 'Your Clinic Snapshot'
       : activeView === 'membership'
         ? 'Membership & Billing'
-        : activeView === 'ai-chat'
-          ? 'AI Analytics Assistant'
-          : activeView === 'profile'
-            ? 'My Profile'
-            : activeView === 'settings'
-              ? 'Account Settings'
-              : 'Performance Analytics';
+        : activeView === 'ga4-analytics'
+          ? 'GA4 Analytics'
+          : activeView === 'search-console'
+            ? 'Search Console'
+            : activeView === 'ai-chat'
+              ? 'AI Analytics Assistant'
+              : activeView === 'profile'
+                ? 'My Profile'
+                : activeView === 'settings'
+                  ? 'Account Settings'
+                  : 'Performance Analytics';
 
   const dashboardSubtitle =
     activeView === 'overview'
@@ -421,6 +436,8 @@ function ClientDashboard() {
         <nav className="space-y-2 flex-grow mt-4">
           <NavItem icon={BarChart3} label="Overview" active={activeView === 'overview'} onClick={() => setActiveView('overview')} />
           <NavItem icon={TrendingUp} label="Analytics" active={activeView === 'analytics'} onClick={() => { setAnalyticsTabLoading(true); setActiveView('analytics'); }} />
+          <NavItem icon={Activity} label="GA4 Analytics" active={activeView === 'ga4-analytics'} onClick={() => setActiveView('ga4-analytics')} />
+          <NavItem icon={Globe} label="Search Console" active={activeView === 'search-console'} onClick={() => setActiveView('search-console')} />
           <NavItem icon={Users} label="Patient Leads" badge="Coming Soon" onClick={() => {}} />
           <NavItem icon={Calendar} label="Patient Count" badge="Coming Soon" onClick={() => {}} />
           <NavItem
@@ -615,11 +632,68 @@ function ClientDashboard() {
                 refreshTrigger={analyticsRefreshKey}
                 onLoadingStateChange={setAnalyticsTabLoading}
               />
-
-              {/* Google Analytics & Search Console (live data) */}
-              {myClinics.length > 0 && (
-                <ClientGoogleSection clinics={myClinics} />
+            </motion.div>
+          ) : activeView === 'ga4-analytics' ? (
+            <motion.div
+              key="ga4-analytics"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+            >
+              {myClinics.length > 1 && (
+                <div className="mb-6">
+                  <label className="block text-xs font-bold uppercase tracking-wider mb-2 text-slate-500 dark:text-slate-400">Select Clinic</label>
+                  <select
+                    value={selectedGoogleClinicId}
+                    onChange={(e) => setSelectedGoogleClinicId(e.target.value)}
+                    className="w-full max-w-sm rounded-xl border p-3 text-sm font-medium transition-colors border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-200 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                  >
+                    {myClinics.map((c: any) => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                  </select>
+                </div>
               )}
+              {selectedGoogleClinicId ? (
+                <GA4AnalyticsTab clinicId={selectedGoogleClinicId} />
+              ) : myClinics.length === 0 ? (
+                <div className="rounded-2xl p-10 border text-center bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
+                  <Activity className="h-8 w-8 text-slate-400 mx-auto mb-4" />
+                  <p className="text-lg font-bold mb-2">No Clinics Found</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">You need to be assigned to a clinic to view GA4 data.</p>
+                </div>
+              ) : null}
+            </motion.div>
+          ) : activeView === 'search-console' ? (
+            <motion.div
+              key="search-console"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+            >
+              {myClinics.length > 1 && (
+                <div className="mb-6">
+                  <label className="block text-xs font-bold uppercase tracking-wider mb-2 text-slate-500 dark:text-slate-400">Select Clinic</label>
+                  <select
+                    value={selectedGoogleClinicId}
+                    onChange={(e) => setSelectedGoogleClinicId(e.target.value)}
+                    className="w-full max-w-sm rounded-xl border p-3 text-sm font-medium transition-colors border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-200 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                  >
+                    {myClinics.map((c: any) => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              {selectedGoogleClinicId ? (
+                <SearchConsoleTab clinicId={selectedGoogleClinicId} />
+              ) : myClinics.length === 0 ? (
+                <div className="rounded-2xl p-10 border text-center bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
+                  <Globe className="h-8 w-8 text-slate-400 mx-auto mb-4" />
+                  <p className="text-lg font-bold mb-2">No Clinics Found</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">You need to be assigned to a clinic to view Search Console data.</p>
+                </div>
+              ) : null}
             </motion.div>
           ) : activeView === 'ai-chat' ? (
             <motion.div
