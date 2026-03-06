@@ -43,9 +43,15 @@ function popupHtml(success: boolean, message: string, clinicId?: string) {
       } catch (e) {
         console.warn('localStorage fallback failed:', e);
       }
-      // If there is no opener (same-tab fallback), redirect user back to admin dashboard.
+      // If there is no opener (same-tab fallback), redirect user back to admin dashboard
+      // with query params so the page auto-opens the clinic modal with success state.
       if (!window.opener) {
-        const redirectUrl = ${JSON.stringify(`${APP_URL}/dashboard/admin`)};
+        const payload = ${payload};
+        const params = new URLSearchParams({ view: 'command-center' });
+        params.set('gmb_oauth', payload.success ? 'success' : 'error');
+        if (payload.clinicId) params.set('gmb_clinic', payload.clinicId);
+        if (payload.message) params.set('gmb_msg', payload.message);
+        const redirectUrl = ${JSON.stringify(APP_URL)} + '/dashboard/admin?' + params.toString();
         setTimeout(() => window.location.replace(redirectUrl), 600);
       }
       // Close popup after 1.5 seconds

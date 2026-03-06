@@ -906,6 +906,52 @@ function AdminDashboardContent() {
     }
   }, []); // Empty dependency - only run on mount to read initial URL param
 
+  // Handle OAuth return: when redirected back from Google OAuth (same-tab fallback),
+  // detect the gmb_oauth param, auto-open the clinic's edit modal, and show the success message.
+  useEffect(() => {
+    const oauthStatus = searchParams.get('gmb_oauth');
+    const clinicId = searchParams.get('gmb_clinic');
+    const message = searchParams.get('gmb_msg');
+
+    if (!oauthStatus || !clinicId) return;
+
+    // Clean up URL params so refresh doesn't re-trigger
+    const url = new URL(window.location.href);
+    url.searchParams.delete('gmb_oauth');
+    url.searchParams.delete('gmb_clinic');
+    url.searchParams.delete('gmb_msg');
+    window.history.replaceState({}, '', `${url.pathname}${url.search}`);
+
+    // Find the clinic in our loaded list and open its edit modal
+    const matchedClinic = clinics.find(c => c.id === clinicId);
+    if (matchedClinic) {
+      setEditingClinic({ ...matchedClinic });
+      setShowEditClinicModal(true);
+    }
+
+    // Update GMB state with the OAuth result
+    if (oauthStatus === 'success') {
+      lastLoadedClinicRef.current = null; // force refresh
+      setGmbState(prev => ({
+        ...prev,
+        connecting: false,
+        message: message || 'Google Business Profile connected successfully!',
+        error: '',
+      }));
+      // Re-fetch the connection data with a slight delay to let the modal mount
+      setTimeout(() => {
+        if (clinicId) fetchGmbConnection(clinicId, true);
+      }, 300);
+    } else {
+      setGmbState(prev => ({
+        ...prev,
+        connecting: false,
+        message: '',
+        error: message || 'Google connection failed. Please try again.',
+      }));
+    }
+  }, [clinics]); // Run when clinics are loaded so we can match the clinicId
+
   // Sync TO URL whenever section changes
   useEffect(() => {
     if (typeof window === 'undefined') return;

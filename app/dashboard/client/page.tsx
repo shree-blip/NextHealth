@@ -45,6 +45,7 @@ import ClientAnalyticsView from '@/components/ClientAnalyticsView';
 import GoogleAnalyticsView from '@/components/GoogleAnalyticsView';
 import GA4AnalyticsTab from '@/components/GA4AnalyticsTab';
 import SearchConsoleTab from '@/components/SearchConsoleTab';
+import ClientErrorBoundary from '@/components/ClientErrorBoundary';
 import PremiumAnalyticsChat from '@/components/PremiumAnalyticsChat';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -628,10 +629,12 @@ function ClientDashboard() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
             >
-              <ClientAnalyticsView
-                refreshTrigger={analyticsRefreshKey}
-                onLoadingStateChange={setAnalyticsTabLoading}
-              />
+              <ClientErrorBoundary title="Analytics Error" description="Something went wrong loading your analytics. Click below to try again.">
+                <ClientAnalyticsView
+                  refreshTrigger={analyticsRefreshKey}
+                  onLoadingStateChange={setAnalyticsTabLoading}
+                />
+              </ClientErrorBoundary>
             </motion.div>
           ) : activeView === 'ga4-analytics' ? (
             <motion.div
@@ -660,7 +663,9 @@ function ClientDashboard() {
                 </div>
               )}
               {selectedGoogleClinicId ? (
-                <GA4AnalyticsTab clinicId={selectedGoogleClinicId} />
+                <ClientErrorBoundary title="GA4 Analytics Error" description="Something went wrong loading GA4 data. Click below to try again.">
+                  <GA4AnalyticsTab clinicId={selectedGoogleClinicId} />
+                </ClientErrorBoundary>
               ) : myClinics.length === 0 ? (
                 <div className="rounded-3xl p-10 border border-slate-200/60 dark:border-slate-700/60 text-center bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm">
                   <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-orange-400 to-amber-500 flex items-center justify-center mx-auto mb-5 shadow-lg shadow-orange-500/20">
@@ -698,7 +703,9 @@ function ClientDashboard() {
                 </div>
               )}
               {selectedGoogleClinicId ? (
-                <SearchConsoleTab clinicId={selectedGoogleClinicId} />
+                <ClientErrorBoundary title="Search Console Error" description="Something went wrong loading Search Console data. Click below to try again.">
+                  <SearchConsoleTab clinicId={selectedGoogleClinicId} />
+                </ClientErrorBoundary>
               ) : myClinics.length === 0 ? (
                 <div className="rounded-3xl p-10 border border-slate-200/60 dark:border-slate-700/60 text-center bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm">
                   <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-purple-400 to-indigo-500 flex items-center justify-center mx-auto mb-5 shadow-lg shadow-purple-500/20">

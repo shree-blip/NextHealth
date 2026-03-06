@@ -40,8 +40,10 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({
         ga4PropertyId: null,
         searchConsoleSite: null,
+        businessLocationId: null,
         ga4Data: [],
         searchConsoleData: [],
+        gmbData: [],
       });
     }
 

@@ -90,6 +90,15 @@ async function googleApiRequest(connectionId: string, url: string, init: Request
 
   if (!res.ok) {
     const apiMessage = data?.error?.message || data?.error;
+
+    // Handle "metric not found" for GA4 gracefully — allow caller to retry
+    // with different metrics (e.g. "conversions" → "keyEvents")
+    if (res.status === 400 && typeof apiMessage === 'string' && apiMessage.includes('is not a valid metric')) {
+      const err = new Error(apiMessage);
+      (err as any).isMetricError = true;
+      throw err;
+    }
+
     if (apiMessage) {
       throw new Error(apiMessage);
     }
@@ -139,42 +148,60 @@ export async function fetchGA4Data(connectionId: string, propertyId: string, sta
   // Ensure propertyId format is "properties/123456"
   const propId = propertyId.startsWith('properties/') ? propertyId : `properties/${propertyId}`;
 
-  const body = {
-    dateRanges: [{ startDate, endDate }],
-    dimensions: [{ name: 'date' }],
-    metrics: [
-      { name: 'activeUsers' },
-      { name: 'newUsers' },
-      { name: 'sessions' },
-      { name: 'screenPageViews' },
-      { name: 'averageSessionDuration' },
-      { name: 'bounceRate' },
-      { name: 'engagementRate' },
-      { name: 'conversions' },
-    ],
-  };
+  // Google renamed "conversions" → "keyEvents" in late 2024.
+  // Try keyEvents first, fall back to conversions for older properties.
+  const conversionMetricNames = ['keyEvents', 'conversions'];
 
-  const data = await googleApiRequest(
-    connectionId,
-    `${GA4_DATA_API}/${propId}:runReport`,
-    { method: 'POST', body: JSON.stringify(body) },
-  );
-
-  return (data.rows || []).map((row: any) => {
-    const date = row.dimensionValues[0].value; // "20260301"
-    const m = row.metricValues;
-    return {
-      date: `${date.slice(0, 4)}-${date.slice(4, 6)}-${date.slice(6, 8)}`,
-      activeUsers: parseInt(m[0]?.value || '0', 10),
-      newUsers: parseInt(m[1]?.value || '0', 10),
-      sessions: parseInt(m[2]?.value || '0', 10),
-      pageViews: parseInt(m[3]?.value || '0', 10),
-      avgSessionDuration: parseFloat(m[4]?.value || '0'),
-      bounceRate: parseFloat(m[5]?.value || '0'),
-      engagementRate: parseFloat(m[6]?.value || '0'),
-      conversions: parseInt(m[7]?.value || '0', 10),
+  for (const convMetric of conversionMetricNames) {
+    const body = {
+      dateRanges: [{ startDate, endDate }],
+      dimensions: [{ name: 'date' }],
+      metrics: [
+        { name: 'activeUsers' },
+        { name: 'newUsers' },
+        { name: 'sessions' },
+        { name: 'screenPageViews' },
+        { name: 'averageSessionDuration' },
+        { name: 'bounceRate' },
+        { name: 'engagementRate' },
+        { name: convMetric },
+      ],
     };
-  });
+
+    try {
+      const data = await googleApiRequest(
+        connectionId,
+        `${GA4_DATA_API}/${propId}:runReport`,
+        { method: 'POST', body: JSON.stringify(body) },
+      );
+
+      return (data.rows || []).map((row: any) => {
+        const date = row.dimensionValues[0].value; // "20260301"
+        const m = row.metricValues;
+        return {
+          date: `${date.slice(0, 4)}-${date.slice(4, 6)}-${date.slice(6, 8)}`,
+          activeUsers: parseInt(m[0]?.value || '0', 10),
+          newUsers: parseInt(m[1]?.value || '0', 10),
+          sessions: parseInt(m[2]?.value || '0', 10),
+          pageViews: parseInt(m[3]?.value || '0', 10),
+          avgSessionDuration: parseFloat(m[4]?.value || '0'),
+          bounceRate: parseFloat(m[5]?.value || '0'),
+          engagementRate: parseFloat(m[6]?.value || '0'),
+          conversions: parseInt(m[7]?.value || '0', 10),
+        };
+      });
+    } catch (err: any) {
+      // If this metric name is invalid, try the next one
+      if (err.isMetricError && convMetric !== conversionMetricNames[conversionMetricNames.length - 1]) {
+        console.warn(`[GA4] Metric "${convMetric}" not valid, retrying with fallback...`);
+        continue;
+      }
+      throw err;
+    }
+  }
+
+  // Should never reach here, but return empty array as safety net
+  return [];
 }
 
 // GA4 — Traffic source breakdown
