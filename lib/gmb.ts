@@ -37,6 +37,7 @@ export const GMB_SCOPES = [
   'https://www.googleapis.com/auth/business.manage',
   'https://www.googleapis.com/auth/analytics.readonly',
   'https://www.googleapis.com/auth/webmasters.readonly',
+  'https://www.googleapis.com/auth/adwords',
 ];
 
 const DAILY_METRICS = [

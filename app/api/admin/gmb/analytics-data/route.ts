@@ -48,6 +48,19 @@ function formatGMBRow(d: any) {
   };
 }
 
+function formatGoogleAdsRow(d: any) {
+  return {
+    date: d.date.toISOString().slice(0, 10),
+    impressions: d.impressions,
+    clicks: d.clicks,
+    cost: Number(d.costMicros) / 1_000_000,
+    conversions: d.conversions,
+    ctr: d.ctr,
+    avgCpc: d.avgCpc,
+    costPerConversion: d.costPerConversion,
+  };
+}
+
 export async function GET(req: NextRequest) {
   try {
     const auth = await requireAdmin(req);
@@ -69,7 +82,7 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ error: 'No Google connection found' }, { status: 404 });
       }
 
-      const [ga4Data, scData, gmbData] = await Promise.all([
+      const [ga4Data, scData, gmbData, adsData] = await Promise.all([
         prisma.gA4Data.findMany({
           where: { gmbConnectionId: connection.id, date: dateFilter },
           orderBy: { date: 'asc' },
@@ -82,15 +95,21 @@ export async function GET(req: NextRequest) {
           where: { gmbConnectionId: connection.id, date: dateFilter },
           orderBy: { date: 'asc' },
         }),
+        prisma.googleAdsData.findMany({
+          where: { gmbConnectionId: connection.id, date: dateFilter },
+          orderBy: { date: 'asc' },
+        }),
       ]);
 
       return NextResponse.json({
         ga4PropertyId: connection.ga4PropertyId,
         searchConsoleSite: connection.searchConsoleSite,
         businessLocationId: connection.businessLocationId,
+        googleAdsCustomerId: connection.googleAdsCustomerId,
         ga4Data: ga4Data.map(formatGA4Row),
         searchConsoleData: scData.map(formatSCRow),
         gmbData: gmbData.map(formatGMBRow),
+        googleAdsData: adsData.map(formatGoogleAdsRow),
       });
     }
 
@@ -106,9 +125,10 @@ export async function GET(req: NextRequest) {
     const allScRows: any[] = [];
     const allGa4Rows: any[] = [];
     const allGmbRows: any[] = [];
+    const allAdsRows: any[] = [];
 
     for (const conn of connections) {
-      const [scRows, ga4Rows, gmbRows] = await Promise.all([
+      const [scRows, ga4Rows, gmbRows, adsRows] = await Promise.all([
         conn.searchConsoleSite
           ? prisma.searchConsoleData.findMany({ where: { gmbConnectionId: conn.id, date: dateFilter }, orderBy: { date: 'asc' } })
           : [],
@@ -118,10 +138,14 @@ export async function GET(req: NextRequest) {
         conn.businessLocationId
           ? prisma.gMBData.findMany({ where: { gmbConnectionId: conn.id, date: dateFilter }, orderBy: { date: 'asc' } })
           : [],
+        conn.googleAdsCustomerId
+          ? prisma.googleAdsData.findMany({ where: { gmbConnectionId: conn.id, date: dateFilter }, orderBy: { date: 'asc' } })
+          : [],
       ]);
       for (const d of scRows) allScRows.push(formatSCRow(d));
       for (const d of ga4Rows) allGa4Rows.push(formatGA4Row(d));
       for (const d of gmbRows) allGmbRows.push(formatGMBRow(d));
+      for (const d of adsRows) allAdsRows.push(formatGoogleAdsRow(d));
     }
 
     // Aggregate SC by date
@@ -211,9 +235,11 @@ export async function GET(req: NextRequest) {
       ga4PropertyId: aggregatedGA4.length > 0 ? 'all' : null,
       searchConsoleSite: aggregatedSC.length > 0 ? 'all' : null,
       businessLocationId: aggregatedGMB.length > 0 ? 'all' : null,
+      googleAdsCustomerId: allAdsRows.length > 0 ? 'all' : null,
       ga4Data: aggregatedGA4,
       searchConsoleData: aggregatedSC,
       gmbData: aggregatedGMB,
+      googleAdsData: allAdsRows,
     });
   } catch (error: any) {
     console.error('Analytics data fetch error:', error);

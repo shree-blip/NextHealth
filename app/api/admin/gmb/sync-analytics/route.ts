@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/auth';
 import prisma from '@/lib/prisma';
 import { syncGA4Data, syncSearchConsoleData } from '@/lib/google-analytics';
+import { syncGoogleAdsData } from '@/lib/google-ads';
 
 export async function POST(req: NextRequest) {
   try {
@@ -20,13 +21,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No Google connection found for this clinic' }, { status: 404 });
     }
 
-    const results = { ga4: { synced: 0 }, searchConsole: { synced: 0 } };
+    const results = { ga4: { synced: 0 }, searchConsole: { synced: 0 }, googleAds: { synced: 0 } };
 
     if (connection.ga4PropertyId) {
       results.ga4 = await syncGA4Data(connection.id);
     }
     if (connection.searchConsoleSite) {
       results.searchConsole = await syncSearchConsoleData(connection.id);
+    }
+    if (connection.googleAdsCustomerId) {
+      results.googleAds = await syncGoogleAdsData(connection.id);
     }
 
     return NextResponse.json({ success: true, ...results });

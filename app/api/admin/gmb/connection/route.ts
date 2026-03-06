@@ -32,6 +32,7 @@ export async function GET(req: NextRequest) {
             lastSyncError: connection.lastSyncError,
             ga4PropertyId: connection.ga4PropertyId,
             searchConsoleSite: connection.searchConsoleSite,
+            googleAdsCustomerId: connection.googleAdsCustomerId,
             recentData: connection.gmbData,
           }
         : null,

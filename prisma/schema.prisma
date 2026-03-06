@@ -273,6 +273,7 @@ model GMBConnection {
   googleEmail        String?
   ga4PropertyId      String?
   searchConsoleSite  String?
+  googleAdsCustomerId String?
   connectionStatus   String    @default("connected")
   lastSyncedAt       DateTime?
   nextSyncAt         DateTime?
@@ -284,6 +285,7 @@ model GMBConnection {
   gmbData            GMBData[]
   ga4Data            GA4Data[]
   searchConsoleData  SearchConsoleData[]
+  googleAdsData      GoogleAdsData[]
 
   @@index([clinicId])
   @@index([businessAccountId])
@@ -368,6 +370,26 @@ model SearchConsoleData {
   avgPosition       Float         @default(0)
   topQueries        Json?
   topPages          Json?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  gmbConnection     GMBConnection @relation(fields: [gmbConnectionId], references: [id], onDelete: Cascade)
+
+  @@unique([gmbConnectionId, date])
+  @@index([gmbConnectionId])
+  @@index([date])
+}
+
+model GoogleAdsData {
+  id                String        @id @default(cuid())
+  gmbConnectionId   String
+  date              DateTime
+  impressions       Int           @default(0)
+  clicks            Int           @default(0)
+  costMicros        BigInt        @default(0)
+  conversions       Float         @default(0)
+  ctr               Float         @default(0)
+  avgCpc            Float         @default(0)
+  costPerConversion Float         @default(0)
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
   gmbConnection     GMBConnection @relation(fields: [gmbConnectionId], references: [id], onDelete: Cascade)

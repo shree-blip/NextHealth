@@ -742,6 +742,23 @@ function AdminDashboardContent() {
     }
   }, []);
 
+  // Helper: compute name similarity score (0-1) for auto-matching GMB locations to clinic names
+  const computeNameSimilarity = (clinicName: string, locationTitle: string): number => {
+    const normalize = (s: string) => s.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim();
+    const a = normalize(clinicName);
+    const b = normalize(locationTitle);
+    if (!a || !b) return 0;
+    if (a === b) return 1;
+    // Check if one contains the other
+    if (a.includes(b) || b.includes(a)) return 0.9;
+    // Word overlap scoring
+    const wordsA = a.split(/\s+/).filter(w => w.length > 1);
+    const wordsB = b.split(/\s+/).filter(w => w.length > 1);
+    if (wordsA.length === 0 || wordsB.length === 0) return 0;
+    const matches = wordsA.filter(w => wordsB.some(wb => wb.includes(w) || w.includes(wb)));
+    return matches.length / Math.max(wordsA.length, wordsB.length);
+  };
+
   const [gmbState, setGmbState] = useState({
     loading: false,
     connecting: false,
@@ -769,6 +786,10 @@ function AdminDashboardContent() {
     syncProgressLabel: '', // Current progress step label
     showProgress: false, // Whether to show full-screen progress
     clinicSaving: false, // Whether clinic details are being saved
+    // Google Ads
+    adsAccounts: [] as { customerId: string; descriptiveName: string; currencyCode: string }[],
+    selectedAdsCustomerId: '',
+    adsError: '',
   });
 
   // Delete confirmation modal state
@@ -1361,27 +1382,32 @@ function AdminDashboardContent() {
           locations: [],
           ga4Properties: [],
           scSites: [],
+          adsAccounts: [],
           selectedAccount: '',
           selectedLocation: '',
           selectedGA4Property: '',
           selectedSCSite: '',
+          selectedAdsCustomerId: '',
           accountsError: '',
           ga4Error: '',
           scError: '',
+          adsError: '',
           message: 'Connect Google to choose the correct business account and location.',
         }));
         return;
       }
 
-      // Step 2: Fetch accounts, locations, GA4, SC in parallel (all use server-side cache)
+      // Step 2: Fetch accounts, locations, GA4, SC, Ads in parallel (all use server-side cache)
       let accounts: any[] = [];
       let locations: any[] = [];
       let ga4Properties: any[] = [];
       let scSites: any[] = [];
+      let adsAccounts: any[] = [];
       const apiWarnings: string[] = [];
       let accountsError = '';
       let ga4Error = '';
       let scError = '';
+      let adsError = '';
 
       const selectedAccountId = connection.businessAccountId || '';
 
@@ -1454,6 +1480,22 @@ function AdminDashboardContent() {
           })
       );
 
+      fetches.push(
+        fetch(`/api/admin/gmb/ads-accounts?clinicId=${encodeURIComponent(clinicId)}`)
+          .then(r => r.json())
+          .then(d => {
+            if (d.accounts) adsAccounts = d.accounts;
+            else if (d.error) {
+              console.warn('[Ads] accounts error:', d.error);
+              adsError = d.error;
+            }
+          })
+          .catch(e => {
+            console.warn('[Ads] accounts fetch failed:', e);
+            adsError = 'Failed to load Google Ads accounts';
+          })
+      );
+
       await Promise.allSettled(fetches);
 
       const selectedAccount = selectedAccountId || accounts?.[0]?.name || '';
@@ -1472,6 +1514,27 @@ function AdminDashboardContent() {
         console.warn('[Google Integrations] API warnings:', apiWarnings);
       }
 
+      // Auto-match GMB location to clinic name if no location is saved yet
+      let autoMatchedLocation = connection.businessLocationId || '';
+      if (!autoMatchedLocation && locations.length > 0 && editingClinic?.name) {
+        if (locations.length === 1) {
+          autoMatchedLocation = locations[0].name;
+          console.log('[GMB] Auto-matched only location:', locations[0].title);
+        } else {
+          let bestMatch = { name: '', score: 0, title: '' };
+          for (const loc of locations) {
+            const score = computeNameSimilarity(editingClinic.name, loc.title || '');
+            if (score > bestMatch.score) {
+              bestMatch = { name: loc.name, score, title: loc.title || loc.name };
+            }
+          }
+          if (bestMatch.score >= 0.3) {
+            autoMatchedLocation = bestMatch.name;
+            console.log(`[GMB] Auto-matched location "${bestMatch.title}" (score: ${bestMatch.score.toFixed(2)}) for clinic "${editingClinic.name}"`);
+          }
+        }
+      }
+
       lastLoadedClinicRef.current = clinicId;
       setGmbState(prev => ({
         ...prev,
@@ -1480,7 +1543,7 @@ function AdminDashboardContent() {
         accounts,
         locations,
         selectedAccount,
-        selectedLocation: connection.businessLocationId || '',
+        selectedLocation: autoMatchedLocation,
         ga4Properties,
         scSites,
         selectedGA4Property: connection.ga4PropertyId || '',
@@ -1488,11 +1551,16 @@ function AdminDashboardContent() {
         accountsError,
         ga4Error,
         scError,
+        adsAccounts,
+        selectedAdsCustomerId: connection.googleAdsCustomerId || '',
+        adsError,
         message: apiWarnings.length > 0
           ? `Connected but some APIs returned errors: ${apiWarnings.join('; ')}`
           : connection.businessLocationId
             ? 'Google Business Profile connected. Daily sync is active.'
-            : 'Google connected. Select account and location to complete setup.',
+            : autoMatchedLocation
+              ? 'Google connected. A matching location was auto-selected. Click Save Configuration to confirm.'
+              : 'Google connected. Select account and location to complete setup.',
         error: '',
       }));
     } catch (error: any) {
@@ -1539,13 +1607,16 @@ function AdminDashboardContent() {
             locations: [],
             ga4Properties: [],
             scSites: [],
+            adsAccounts: [],
             selectedAccount: '',
             selectedLocation: '',
             selectedGA4Property: '',
             selectedSCSite: '',
+            selectedAdsCustomerId: '',
             accountsError: '',
             ga4Error: '',
             scError: '',
+            adsError: '',
             message: `Google account (${connectedEmail}) disconnected successfully.`,
             error: '',
           }));
@@ -1686,7 +1757,20 @@ function AdminDashboardContent() {
       const locationsData = await locationsRes.json();
       if (!locationsRes.ok) throw new Error(locationsData.error || 'Failed to load locations');
 
-      setGmbState(prev => ({ ...prev, locations: locationsData.locations || [] }));
+      const loadedLocations = locationsData.locations || [];
+      // Auto-match location to clinic name
+      let autoLocation = '';
+      if (loadedLocations.length === 1) {
+        autoLocation = loadedLocations[0].name;
+      } else if (loadedLocations.length > 1 && editingClinic?.name) {
+        let bestMatch = { name: '', score: 0 };
+        for (const loc of loadedLocations) {
+          const score = computeNameSimilarity(editingClinic.name, loc.title || '');
+          if (score > bestMatch.score) bestMatch = { name: loc.name, score };
+        }
+        if (bestMatch.score >= 0.3) autoLocation = bestMatch.name;
+      }
+      setGmbState(prev => ({ ...prev, locations: loadedLocations, selectedLocation: autoLocation }));
     } catch (error: any) {
       setGmbState(prev => ({
         ...prev,
@@ -2487,6 +2571,61 @@ function AdminDashboardContent() {
                         )}
                       </div>
                     </div>
+
+                    {/* STEP 4: Google Ads */}
+                    <div className="rounded-2xl border border-slate-200/80 dark:border-slate-700/80 overflow-hidden bg-white/70 dark:bg-slate-800/30 backdrop-blur-sm">
+                      <div className="flex items-center gap-3 px-5 py-4 bg-white/80 dark:bg-slate-800/60 border-b border-slate-100 dark:border-slate-700/50">
+                        <span className="h-7 w-7 rounded-lg bg-green-500 text-white text-xs font-bold flex items-center justify-center shrink-0">4</span>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-bold text-slate-800 dark:text-slate-200">Google Ads</p>
+                          <p className="text-[11px] text-slate-400 dark:text-slate-500">Select your Google Ads account for campaign data</p>
+                        </div>
+                        {gmbState.selectedAdsCustomerId ? (
+                          <span className="inline-flex items-center gap-1 text-[10px] px-2.5 py-1 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 font-bold shrink-0">
+                            <Check className="h-3 w-3" /> Selected
+                          </span>
+                        ) : gmbState.adsAccounts.length > 0 ? (
+                          <span className="text-[10px] px-2.5 py-1 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 font-bold shrink-0">Action needed</span>
+                        ) : null}
+                      </div>
+                      <div className="p-5 bg-white/50 dark:bg-transparent">
+                        {gmbState.loading && gmbState.adsAccounts.length === 0 ? (
+                          <div className="flex items-center gap-2 py-3 justify-center">
+                            <RefreshCw className="h-4 w-4 animate-spin text-slate-400" />
+                            <span className="text-xs text-slate-400">Loading Google Ads accounts...</span>
+                          </div>
+                        ) : gmbState.adsError ? (
+                          <div className="flex items-center gap-2.5 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800/30">
+                            <Search className="h-4 w-4 text-amber-500 shrink-0" />
+                            <p className="text-xs text-amber-700 dark:text-amber-400">{gmbState.adsError}</p>
+                          </div>
+                        ) : gmbState.adsAccounts.length > 0 ? (
+                          <div className="space-y-1.5">
+                            <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Google Ads Account</label>
+                            <div className="relative">
+                              <select
+                                value={gmbState.selectedAdsCustomerId}
+                                onChange={(e) => setGmbState(prev => ({ ...prev, selectedAdsCustomerId: e.target.value }))}
+                                className="w-full appearance-none rounded-2xl border border-slate-200/80 dark:border-slate-700/80 bg-white/90 dark:bg-slate-900/60 px-4 py-3 pr-10 text-sm font-semibold text-slate-800 dark:text-slate-200 shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-400"
+                              >
+                                <option value="">Choose an account...</option>
+                                {gmbState.adsAccounts.map((a) => (
+                                  <option key={a.customerId} value={a.customerId}>
+                                    {`${a.descriptiveName || 'Account'} (${a.customerId})${a.currencyCode ? ` — ${a.currencyCode}` : ''}`}
+                                  </option>
+                                ))}
+                              </select>
+                              <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2.5 p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50">
+                            <Search className="h-4 w-4 text-slate-400 shrink-0" />
+                            <p className="text-xs text-slate-500 dark:text-slate-400">No Google Ads accounts found. A developer token may be required.</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
 
                   {/* ── 4. Action bar — Save + Sync ── */}
@@ -2497,6 +2636,7 @@ function AdminDashboardContent() {
                         { key: 'GBP', active: !!gmbState.connection.businessLocationId, label: gmbState.connection.locationName || 'Business Profile' },
                         { key: 'GA4', active: !!gmbState.selectedGA4Property, label: gmbState.ga4Properties.find(p => p.propertyId === gmbState.selectedGA4Property)?.displayName || 'Analytics' },
                         { key: 'SC', active: !!gmbState.selectedSCSite, label: gmbState.selectedSCSite || 'Search Console' },
+                        { key: 'Ads', active: !!gmbState.selectedAdsCustomerId, label: gmbState.adsAccounts.find(a => a.customerId === gmbState.selectedAdsCustomerId)?.descriptiveName || 'Google Ads' },
                       ].map(item => (
                         <span key={item.key} className={`inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-full border ${
                           item.active
@@ -2549,6 +2689,22 @@ function AdminDashboardContent() {
                               throw new Error(err.error || 'Failed to save analytics configuration');
                             }
                           }
+                          // Save Google Ads selection
+                          if (gmbState.selectedAdsCustomerId) {
+                            setGmbState(prev => ({ ...prev, syncProgress: 65, syncProgressLabel: 'Saving Google Ads selection...' }));
+                            const adsRes = await fetch('/api/admin/gmb/select-ads', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({
+                                clinicId: editingClinic.id,
+                                googleAdsCustomerId: gmbState.selectedAdsCustomerId,
+                              }),
+                            });
+                            if (!adsRes.ok) {
+                              const err = await adsRes.json();
+                              throw new Error(err.error || 'Failed to save Google Ads configuration');
+                            }
+                          }
                           setGmbState(prev => ({ ...prev, syncProgress: 80, syncProgressLabel: 'Refreshing connection data...' }));
                           await fetchGmbConnection(editingClinic.id, true);
                           setGmbState(prev => ({ ...prev, syncProgress: 100, syncProgressLabel: 'Configuration saved!' }));
@@ -2570,7 +2726,7 @@ function AdminDashboardContent() {
                           }));
                         }
                       }}
-                      disabled={gmbState.analyticsSaving || (!gmbState.selectedAccount && !gmbState.selectedGA4Property && !gmbState.selectedSCSite)}
+                      disabled={gmbState.analyticsSaving || (!gmbState.selectedAccount && !gmbState.selectedGA4Property && !gmbState.selectedSCSite && !gmbState.selectedAdsCustomerId)}
                       className={`w-full px-4 py-3 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 ${
                         gmbState.analyticsSaving
                           ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 cursor-wait'
@@ -2591,7 +2747,7 @@ function AdminDashboardContent() {
                         setGmbState(prev => ({ ...prev, confirmSyncing: true, error: '', message: '', showProgress: true, syncProgress: 0, syncProgressLabel: 'Starting data sync...' }));
                         try {
                           let step = 0;
-                          const totalSteps = (gmbState.connection.businessLocationId ? 1 : 0) + (gmbState.selectedGA4Property || gmbState.selectedSCSite ? 1 : 0);
+                          const totalSteps = (gmbState.connection.businessLocationId ? 1 : 0) + (gmbState.selectedGA4Property || gmbState.selectedSCSite ? 1 : 0) + (gmbState.selectedAdsCustomerId ? 1 : 0);
                           if (totalSteps === 0) throw new Error('No integrations configured to sync');
 
                           if (gmbState.connection.businessLocationId) {
@@ -2618,6 +2774,16 @@ function AdminDashboardContent() {
                             });
                             if (!r.ok) throw new Error('Analytics sync failed');
                           }
+                          if (gmbState.selectedAdsCustomerId) {
+                            step++;
+                            setGmbState(prev => ({ ...prev, syncProgress: Math.round((step / (totalSteps + 1)) * 70), syncProgressLabel: 'Syncing Google Ads data...' }));
+                            const r = await fetch('/api/admin/gmb/select-ads', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ clinicId: editingClinic.id, googleAdsCustomerId: gmbState.selectedAdsCustomerId }),
+                            });
+                            if (!r.ok) throw new Error('Google Ads sync failed');
+                          }
                           setGmbState(prev => ({ ...prev, syncProgress: 85, syncProgressLabel: 'Refreshing connection status...' }));
                           await fetchGmbConnection(editingClinic.id, true);
                           setGmbState(prev => ({ ...prev, syncProgress: 100, syncProgressLabel: 'Sync complete!' }));
@@ -2639,7 +2805,7 @@ function AdminDashboardContent() {
                           }));
                         }
                       }}
-                      disabled={gmbState.confirmSyncing || (!gmbState.connection.businessLocationId && !gmbState.selectedGA4Property && !gmbState.selectedSCSite) || (gmbState.connection?.nextSyncAt && new Date(gmbState.connection.nextSyncAt) > new Date())}
+                      disabled={gmbState.confirmSyncing || (!gmbState.connection.businessLocationId && !gmbState.selectedGA4Property && !gmbState.selectedSCSite && !gmbState.selectedAdsCustomerId) || (gmbState.connection?.nextSyncAt && new Date(gmbState.connection.nextSyncAt) > new Date())}
                       className={`w-full px-4 py-3 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 border ${
                         gmbState.confirmSyncing
                           ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800/40 text-emerald-700 dark:text-emerald-400 cursor-wait'

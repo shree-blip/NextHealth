@@ -137,21 +137,31 @@ async function googleApiRequest(connectionId: string, url: string, init: Request
 // GA4 — Property Discovery
 // ══════════════════════════════════════════════════════════════
 export async function listGA4Properties(connectionId: string) {
-  const data = await googleApiRequest(
-    connectionId,
-    `${GA4_ADMIN_API}/accountSummaries`,
-  );
-
   const properties: { propertyId: string; displayName: string; account: string }[] = [];
-  for (const acct of data.accountSummaries || []) {
-    for (const prop of acct.propertySummaries || []) {
-      properties.push({
-        propertyId: prop.property, // e.g. "properties/123456"
-        displayName: prop.displayName || prop.property,
-        account: acct.displayName || acct.account,
-      });
+  let pageToken: string | undefined;
+  let attempts = 0;
+
+  do {
+    const url = pageToken
+      ? `${GA4_ADMIN_API}/accountSummaries?pageToken=${encodeURIComponent(pageToken)}`
+      : `${GA4_ADMIN_API}/accountSummaries`;
+
+    const data = await googleApiRequest(connectionId, url);
+
+    for (const acct of data.accountSummaries || []) {
+      for (const prop of acct.propertySummaries || []) {
+        properties.push({
+          propertyId: prop.property, // e.g. "properties/123456"
+          displayName: prop.displayName || prop.property,
+          account: acct.displayName || acct.account,
+        });
+      }
     }
-  }
+
+    pageToken = data.nextPageToken;
+    attempts++;
+  } while (pageToken && attempts < 10);
+
   return properties;
 }
 

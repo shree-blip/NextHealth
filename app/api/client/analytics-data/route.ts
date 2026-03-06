@@ -3,6 +3,7 @@ import { getAuthenticatedDbUser } from '@/lib/auth';
 import prisma from '@/lib/prisma';
 import { syncGA4Data, syncSearchConsoleData } from '@/lib/google-analytics';
 import { syncGmbConnection } from '@/lib/gmb';
+import { syncGoogleAdsData } from '@/lib/google-ads';
 
 /**
  * Client-facing analytics data endpoint.
@@ -41,9 +42,11 @@ export async function GET(req: NextRequest) {
         ga4PropertyId: null,
         searchConsoleSite: null,
         businessLocationId: null,
+        googleAdsCustomerId: null,
         ga4Data: [],
         searchConsoleData: [],
         gmbData: [],
+        googleAdsData: [],
       });
     }
 
@@ -62,6 +65,7 @@ export async function GET(req: NextRequest) {
         if (connection.ga4PropertyId) syncPromises.push(syncGA4Data(connection.id, syncDays).catch(e => console.error('GA4 sync error:', e.message)));
         if (connection.searchConsoleSite) syncPromises.push(syncSearchConsoleData(connection.id, syncDays).catch(e => console.error('SC sync error:', e.message)));
         if (connection.businessLocationId) syncPromises.push(syncGmbConnection(connection.id).catch(e => console.error('GMB sync error:', e.message)));
+        if (connection.googleAdsCustomerId) syncPromises.push(syncGoogleAdsData(connection.id, syncDays).catch(e => console.error('Google Ads sync error:', e.message)));
         if (syncPromises.length > 0) await Promise.allSettled(syncPromises);
         await prisma.gMBConnection.update({
           where: { id: connection.id },
@@ -81,7 +85,7 @@ export async function GET(req: NextRequest) {
 
     const dateFilter = { gte: since, lte: until };
 
-    const [ga4Data, scData, gmbData] = await Promise.all([
+    const [ga4Data, scData, gmbData, adsData] = await Promise.all([
       prisma.gA4Data.findMany({
         where: { gmbConnectionId: connection.id, date: dateFilter },
         orderBy: { date: 'asc' },
@@ -94,12 +98,17 @@ export async function GET(req: NextRequest) {
         where: { gmbConnectionId: connection.id, date: dateFilter },
         orderBy: { date: 'asc' },
       }),
+      prisma.googleAdsData.findMany({
+        where: { gmbConnectionId: connection.id, date: dateFilter },
+        orderBy: { date: 'asc' },
+      }),
     ]);
 
     return NextResponse.json({
       ga4PropertyId: connection.ga4PropertyId,
       searchConsoleSite: connection.searchConsoleSite,
       businessLocationId: connection.businessLocationId,
+      googleAdsCustomerId: connection.googleAdsCustomerId,
       ga4Data: ga4Data.map(d => ({
         date: d.date.toISOString().slice(0, 10),
         activeUsers: d.activeUsers,
@@ -136,6 +145,16 @@ export async function GET(req: NextRequest) {
         totalReviews: d.totalReviews,
         averageRating: d.averageRating,
         newReviews: d.newReviews,
+      })),
+      googleAdsData: adsData.map(d => ({
+        date: d.date.toISOString().slice(0, 10),
+        impressions: d.impressions,
+        clicks: d.clicks,
+        cost: Number(d.costMicros) / 1_000_000,
+        conversions: d.conversions,
+        ctr: d.ctr,
+        avgCpc: d.avgCpc,
+        costPerConversion: d.costPerConversion,
       })),
     });
   } catch (error: any) {
