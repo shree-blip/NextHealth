@@ -91,6 +91,8 @@ export default function AdminAnalyticsView({ isDark, refreshTrigger }: AdminAnal
   const [showDropdown, setShowDropdown] = useState(false);
   const [filterPreset, setFilterPreset] = useState<FilterPreset>('last_week');
   const [scSummary, setScSummary] = useState<{ clicks: number; impressions: number; avgPosition: number } | null>(null);
+  const [gmbDbData, setGmbDbData] = useState<any[]>([]); // GBP data from database
+  const [gmbSummary, setGmbSummary] = useState<{ views: number; phoneCalls: number; websiteClicks: number } | null>(null); // GBP summary
 
   useEffect(() => {
     fetchClinics();
@@ -290,6 +292,36 @@ export default function AdminAnalyticsView({ isDark, refreshTrigger }: AdminAnal
     fetchScSummary();
   }, [scDateRange, selectedClinic]);
 
+  // Fetch GBP data from database for the selected date range
+  useEffect(() => {
+    const fetchGmbSummary = async () => {
+      try {
+        const params = new URLSearchParams({
+          startDate: scDateRange.startDate,
+          endDate: scDateRange.endDate,
+        });
+        if (selectedClinic && selectedClinic !== 'all') {
+          params.set('clinicId', selectedClinic);
+        }
+        const res = await fetch(`/api/admin/gmb/analytics-data?${params.toString()}`);
+        if (!res.ok) { setGmbDbData([]); setGmbSummary(null); return; }
+        const json = await res.json();
+        const gmbRows: any[] = json.gmbData || [];
+        setGmbDbData(gmbRows);
+        
+        if (gmbRows.length === 0) { setGmbSummary(null); return; }
+        const totalViews = gmbRows.reduce((s, d) => s + (d.views || 0), 0);
+        const totalCalls = gmbRows.reduce((s, d) => s + (d.phoneCalls || 0), 0);
+        const totalClicks = gmbRows.reduce((s, d) => s + (d.websiteClicks || 0), 0);
+        setGmbSummary({ views: totalViews, phoneCalls: totalCalls, websiteClicks: totalClicks });
+      } catch {
+        setGmbDbData([]);
+        setGmbSummary(null);
+      }
+    };
+    fetchGmbSummary();
+  }, [scDateRange, selectedClinic]);
+
   // Conditional render states
   if (loading && clinics.length === 0) {
     return (
@@ -361,6 +393,13 @@ export default function AdminAnalyticsView({ isDark, refreshTrigger }: AdminAnal
     metaSpend: 0,
     googleSpend: 0,
   });
+
+  // Use GBP data from database if available, otherwise fall back to manual analytics
+  const gmbMetrics = gmbSummary || {
+    phoneCalls: totals.calls,
+    views: 0,
+    websiteClicks: 0,
+  };
 
   const trafficData = undefined; // Removed — traffic & ranking now sourced from Search Console
 
@@ -578,8 +617,24 @@ export default function AdminAnalyticsView({ isDark, refreshTrigger }: AdminAnal
             <Phone className="h-8 w-8 text-emerald-500" />
             <ArrowUpRight className="h-5 w-5 text-emerald-500" />
           </div>
-          <h3 className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{totals.calls}</h3>
-          <p className={`text-sm font-semibold ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>GMB Calls</p>
+          <h3 className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{gmbMetrics.phoneCalls}</h3>
+          <p className={`text-sm font-semibold ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>GBP Calls</p>
+          <p className={`text-xs mt-1 ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>{gmbSummary ? 'Auto-synced from Google Business Profile' : 'From manual analytics'}</p>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.25 }}
+          className={`rounded-2xl p-6 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}
+        >
+          <div className="flex items-center justify-between mb-3">
+            <Globe className="h-8 w-8 text-blue-400" />
+            <ArrowUpRight className="h-5 w-5 text-blue-400" />
+          </div>
+          <h3 className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{gmbMetrics.websiteClicks.toLocaleString()}</h3>
+          <p className={`text-sm font-semibold ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>GBP Website Clicks</p>
+          <p className={`text-xs mt-1 ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>{gmbSummary ? 'Auto-synced from Google Business Profile' : 'No data available'}</p>
         </motion.div>
 
         <motion.div
