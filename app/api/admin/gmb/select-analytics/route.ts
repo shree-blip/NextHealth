@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/auth';
 import prisma from '@/lib/prisma';
+import { syncGA4Data, syncSearchConsoleData } from '@/lib/google-analytics';
 
 export async function POST(req: NextRequest) {
   try {
@@ -32,10 +33,40 @@ export async function POST(req: NextRequest) {
       data: updateData,
     });
 
+    // Auto-sync data after saving configuration (non-blocking)
+    const syncResults = { ga4: { synced: 0 }, searchConsole: { synced: 0 } };
+    try {
+      const syncPromises: Promise<any>[] = [];
+      if (updated.ga4PropertyId) {
+        syncPromises.push(
+          syncGA4Data(connection.id)
+            .then(r => { syncResults.ga4 = r; })
+            .catch(err => console.error('GA4 auto-sync error:', err.message))
+        );
+      }
+      if (updated.searchConsoleSite) {
+        syncPromises.push(
+          syncSearchConsoleData(connection.id)
+            .then(r => { syncResults.searchConsole = r; })
+            .catch(err => console.error('SC auto-sync error:', err.message))
+        );
+      }
+      if (syncPromises.length > 0) {
+        await Promise.allSettled(syncPromises);
+        await prisma.gMBConnection.update({
+          where: { id: connection.id },
+          data: { lastSyncedAt: new Date(), syncStatus: 'idle' },
+        });
+      }
+    } catch (err) {
+      console.error('Auto-sync after select-analytics failed:', err);
+    }
+
     return NextResponse.json({
       success: true,
       ga4PropertyId: updated.ga4PropertyId,
       searchConsoleSite: updated.searchConsoleSite,
+      synced: syncResults,
     });
   } catch (error: any) {
     console.error('Select analytics sources error:', error);

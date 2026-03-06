@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthenticatedDbUser } from '@/lib/auth';
 import prisma from '@/lib/prisma';
+import { syncGA4Data, syncSearchConsoleData } from '@/lib/google-analytics';
 
 /**
  * Client-facing analytics data endpoint.
@@ -41,6 +42,33 @@ export async function GET(req: NextRequest) {
         ga4Data: [],
         searchConsoleData: [],
       });
+    }
+
+    // Auto-sync if data has never been synced or is stale (>1 hour)
+    const STALE_MS = 60 * 60 * 1000; // 1 hour
+    const forceSync = req.nextUrl.searchParams.get('sync') === '1';
+    const isStale = !connection.lastSyncedAt || (Date.now() - connection.lastSyncedAt.getTime() > STALE_MS);
+    if ((isStale || forceSync) && connection.refreshToken) {
+      try {
+        await prisma.gMBConnection.update({
+          where: { id: connection.id },
+          data: { syncStatus: 'syncing' },
+        });
+        const syncPromises: Promise<any>[] = [];
+        if (connection.ga4PropertyId) syncPromises.push(syncGA4Data(connection.id).catch(e => console.error('GA4 sync error:', e.message)));
+        if (connection.searchConsoleSite) syncPromises.push(syncSearchConsoleData(connection.id).catch(e => console.error('SC sync error:', e.message)));
+        if (syncPromises.length > 0) await Promise.allSettled(syncPromises);
+        await prisma.gMBConnection.update({
+          where: { id: connection.id },
+          data: { lastSyncedAt: new Date(), syncStatus: 'idle', lastSyncError: null },
+        });
+      } catch (syncErr: any) {
+        console.error('Auto-sync failed:', syncErr.message);
+        await prisma.gMBConnection.update({
+          where: { id: connection.id },
+          data: { syncStatus: 'error', lastSyncError: syncErr.message },
+        }).catch(() => {});
+      }
     }
 
     const since = startDate ? new Date(startDate + 'T00:00:00Z') : new Date(Date.now() - days * 86400000);

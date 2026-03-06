@@ -38,16 +38,18 @@ interface SearchConsoleTabProps {
 export default function SearchConsoleTab({ clinicId, isDark = false }: SearchConsoleTabProps) {
   const [data, setData] = useState<SCRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [period, setPeriod] = useState<Period>('30d');
   const [searchConsoleSite, setSearchConsoleSite] = useState<string | null>(null);
 
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (forceSync = false) => {
     try {
-      setLoading(true);
+      if (forceSync) setSyncing(true); else setLoading(true);
       setError(null);
       const days = parseInt(period);
-      const res = await fetch(`/api/client/analytics-data?clinicId=${clinicId}&days=${days}`);
+      const syncParam = forceSync ? '&sync=1' : '';
+      const res = await fetch(`/api/client/analytics-data?clinicId=${clinicId}&days=${days}${syncParam}`);
       const json = await res.json();
       if (!res.ok) throw new Error(json.error);
       setData(json.searchConsoleData || []);
@@ -56,6 +58,7 @@ export default function SearchConsoleTab({ clinicId, isDark = false }: SearchCon
       setError(err.message);
     } finally {
       setLoading(false);
+      setSyncing(false);
     }
   }, [clinicId, period]);
 
@@ -91,7 +94,7 @@ export default function SearchConsoleTab({ clinicId, isDark = false }: SearchCon
       <div className={`rounded-2xl p-8 border text-center ${isDark ? 'bg-red-900/20 border-red-800' : 'bg-red-50 border-red-200'}`}>
         <p className={`text-sm font-bold mb-2 ${isDark ? 'text-red-400' : 'text-red-700'}`}>Failed to load Search Console data</p>
         <p className={`text-xs mb-4 ${isDark ? 'text-red-400/70' : 'text-red-500'}`}>{error}</p>
-        <button onClick={fetchData} className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-sm font-bold hover:bg-red-200 transition-colors">
+        <button onClick={() => fetchData()} className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-sm font-bold hover:bg-red-200 transition-colors">
           <RefreshCw className="h-4 w-4" /> Retry
         </button>
       </div>
@@ -161,7 +164,17 @@ export default function SearchConsoleTab({ clinicId, isDark = false }: SearchCon
             {searchConsoleSite ? `${searchConsoleSite}` : 'Google Search Console performance data'}
           </p>
         </div>
-        <PeriodSelector period={period} onChange={setPeriod} isDark={isDark} />
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => fetchData(true)}
+            disabled={syncing}
+            className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition-all border ${isDark ? 'border-slate-600 bg-slate-700 text-slate-200 hover:bg-slate-600' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'} disabled:opacity-50`}
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${syncing ? 'animate-spin' : ''}`} />
+            {syncing ? 'Syncing...' : 'Refresh'}
+          </button>
+          <PeriodSelector period={period} onChange={setPeriod} isDark={isDark} />
+        </div>
       </div>
 
       {/* KPI Cards */}
