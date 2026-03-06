@@ -9,6 +9,8 @@ import {
   clearGmbCache,
 } from '@/lib/gmb';
 
+const APP_URL = process.env.APP_URL || 'http://localhost:3000';
+
 function popupHtml(success: boolean, message: string, clinicId?: string) {
   const payload = success
     ? `{ type: 'gmb_auth_complete', success: true, clinicId: '${clinicId || ''}', message: ${JSON.stringify(message)} }`
@@ -26,6 +28,7 @@ function popupHtml(success: boolean, message: string, clinicId?: string) {
       <p style="font-size: 14px; color: #666; margin: 0;">${message}</p>
     </div>
     <script>
+      const appUrl = ${JSON.stringify(APP_URL)};
       // Try postMessage first (works when window.opener is available)
       if (window.opener) {
         try {
@@ -39,6 +42,11 @@ function popupHtml(success: boolean, message: string, clinicId?: string) {
         localStorage.setItem('gmb_oauth_result', JSON.stringify(${payload}));
       } catch (e) {
         console.warn('localStorage fallback failed:', e);
+      }
+      // If there is no opener (same-tab fallback), redirect user back to admin dashboard.
+      if (!window.opener) {
+        const redirectUrl = ${JSON.stringify(`${APP_URL}/dashboard/admin`)};
+        setTimeout(() => window.location.replace(redirectUrl), 600);
       }
       // Close popup after 1.5 seconds
       setTimeout(() => window.close(), 1500);

@@ -130,8 +130,21 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 's
       // Open popup
       const popup = window.open(url, 'oauth_popup', 'width=600,height=700');
       if (!popup) {
-        throw new Error('Please allow popups to continue with Google sign-in.');
+        // Popup blocked: fall back to same-tab redirect
+        window.location.assign(url);
+        return;
       }
+
+      // Safari/strict browsers can return a handle while still blocking popup behavior.
+      setTimeout(() => {
+        try {
+          if (popup.closed) {
+            window.location.assign(url);
+          }
+        } catch {
+          // ignore
+        }
+      }, 700);
 
       // Listen for OAuth completion
       const handleMessage = async (event: MessageEvent) => {

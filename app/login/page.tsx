@@ -21,6 +21,15 @@ export default function LoginPage() {
   const { refreshUser } = useAuth();
 
   useEffect(() => {
+    const query = new URLSearchParams(window.location.search);
+    const oauthError = query.get('oauthError');
+    if (oauthError) {
+      setError(decodeURIComponent(oauthError));
+      query.delete('oauthError');
+      const next = `${window.location.pathname}${query.toString() ? `?${query.toString()}` : ''}`;
+      window.history.replaceState({}, '', next);
+    }
+
     const handleMessage = async (event: MessageEvent) => {
       const origin = event.origin;
       const appUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
@@ -164,9 +173,21 @@ export default function LoginPage() {
       );
 
       if (!authWindow) {
-        setError('Please allow popups for this site to connect your account.');
-        setIsLoading(false);
+        // Popup blocked: fall back to same-tab OAuth redirect
+        window.location.assign(url);
+        return;
       }
+
+      // Some browsers return a window handle even when popup is effectively blocked.
+      setTimeout(() => {
+        try {
+          if (authWindow.closed) {
+            window.location.assign(url);
+          }
+        } catch {
+          // Ignore cross-origin access errors
+        }
+      }, 700);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'OAuth error';
       setError(message);

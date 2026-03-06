@@ -256,10 +256,11 @@ export default function GoogleAnalyticsView({ clinicId, isDark = false, isClient
   ].filter(s => s.value > 0);
 
   // Top blog pages from the latest SC row that has them
-  const latestSCWithPages = [...scData].reverse().find(d => d.topPages && d.topPages.length > 0);
-  const allPages = latestSCWithPages?.topPages || [];
+  const latestSCWithPages = [...scData].reverse().find(d => Array.isArray(d.topPages) && d.topPages.length > 0);
+  const allPages = Array.isArray(latestSCWithPages?.topPages) ? latestSCWithPages.topPages : [];
   const topBlogs = allPages
-    .filter(p => {
+    .filter((p: any) => p && typeof p === 'object' && typeof p.page === 'string')
+    .filter((p: any) => {
       let path = p.page;
       try { path = new URL(p.page).pathname; } catch { /* keep full */ }
       return path.includes('/blog');
@@ -491,9 +492,10 @@ export default function GoogleAnalyticsView({ clinicId, isDark = false, isClient
                 </tr>
               </thead>
               <tbody>
-                {topBlogs.map((p, i) => {
-                  let displayUrl = p.page;
-                  try { displayUrl = new URL(p.page).pathname; } catch { /* keep full */ }
+                {topBlogs.map((p: any, i) => {
+                  const rawPage = typeof p.page === 'string' ? p.page : '';
+                  let displayUrl = rawPage;
+                  try { displayUrl = new URL(rawPage).pathname; } catch { /* keep full */ }
                   const blogTitle = displayUrl
                     .replace(/^\/blog\//, '')
                     .replace(/\/$/, '')
@@ -503,7 +505,7 @@ export default function GoogleAnalyticsView({ clinicId, isDark = false, isClient
                   return (
                     <tr key={i} className={`${isDark ? 'border-b border-slate-700/50 hover:bg-slate-700/30' : 'border-b border-slate-100 hover:bg-slate-50'} transition`}>
                       <td className={`py-2 px-2 font-mono ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{i + 1}</td>
-                      <td className={`py-2 px-2 font-medium truncate max-w-xs ${isDark ? 'text-white' : 'text-slate-900'}`} title={p.page}>{blogTitle}</td>
+                      <td className={`py-2 px-2 font-medium truncate max-w-xs ${isDark ? 'text-white' : 'text-slate-900'}`} title={rawPage}>{blogTitle}</td>
                       <td className="py-2 px-2 text-right text-emerald-500 font-semibold">{p.clicks?.toLocaleString()}</td>
                       <td className={`py-2 px-2 text-right ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>{p.impressions?.toLocaleString()}</td>
                     </tr>

@@ -43,6 +43,7 @@ import {
   Sparkles,
   Check,
   Search,
+  ChevronDown,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -59,6 +60,7 @@ import AdminSettings from '@/components/AdminSettings';
 import { useAdminTranslation } from '@/hooks/useAdminTranslation';
 import AdminSelect from '@/components/AdminSelect';
 import Image from 'next/image';
+import ClientErrorBoundary from '@/components/ClientErrorBoundary';
 
 // Modal Component
 function Modal({ isOpen, onClose, title, children }: { isOpen: boolean; onClose: () => void; title: string; children: React.ReactNode }) {
@@ -1501,11 +1503,8 @@ function AdminDashboardContent() {
 
       if (!popup) {
         window.removeEventListener('message', handlePopupMessage);
-        setGmbState(prev => ({
-          ...prev,
-          connecting: false,
-          error: 'Popup blocked. Please allow popups and try again.',
-        }));
+        // Popup blocked: fall back to same-tab redirect OAuth
+        window.location.assign(urlData.authUrl);
         return;
       }
 
@@ -1985,17 +1984,17 @@ function AdminDashboardContent() {
             />
           </div>
 
-          {/* ═══ Google Integrations — Full Redesign ═══ */}
-          <div className="rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm">
+          {/* ═══ Google Integrations — Modernized UI ═══ */}
+          <div className="rounded-3xl border border-slate-200/70 dark:border-slate-700/70 overflow-hidden shadow-md bg-white/80 dark:bg-slate-900/60 backdrop-blur-sm">
             {/* ── 1. Header ── */}
-            <div className="flex items-center justify-between px-6 py-4 bg-gradient-to-r from-white to-blue-50/60 dark:from-slate-800 dark:to-blue-950/20 border-b border-slate-200 dark:border-slate-700">
+            <div className="flex items-center justify-between px-6 py-5 bg-gradient-to-r from-white via-blue-50/40 to-indigo-50/40 dark:from-slate-800 dark:via-slate-800 dark:to-indigo-950/20 border-b border-slate-200/80 dark:border-slate-700/80">
               <div className="flex items-center gap-3">
                 <div className="h-9 w-9 rounded-xl bg-white dark:bg-slate-700 shadow-sm flex items-center justify-center">
                   <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.27-4.74 3.27-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-slate-900 dark:text-white">Google Integrations</h3>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400">Business Profile · Analytics · Search Console</p>
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white">Google Integrations</h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Business Profile · Analytics · Search Console</p>
                 </div>
               </div>
               {/* Status badge — shows nuanced state */}
@@ -2110,8 +2109,8 @@ function AdminDashboardContent() {
                     </div>
 
                     {/* STEP 1: Google Business Profile */}
-                    <div className="rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
-                      <div className="flex items-center gap-3 px-4 py-3 bg-white dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-700/50">
+                    <div className="rounded-2xl border border-slate-200/80 dark:border-slate-700/80 overflow-hidden bg-white/70 dark:bg-slate-800/30 backdrop-blur-sm">
+                      <div className="flex items-center gap-3 px-5 py-4 bg-white/80 dark:bg-slate-800/60 border-b border-slate-100 dark:border-slate-700/50">
                         <span className="h-7 w-7 rounded-lg bg-blue-500 text-white text-xs font-bold flex items-center justify-center shrink-0">1</span>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-bold text-slate-800 dark:text-slate-200">Business Profile</p>
@@ -2125,7 +2124,7 @@ function AdminDashboardContent() {
                           <span className="text-[10px] px-2.5 py-1 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 font-bold shrink-0">Action needed</span>
                         ) : null}
                       </div>
-                      <div className="p-4 space-y-3 bg-white/50 dark:bg-transparent">
+                      <div className="p-5 space-y-4 bg-white/50 dark:bg-transparent">
                         {gmbState.loading && gmbState.accounts.length === 0 ? (
                           <div className="flex items-center gap-2 py-3 justify-center">
                             <RefreshCw className="h-4 w-4 animate-spin text-slate-400" />
@@ -2138,31 +2137,41 @@ function AdminDashboardContent() {
                           </div>
                         ) : gmbState.accounts.length > 0 ? (
                           <>
-                            <AdminSelect
-                              label="Business Account"
-                              value={gmbState.selectedAccount}
-                              onChange={(value) => handleAccountChange(value)}
-                              options={[
-                                { value: '', label: 'Choose an account...' },
-                                ...gmbState.accounts.map((account) => ({
-                                  value: account.name,
-                                  label: account.accountName || account.name
-                                }))
-                              ]}
-                            />
+                            <div className="space-y-1.5">
+                              <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Business Account</label>
+                              <div className="relative">
+                                <select
+                                  value={gmbState.selectedAccount}
+                                  onChange={(e) => handleAccountChange(e.target.value)}
+                                  className="w-full appearance-none rounded-2xl border border-slate-200/80 dark:border-slate-700/80 bg-white/90 dark:bg-slate-900/60 px-4 py-3 pr-10 text-sm font-semibold text-slate-800 dark:text-slate-200 shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400"
+                                >
+                                  <option value="">Choose an account...</option>
+                                  {gmbState.accounts.map((account) => (
+                                    <option key={account.name} value={account.name}>{account.accountName || account.name}</option>
+                                  ))}
+                                </select>
+                                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                              </div>
+                            </div>
                             {gmbState.selectedAccount && gmbState.locations.length > 0 && (
-                              <AdminSelect
-                                label="Business Location"
-                                value={gmbState.selectedLocation}
-                                onChange={(value) => setGmbState(prev => ({ ...prev, selectedLocation: value }))}
-                                options={[
-                                  { value: '', label: 'Choose a location...' },
-                                  ...gmbState.locations.map((location) => ({
-                                    value: location.name,
-                                    label: `${location.title || location.name}${location.address ? ` — ${location.address}` : ''}`
-                                  }))
-                                ]}
-                              />
+                              <div className="space-y-1.5">
+                                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Business Location</label>
+                                <div className="relative">
+                                  <select
+                                    value={gmbState.selectedLocation}
+                                    onChange={(e) => setGmbState(prev => ({ ...prev, selectedLocation: e.target.value }))}
+                                    className="w-full appearance-none rounded-2xl border border-slate-200/80 dark:border-slate-700/80 bg-white/90 dark:bg-slate-900/60 px-4 py-3 pr-10 text-sm font-semibold text-slate-800 dark:text-slate-200 shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400"
+                                  >
+                                    <option value="">Choose a location...</option>
+                                    {gmbState.locations.map((location) => (
+                                      <option key={location.name} value={location.name}>
+                                        {`${location.title || location.name}${location.address ? ` — ${location.address}` : ''}`}
+                                      </option>
+                                    ))}
+                                  </select>
+                                  <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                                </div>
+                              </div>
                             )}
                             {gmbState.selectedAccount && gmbState.locations.length === 0 && !gmbState.loading && (
                               <div className="flex items-center gap-2 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800/30">
@@ -2181,8 +2190,8 @@ function AdminDashboardContent() {
                     </div>
 
                     {/* STEP 2: Google Analytics GA4 */}
-                    <div className="rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
-                      <div className="flex items-center gap-3 px-4 py-3 bg-white dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-700/50">
+                    <div className="rounded-2xl border border-slate-200/80 dark:border-slate-700/80 overflow-hidden bg-white/70 dark:bg-slate-800/30 backdrop-blur-sm">
+                      <div className="flex items-center gap-3 px-5 py-4 bg-white/80 dark:bg-slate-800/60 border-b border-slate-100 dark:border-slate-700/50">
                         <span className="h-7 w-7 rounded-lg bg-orange-500 text-white text-xs font-bold flex items-center justify-center shrink-0">2</span>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-bold text-slate-800 dark:text-slate-200">Google Analytics (GA4)</p>
@@ -2196,7 +2205,7 @@ function AdminDashboardContent() {
                           <span className="text-[10px] px-2.5 py-1 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 font-bold shrink-0">Action needed</span>
                         ) : null}
                       </div>
-                      <div className="p-4 bg-white/50 dark:bg-transparent">
+                      <div className="p-5 bg-white/50 dark:bg-transparent">
                         {gmbState.loading && gmbState.ga4Properties.length === 0 ? (
                           <div className="flex items-center gap-2 py-3 justify-center">
                             <RefreshCw className="h-4 w-4 animate-spin text-slate-400" />
@@ -2208,18 +2217,22 @@ function AdminDashboardContent() {
                             <p className="text-xs text-rose-700 dark:text-rose-400">{gmbState.ga4Error}</p>
                           </div>
                         ) : gmbState.ga4Properties.length > 0 ? (
-                          <AdminSelect
-                            label="GA4 Property"
-                            value={gmbState.selectedGA4Property}
-                            onChange={(value) => setGmbState(prev => ({ ...prev, selectedGA4Property: value }))}
-                            options={[
-                              { value: '', label: 'Choose a GA4 property...' },
-                              ...gmbState.ga4Properties.map((p) => ({
-                                value: p.propertyId,
-                                label: `${p.displayName} (${p.account})`
-                              }))
-                            ]}
-                          />
+                          <div className="space-y-1.5">
+                            <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">GA4 Property</label>
+                            <div className="relative">
+                              <select
+                                value={gmbState.selectedGA4Property}
+                                onChange={(e) => setGmbState(prev => ({ ...prev, selectedGA4Property: e.target.value }))}
+                                className="w-full appearance-none rounded-2xl border border-slate-200/80 dark:border-slate-700/80 bg-white/90 dark:bg-slate-900/60 px-4 py-3 pr-10 text-sm font-semibold text-slate-800 dark:text-slate-200 shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-400"
+                              >
+                                <option value="">Choose a GA4 property...</option>
+                                {gmbState.ga4Properties.map((p) => (
+                                  <option key={p.propertyId} value={p.propertyId}>{`${p.displayName} (${p.account})`}</option>
+                                ))}
+                              </select>
+                              <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                            </div>
+                          </div>
                         ) : (
                           <div className="flex items-center gap-2.5 p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50">
                             <Search className="h-4 w-4 text-slate-400 shrink-0" />
@@ -2230,8 +2243,8 @@ function AdminDashboardContent() {
                     </div>
 
                     {/* STEP 3: Search Console */}
-                    <div className="rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
-                      <div className="flex items-center gap-3 px-4 py-3 bg-white dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-700/50">
+                    <div className="rounded-2xl border border-slate-200/80 dark:border-slate-700/80 overflow-hidden bg-white/70 dark:bg-slate-800/30 backdrop-blur-sm">
+                      <div className="flex items-center gap-3 px-5 py-4 bg-white/80 dark:bg-slate-800/60 border-b border-slate-100 dark:border-slate-700/50">
                         <span className="h-7 w-7 rounded-lg bg-purple-500 text-white text-xs font-bold flex items-center justify-center shrink-0">3</span>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-bold text-slate-800 dark:text-slate-200">Search Console</p>
@@ -2245,7 +2258,7 @@ function AdminDashboardContent() {
                           <span className="text-[10px] px-2.5 py-1 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 font-bold shrink-0">Action needed</span>
                         ) : null}
                       </div>
-                      <div className="p-4 bg-white/50 dark:bg-transparent">
+                      <div className="p-5 bg-white/50 dark:bg-transparent">
                         {gmbState.loading && gmbState.scSites.length === 0 ? (
                           <div className="flex items-center gap-2 py-3 justify-center">
                             <RefreshCw className="h-4 w-4 animate-spin text-slate-400" />
@@ -2257,18 +2270,22 @@ function AdminDashboardContent() {
                             <p className="text-xs text-rose-700 dark:text-rose-400">{gmbState.scError}</p>
                           </div>
                         ) : gmbState.scSites.length > 0 ? (
-                          <AdminSelect
-                            label="Search Console Site"
-                            value={gmbState.selectedSCSite}
-                            onChange={(value) => setGmbState(prev => ({ ...prev, selectedSCSite: value }))}
-                            options={[
-                              { value: '', label: 'Choose a site...' },
-                              ...gmbState.scSites.map((s) => ({
-                                value: s.siteUrl,
-                                label: s.siteUrl
-                              }))
-                            ]}
-                          />
+                          <div className="space-y-1.5">
+                            <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Search Console Site</label>
+                            <div className="relative">
+                              <select
+                                value={gmbState.selectedSCSite}
+                                onChange={(e) => setGmbState(prev => ({ ...prev, selectedSCSite: e.target.value }))}
+                                className="w-full appearance-none rounded-2xl border border-slate-200/80 dark:border-slate-700/80 bg-white/90 dark:bg-slate-900/60 px-4 py-3 pr-10 text-sm font-semibold text-slate-800 dark:text-slate-200 shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-400"
+                              >
+                                <option value="">Choose a site...</option>
+                                {gmbState.scSites.map((s) => (
+                                  <option key={s.siteUrl} value={s.siteUrl}>{s.siteUrl}</option>
+                                ))}
+                              </select>
+                              <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                            </div>
+                          </div>
                         ) : (
                           <div className="flex items-center gap-2.5 p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50">
                             <Globe className="h-4 w-4 text-slate-400 shrink-0" />
@@ -3627,12 +3644,24 @@ function ContentForSection(props: {
               </p>
             </div>
             <div className={`pt-6 border-t ${isDark ? 'border-slate-700' : 'border-slate-200'}`}>
-              <ClientAnalyticsView isAdmin refreshTrigger={analyticsRefreshKey} />
+              <ClientErrorBoundary
+                isDark={isDark}
+                title="Analytics charts failed to load"
+                description="A client-side rendering error occurred in the analytics charts. You can retry below without reloading the dashboard."
+              >
+                <ClientAnalyticsView isAdmin refreshTrigger={analyticsRefreshKey} />
+              </ClientErrorBoundary>
             </div>
           </div>
 
           {/* Google Analytics & Search Console (per-clinic) */}
-          <GoogleAnalyticsSection clinics={clinics} isDark={isDark} />
+          <ClientErrorBoundary
+            isDark={isDark}
+            title="Google analytics section failed to load"
+            description="A client-side rendering error occurred in the Google Analytics/Search Console section. Retry to continue."
+          >
+            <GoogleAnalyticsSection clinics={clinics} isDark={isDark} />
+          </ClientErrorBoundary>
         </div>
       );
 

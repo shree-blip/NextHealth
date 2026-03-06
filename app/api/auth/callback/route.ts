@@ -101,11 +101,29 @@ function htmlResponse(messageType: 'OAUTH_AUTH_SUCCESS' | 'OAUTH_AUTH_ERROR', pa
               }
             } else {
               console.warn('[OAuth Callback] No window.opener available');
-              updateStatus('Authentication complete. Please close this window.');
-              // Even without opener, try to close the window
-              setTimeout(function() {
-                attemptClose();
-              }, 1000);
+              // Same-tab fallback (popup blocked): continue OAuth via redirect.
+              try {
+                if (messageType === 'OAUTH_AUTH_SUCCESS') {
+                  var role = (parsed.user && parsed.user.role) ? parsed.user.role : 'client';
+                  var dashboardPath = (role === 'admin' || role === 'super_admin') ? '/dashboard/admin' : ('/dashboard/' + role);
+                  updateStatus('Connected! Redirecting...');
+                  setTimeout(function() {
+                    window.location.replace(${JSON.stringify(targetOrigin)} + dashboardPath);
+                  }, 250);
+                } else {
+                  var err = encodeURIComponent(parsed.error || 'Google login failed');
+                  updateStatus('Authentication failed. Redirecting to login...');
+                  setTimeout(function() {
+                    window.location.replace(${JSON.stringify(targetOrigin)} + '/login?oauthError=' + err);
+                  }, 250);
+                }
+              } catch (e) {
+                console.error('[OAuth Callback] Same-tab redirect fallback failed:', e);
+                updateStatus('Authentication complete. Please close this window.');
+                setTimeout(function() {
+                  attemptClose();
+                }, 1000);
+              }
             }
           })();
           
