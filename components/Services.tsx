@@ -187,7 +187,7 @@ export default function Services({ compact = false, showImages = true }: Service
           viewport={{ once: true }}
           className="text-center mb-20"
         >
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900">Our Services</h1>
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-gray-900">Our Services</h2>
           <p className="mt-6 text-xl text-gray-600 max-w-3xl mx-auto">
             Everything your healthcare practice needs to own the digital space.
           </p>

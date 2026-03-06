@@ -29,6 +29,16 @@ export default function robots(): MetadataRoute.Robots {
           '/applet/',
         ],
       },
+      {
+        userAgent: 'Bingbot',
+        allow: ['/', '/blog/', '/news/', '/login', '/signup'],
+        disallow: [
+          '/dashboard/',
+          '/api/',
+          '/profile/',
+          '/applet/',
+        ],
+      },
     ],
     sitemap: `${SITE_URL}/sitemap.xml`,
   };

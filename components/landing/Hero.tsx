@@ -28,9 +28,9 @@ export default function Hero() {
 
             {/* trust logos placeholder row */}
             <div className="mt-10 flex flex-wrap justify-center items-center gap-6 opacity-60">
-              <img src="/Client_logo/placeholder.png" alt="" className="h-8" />
-              <img src="/Client_logo/placeholder.png" alt="" className="h-8" />
-              <img src="/Client_logo/placeholder.png" alt="" className="h-8" />
+              <img src="/Client_logo/placeholder.png" alt="Trusted healthcare partner logo" className="h-8" />
+              <img src="/Client_logo/placeholder.png" alt="Healthcare client partner logo" className="h-8" />
+              <img src="/Client_logo/placeholder.png" alt="Medical industry partner logo" className="h-8" />
             </div>
           </motion.div>
 

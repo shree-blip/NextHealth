@@ -77,8 +77,14 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
       };
     }
 
+    // Ensure title is under 70 characters for optimal search results display
+    let finalTitle = post.seoTitle || post.title || 'Blog Post | The NextGen Healthcare Marketing';
+    if (finalTitle.length > 70) {
+      finalTitle = finalTitle.substring(0, 67) + '...';
+    }
+
     return {
-      title: post.seoTitle || post.title || 'Blog Post | The NextGen Healthcare Marketing',
+      title: finalTitle,
       description: post.metaDesc || post.excerpt || 'Read our latest blog post.',
       alternates: {
         canonical: `${SITE_URL}/blog/${slug}`,
