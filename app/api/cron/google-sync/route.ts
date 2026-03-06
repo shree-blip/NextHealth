@@ -68,7 +68,9 @@ export async function GET(request: Request) {
       // ── GMB sync ────────────────────────────────────────────────────
       if (conn.businessLocationId) {
         try {
-          await syncGmbConnection(conn.id);
+          // Pass 24-hour cooldown for cron syncs (vs 30-min for manual)
+          const cronNextSync = new Date(Date.now() + 24 * 60 * 60 * 1000);
+          await syncGmbConnection(conn.id, cronNextSync);
           entry.gmb = { synced: 1 };
         } catch (err: any) {
           console.error(`[CRON:google-sync] GMB sync failed for clinic ${conn.clinicId}:`, err.message);
@@ -96,12 +98,11 @@ export async function GET(request: Request) {
         }
       }
 
-      // Update sync timestamps
+      // Update sync timestamps (no need to set nextSyncAt again, syncGmbConnection already did)
       await prisma.gMBConnection.update({
         where: { id: conn.id },
         data: {
           lastSyncedAt: new Date(),
-          nextSyncAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // next sync in 24h
           syncStatus: 'idle',
         },
       }).catch(() => {});

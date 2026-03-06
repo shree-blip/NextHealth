@@ -20,7 +20,24 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No GMB connection found for this clinic' }, { status: 404 });
     }
 
-    await syncGmbConnection(connection.id);
+    // ── Cooldown check: prevent sync spam (30-minute cooldown) ──────
+    const now = new Date();
+    if (connection.nextSyncAt && connection.nextSyncAt > now) {
+      const secondsUntilNext = Math.ceil((connection.nextSyncAt.getTime() - now.getTime()) / 1000);
+      return NextResponse.json(
+        {
+          error: `Sync is on cooldown. Please try again in ${Math.ceil(secondsUntilNext / 60)} minute${Math.ceil(secondsUntilNext / 60) !== 1 ? 's' : ''}.`,
+          nextSyncAt: connection.nextSyncAt.toISOString(),
+          secondsUntilNext,
+        },
+        { status: 429 }
+      );
+    }
+
+    // ── Schedule next sync 30 minutes from now ────────────────────────
+    const nextSyncAt = new Date(now.getTime() + 30 * 60_000);
+
+    await syncGmbConnection(connection.id, nextSyncAt);
 
     const refreshed = await prisma.gMBConnection.findUnique({ where: { id: connection.id } });
 

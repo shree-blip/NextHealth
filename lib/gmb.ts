@@ -268,12 +268,26 @@ async function gmbApiRequest(connectionId: string, url: string, init: RequestIni
     response = await makeRequest(accessToken);
   }
 
-  // Handle 429 rate limit with one automatic retry after a short delay
+  // Handle 429 rate limit with exponential backoff + jitter
   if (response.status === 429) {
-    const retryAfter = parseInt(response.headers.get('Retry-After') || '5', 10);
-    const waitMs = Math.min(retryAfter * 1000, 30_000);
-    await new Promise(resolve => setTimeout(resolve, waitMs));
-    response = await makeRequest(accessToken);
+    const maxAttempts = 3;
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      // Use Retry-After header if available, otherwise exponential backoff
+      const baseDelaySeconds = attempt === 1 
+        ? parseInt(response.headers.get('Retry-After') || '1', 10)
+        : Math.pow(2, attempt - 1);
+      
+      // Add random jitter (±20%) to prevent thundering herd
+      const jitter = baseDelaySeconds * 0.2 * (Math.random() * 2 - 1);
+      const delaySeconds = Math.max(1, baseDelaySeconds + jitter);
+      const delayMs = Math.min(delaySeconds * 1000, 60_000);
+      
+      console.log(`[Rate Limit] Attempt ${attempt}/${maxAttempts}, waiting ${delayMs}ms before retry...`);
+      await new Promise(resolve => setTimeout(resolve, delayMs));
+      
+      response = await makeRequest(accessToken);
+      if (response.status !== 429) break;
+    }
   }
 
   // Robust response parsing — handle non-JSON gracefully
@@ -297,6 +311,10 @@ async function gmbApiRequest(connectionId: string, url: string, init: RequestIni
   }
 
   if (!response.ok) {
+    // Provide specific error for rate limits
+    if (response.status === 429) {
+      throw new Error('Google API rate limited after multiple retries. Please wait 30+ minutes before retrying.');
+    }
     throw new Error(data?.error?.message || data?.error || `Google API error (${response.status})`);
   }
 
@@ -507,7 +525,7 @@ function aggregateMetricSeries(series: any[]) {
   return byDate;
 }
 
-export async function syncGmbConnection(connectionId: string) {
+export async function syncGmbConnection(connectionId: string, nextSyncAt?: Date) {
   const connection = await prisma.gMBConnection.findUnique({ where: { id: connectionId } });
   if (!connection) {
     throw new Error('GMB connection not found');
@@ -517,11 +535,15 @@ export async function syncGmbConnection(connectionId: string) {
     throw new Error('No business location selected');
   }
 
+  // If nextSyncAt not provided, set cooldown for next sync
+  const scheduledNextSync = nextSyncAt || new Date(Date.now() + 30 * 60_000);
+
   await prisma.gMBConnection.update({
     where: { id: connectionId },
     data: {
       syncStatus: 'syncing',
       lastSyncError: null,
+      nextSyncAt: scheduledNextSync,
     },
   });
 

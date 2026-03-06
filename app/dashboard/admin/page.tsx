@@ -45,6 +45,7 @@ import {
   Search,
   ChevronDown,
   Unlink,
+  Clock,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -758,6 +759,7 @@ function AdminDashboardContent() {
     analyticsLoading: false,
     analyticsSaving: false,
     confirmSyncing: false,
+    syncCooldownSeconds: 0, // Countdown timer for sync cooldown
   });
 
   // Delete confirmation modal state
@@ -2502,7 +2504,13 @@ function AdminDashboardContent() {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({ clinicId: editingClinic.id }),
-                              }).then(r => { if (!r.ok) throw new Error('GBP sync failed'); }).catch(() => {})
+                              }).then(async r => {
+                                if (r.status === 429) {
+                                  const data = await r.json();
+                                  throw new Error(data.error || 'Sync cooldown active. Please wait before retrying.');
+                                }
+                                if (!r.ok) throw new Error('GBP sync failed');
+                              }).catch(() => {})
                             );
                           }
                           if (gmbState.selectedGA4Property || gmbState.selectedSCSite) {
@@ -2530,17 +2538,25 @@ function AdminDashboardContent() {
                           }));
                         }
                       }}
-                      disabled={gmbState.confirmSyncing || (!gmbState.connection.businessLocationId && !gmbState.selectedGA4Property && !gmbState.selectedSCSite)}
+                      disabled={gmbState.confirmSyncing || (!gmbState.connection.businessLocationId && !gmbState.selectedGA4Property && !gmbState.selectedSCSite) || (gmbState.connection?.nextSyncAt && new Date(gmbState.connection.nextSyncAt) > new Date())}
                       className={`w-full px-4 py-3 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 border ${
                         gmbState.confirmSyncing
                           ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800/40 text-emerald-700 dark:text-emerald-400 cursor-wait'
-                          : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 disabled:opacity-40 disabled:cursor-not-allowed'
+                          : gmbState.connection?.nextSyncAt && new Date(gmbState.connection.nextSyncAt) > new Date()
+                            ? 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 cursor-not-allowed'
+                            : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 disabled:opacity-40 disabled:cursor-not-allowed'
                       }`}
+                      title={gmbState.connection?.nextSyncAt && new Date(gmbState.connection.nextSyncAt) > new Date() ? `Next sync available in ${Math.ceil((new Date(gmbState.connection.nextSyncAt).getTime() - new Date().getTime()) / 60000)} minutes` : 'Sync your Google data now'}
                     >
                       {gmbState.confirmSyncing ? (
-                        <><RefreshCw className="h-4 w-4 animate-spin" /> Syncing Data...</>
+                        <><RefreshCw className="h-4 w-4 animate-spin" /> Syncing...</>
+                      ) : gmbState.connection?.nextSyncAt && new Date(gmbState.connection.nextSyncAt) > new Date() ? (
+                        <>
+                          <Clock className="h-4 w-4" /> 
+                          Sync available in {Math.ceil((new Date(gmbState.connection.nextSyncAt).getTime() - new Date().getTime()) / 60000)}m
+                        </>
                       ) : (
-                        <><RefreshCw className="h-4 w-4" /> Sync Data Now</>
+                        <><Zap className="h-4 w-4" /> Sync Data</>
                       )}
                     </button>
                   </div>
