@@ -44,6 +44,7 @@ import {
   Check,
   Search,
   ChevronDown,
+  Unlink,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -1495,6 +1496,56 @@ function AdminDashboardContent() {
     }
   };
 
+  const handleGmbDisconnect = () => {
+    if (!editingClinic?.id) return;
+    const clinicIdToDisconnect = editingClinic.id;
+    const connectedEmail = gmbState.connection?.googleEmail || 'this Google account';
+
+    setDeleteModal({
+      isOpen: true,
+      title: 'Disconnect Google Account',
+      description: `This will revoke access, remove all synced Google data (Business Profile, Analytics, Search Console), and stop future syncs for this clinic. This action cannot be undone.`,
+      itemName: connectedEmail,
+      isLoading: false,
+      onConfirm: async () => {
+        setDeleteModal(prev => ({ ...prev, isLoading: true }));
+        try {
+          const res = await fetch('/api/admin/gmb/disconnect', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ clinicId: clinicIdToDisconnect }),
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || 'Failed to disconnect');
+
+          // Reset GMB state to disconnected
+          lastLoadedClinicRef.current = null;
+          setGmbState(prev => ({
+            ...prev,
+            connection: null,
+            accounts: [],
+            locations: [],
+            ga4Properties: [],
+            scSites: [],
+            selectedAccount: '',
+            selectedLocation: '',
+            selectedGA4Property: '',
+            selectedSCSite: '',
+            accountsError: '',
+            ga4Error: '',
+            scError: '',
+            message: `Google account (${connectedEmail}) disconnected successfully.`,
+            error: '',
+          }));
+          resetDeleteModal();
+        } catch (err: any) {
+          resetDeleteModal();
+          setGmbState(prev => ({ ...prev, error: err.message || 'Failed to disconnect Google account' }));
+        }
+      },
+    });
+  };
+
   const handleGmbConnect = async () => {
     if (!editingClinic?.id) return;
     const clinicIdForOAuth = editingClinic.id;
@@ -2137,13 +2188,23 @@ function AdminDashboardContent() {
                           </div>
                         </div>
                       </div>
-                      <button
-                        onClick={handleGmbConnect}
-                        disabled={gmbState.connecting}
-                        className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 font-semibold px-3 py-2 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors disabled:opacity-50 shrink-0"
-                      >
-                        {gmbState.connecting ? 'Reconnecting...' : 'Reconnect'}
-                      </button>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <button
+                          onClick={handleGmbConnect}
+                          disabled={gmbState.connecting}
+                          className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 font-semibold px-3 py-2 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors disabled:opacity-50"
+                        >
+                          {gmbState.connecting ? 'Reconnecting...' : 'Reconnect'}
+                        </button>
+                        <button
+                          onClick={handleGmbDisconnect}
+                          disabled={gmbState.connecting}
+                          className="inline-flex items-center gap-1 text-xs text-rose-600 dark:text-rose-400 hover:text-rose-700 font-semibold px-3 py-2 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-900/30 transition-colors disabled:opacity-50"
+                          title="Disconnect Google account"
+                        >
+                          <Unlink className="h-3.5 w-3.5" /> Disconnect
+                        </button>
+                      </div>
                     </div>
                   </div>
 

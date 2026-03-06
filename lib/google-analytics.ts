@@ -45,13 +45,27 @@ async function getValidToken(connectionId: string): Promise<string> {
   });
 
   const data = await res.json();
-  if (!res.ok) throw new Error(data?.error_description || 'Token refresh failed');
+  if (!res.ok) {
+    // Mark the connection as refresh_failed so the cron won't keep retrying
+    await prisma.gMBConnection.update({
+      where: { id: connectionId },
+      data: {
+        connectionStatus: 'refresh_failed',
+        syncStatus: 'error',
+        lastSyncError: data?.error_description || data?.error || 'Token refresh failed',
+      },
+    });
+    throw new Error(data?.error_description || 'Token refresh failed');
+  }
 
   await prisma.gMBConnection.update({
     where: { id: connectionId },
     data: {
       accessToken: data.access_token,
       tokenExpiry: new Date(Date.now() + (data.expires_in || 3600) * 1000),
+      connectionStatus: 'connected',
+      syncStatus: 'idle',
+      lastSyncError: null,
     },
   });
 

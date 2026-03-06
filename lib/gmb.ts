@@ -312,6 +312,25 @@ export async function upsertOAuthConnection(params: {
 }) {
   const tokenExpiry = new Date(Date.now() + params.expiresIn * 1000);
 
+  // ── Enforce email uniqueness across clinics ──────────────────────
+  // The same Google account must not be connected to more than one clinic.
+  if (params.googleEmail) {
+    const conflict = await prisma.gMBConnection.findFirst({
+      where: {
+        googleEmail: params.googleEmail,
+        clinicId: { not: params.clinicId },
+      },
+      select: { clinicId: true, clinic: { select: { name: true } } },
+    });
+
+    if (conflict) {
+      throw new Error(
+        `This Google account (${params.googleEmail}) is already connected to "${conflict.clinic?.name || conflict.clinicId}". ` +
+        `Each clinic must use its own Google account. Disconnect the other clinic first or sign in with a different Google account.`
+      );
+    }
+  }
+
   const existing = await prisma.gMBConnection.findUnique({ where: { clinicId: params.clinicId } });
 
   if (existing) {
