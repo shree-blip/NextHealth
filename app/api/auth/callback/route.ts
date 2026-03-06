@@ -30,10 +30,21 @@ function htmlResponse(messageType: 'OAUTH_AUTH_SUCCESS' | 'OAUTH_AUTH_ERROR', pa
           (function () {
             var msg = ${JSON.stringify(message)};
             var parsed = JSON.parse(msg);
+            console.log('[OAuth Callback] Attempting postMessage to parent window');
+            console.log('[OAuth Callback] targetOrigin:', ${JSON.stringify(targetOrigin)});
+            console.log('[OAuth Callback] window.opener:', !!window.opener);
+            
             if (window.opener) {
-              window.opener.postMessage(parsed, ${JSON.stringify(targetOrigin)});
-              window.close();
+              try {
+                window.opener.postMessage(parsed, ${JSON.stringify(targetOrigin)});
+                console.log('[OAuth Callback] postMessage sent successfully');
+                window.close();
+              } catch (err) {
+                console.error('[OAuth Callback] postMessage error:', err);
+                window.location.href = ${JSON.stringify('/login')};
+              }
             } else {
+              console.warn('[OAuth Callback] No window.opener - redirecting to login');
               window.location.href = ${JSON.stringify('/login')};
             }
           })();

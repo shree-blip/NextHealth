@@ -26,7 +26,16 @@ export default function LoginPage() {
       const appUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
       const allowedOrigin = new URL(appUrl).origin;
 
-      if (!origin.endsWith('.run.app') && !origin.includes('localhost') && origin !== allowedOrigin) {
+      // Origin validation: Allow localhost, .run.app (Vercel), or exact origin match
+      const isValidOrigin = 
+        origin.includes('localhost') || 
+        origin.endsWith('.run.app') || 
+        origin === allowedOrigin ||
+        // Allow dynamic iframe origin as fallback
+        origin === window.location.origin;
+
+      if (!isValidOrigin) {
+        console.warn(`[OAuth] Origin validation failed: ${origin} not in [localhost, .run.app, ${allowedOrigin}, ${window.location.origin}]`);
         return;
       }
 
@@ -42,6 +51,8 @@ export default function LoginPage() {
         const token = event.data.token;
         const dashboardPath = user?.role === 'super_admin' ? '/dashboard/admin' : `/dashboard/${user.role}`;
 
+        console.log('[Login] OAuth success received:', { user, dashboardPath });
+
         // Show loading screen immediately — no blank screen
         setIsRedirecting(true);
         setIsLoading(false);
@@ -51,20 +62,34 @@ export default function LoginPage() {
           // The popup's Set-Cookie may be blocked by browsers that restrict
           // cookies from third-party redirect chains (Safari ITP, Chrome, etc).
           if (token) {
-            await fetch('/api/auth/token-login', {
+            console.log('[Login] Setting auth token cookie...');
+            const tokenRes = await fetch('/api/auth/token-login', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ token }),
             });
+            
+            if (!tokenRes.ok) {
+              throw new Error(`Token login failed with status ${tokenRes.status}`);
+            }
+            console.log('[Login] Auth token cookie set successfully');
           }
+          
+          // Small delay to ensure cookie is set before navigating
+          await new Promise(resolve => setTimeout(resolve, 100));
+          
+          // Navigate with explicit replaceState to prevent back button issues
+          console.log('[Login] Navigating to dashboard:', dashboardPath);
+          window.location.replace(dashboardPath);
         } catch (err) {
-          console.error('Failed to set auth token:', err);
+          console.error('OAuth login failed:', err);
+          setError('Authentication failed. Please try again.');
+          setIsRedirecting(false);
+          setIsLoading(false);
         }
-
-        // Navigate immediately — loading.tsx keeps animation alive during page load
-        router.replace(dashboardPath);
       }
     };
+    console.log('[Login] Setting up OAuth message listener');
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
   }, [router]);
