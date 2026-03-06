@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import {
   LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, AreaChart, Area,
@@ -8,6 +8,7 @@ import {
 } from 'recharts';
 import { TrendingUp, FileText, Globe, Phone, DollarSign, Users, Loader2, Building2, ChevronDown, ArrowUpRight, Database, MousePointerClick, Target, Eye, BarChart3, Search } from 'lucide-react';
 import SearchConsolePerformanceChart from './SearchConsolePerformanceChart';
+import AnalyticsDateFilter, { type DateRange, type FilterPreset } from './AnalyticsDateFilter';
 
 interface WeeklyAnalytics {
   id: string;
@@ -52,8 +53,6 @@ interface ClinicInfo {
 
 const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
-type FilterPreset = 'last_week' | 'current_month' | 'last_month' | 'compare_last_week' | 'compare_last_month';
-
 function getMonday(date: Date): Date {
   const copy = new Date(date);
   const day = copy.getDay();
@@ -90,6 +89,13 @@ export default function AdminAnalyticsView({ isDark, refreshTrigger }: AdminAnal
   const [loading, setLoading] = useState(true);
   const [showDropdown, setShowDropdown] = useState(false);
   const [filterPreset, setFilterPreset] = useState<FilterPreset>('last_week');
+  const [dateRange, setDateRange] = useState<DateRange>(() => {
+    const now = new Date();
+    const thisMonday = getMonday(now);
+    const start = addDays(thisMonday, -7);
+    const end = addDays(start, 6);
+    return { startDate: start.toISOString().slice(0, 10), endDate: end.toISOString().slice(0, 10) };
+  });
   const [scSummary, setScSummary] = useState<{ clicks: number; impressions: number; avgPosition: number } | null>(null);
   const [gmbDbData, setGmbDbData] = useState<any[]>([]); // GBP data from database
   const [gmbSummary, setGmbSummary] = useState<{ views: number; phoneCalls: number; websiteClicks: number } | null>(null); // GBP summary
@@ -179,21 +185,24 @@ export default function AdminAnalyticsView({ isDark, refreshTrigger }: AdminAnal
         return sortByDate(analytics.filter((w) => w.year === currentMonthYear && w.month === currentMonth));
       case 'last_month':
         return sortByDate(analytics.filter((w) => w.year === lastMonthDate.getFullYear() && w.month === (lastMonthDate.getMonth() + 1)));
-      case 'compare_last_week':
-        return sortByDate(analytics.filter((w) =>
-          (w.year === lastWeek.year && w.month === lastWeek.month && w.weekNumber === lastWeek.weekNumber) ||
-          (w.year === weekBefore.year && w.month === weekBefore.month && w.weekNumber === weekBefore.weekNumber)
-        ));
-      case 'compare_last_month':
-        return sortByDate(analytics.filter((w) =>
-          (w.year === lastMonthDate.getFullYear() && w.month === (lastMonthDate.getMonth() + 1)) ||
-          (w.year === monthBeforeDate.getFullYear() && w.month === (monthBeforeDate.getMonth() + 1))
-        ));
+      case 'year':
+        return sortByDate(analytics.filter((w) => w.year === now.getFullYear()));
+      case 'custom': {
+        // Filter by date range — approximate using year/month
+        const startD = new Date(dateRange.startDate + 'T00:00:00');
+        const endD = new Date(dateRange.endDate + 'T00:00:00');
+        return sortByDate(analytics.filter((w) => {
+          // Check if the week falls within the custom range
+          const wDate = new Date(w.year, w.month - 1, 1);
+          const wEnd = new Date(w.year, w.month, 0);
+          return wEnd >= startD && wDate <= endD;
+        }));
+      }
       case 'last_week':
       default:
         return sortByDate(analytics.filter((w) => w.year === lastWeek.year && w.month === lastWeek.month && w.weekNumber === lastWeek.weekNumber));
     }
-  }, [analytics, filterPreset]);
+  }, [analytics, filterPreset, dateRange]);
 
   // Aggregate data by week for current filter
   const weeklyAggregated = filteredAnalytics.reduce((acc, week) => {
@@ -234,44 +243,14 @@ export default function AdminAnalyticsView({ isDark, refreshTrigger }: AdminAnal
     return acc;
   }, {} as Record<string, any>);
 
-  // Compute date range from filter preset for Search Console chart
-  const scDateRange = useMemo(() => {
-    const now = new Date();
-    const thisMonday = getMonday(now);
-    const fmt = (d: Date) => d.toISOString().slice(0, 10);
+  // scDateRange is now driven by the AnalyticsDateFilter component
+  const scDateRange = dateRange;
 
-    switch (filterPreset) {
-      case 'last_week': {
-        const start = addDays(thisMonday, -7);
-        const end = addDays(start, 6);
-        return { startDate: fmt(start), endDate: fmt(end) };
-      }
-      case 'current_month': {
-        const start = new Date(now.getFullYear(), now.getMonth(), 1);
-        return { startDate: fmt(start), endDate: fmt(now) };
-      }
-      case 'last_month': {
-        const start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-        const end = new Date(now.getFullYear(), now.getMonth(), 0);
-        return { startDate: fmt(start), endDate: fmt(end) };
-      }
-      case 'compare_last_week': {
-        const start = addDays(thisMonday, -14);
-        const end = addDays(thisMonday, -1);
-        return { startDate: fmt(start), endDate: fmt(end) };
-      }
-      case 'compare_last_month': {
-        const start = new Date(now.getFullYear(), now.getMonth() - 2, 1);
-        const end = new Date(now.getFullYear(), now.getMonth(), 0);
-        return { startDate: fmt(start), endDate: fmt(end) };
-      }
-      default: {
-        const start = addDays(thisMonday, -7);
-        const end = addDays(start, 6);
-        return { startDate: fmt(start), endDate: fmt(end) };
-      }
-    }
-  }, [filterPreset]);
+  // Callback for AnalyticsDateFilter
+  const handleFilterChange = useCallback((range: DateRange, preset: FilterPreset) => {
+    setDateRange(range);
+    setFilterPreset(preset);
+  }, []);
 
   // Fetch ALL Google data (GA4 + SC + GBP) from database for the selected date range
   useEffect(() => {
@@ -400,26 +379,11 @@ export default function AdminAnalyticsView({ isDark, refreshTrigger }: AdminAnal
   if (filteredAnalytics.length === 0) {
     return (
       <div className="space-y-4">
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            onClick={() => setFilterPreset('last_week')}
-            className={`px-3 py-2 rounded-lg text-sm font-semibold border ${isDark ? 'bg-slate-800 border-slate-700 text-slate-200' : 'bg-white border-slate-200 text-slate-700'}`}
-          >
-            Last Week (Default)
-          </button>
-          <button
-            onClick={() => setFilterPreset('current_month')}
-            className={`px-3 py-2 rounded-lg text-sm font-semibold border ${isDark ? 'bg-slate-800 border-slate-700 text-slate-200' : 'bg-white border-slate-200 text-slate-700'}`}
-          >
-            Current Month
-          </button>
-          <button
-            onClick={() => setFilterPreset('last_month')}
-            className={`px-3 py-2 rounded-lg text-sm font-semibold border ${isDark ? 'bg-slate-800 border-slate-700 text-slate-200' : 'bg-white border-slate-200 text-slate-700'}`}
-          >
-            Last Month
-          </button>
-        </div>
+        <AnalyticsDateFilter
+          isDark={isDark}
+          onChange={handleFilterChange}
+          initialPreset={filterPreset}
+        />
         <div className={`rounded-2xl p-8 border text-center ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
           <Database className={`h-12 w-12 mx-auto mb-4 ${isDark ? 'text-slate-500' : 'text-slate-400'}`} />
           <h3 className={`text-xl font-bold mb-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>No Data For Selected Filter</h3>
@@ -541,76 +505,11 @@ export default function AdminAnalyticsView({ isDark, refreshTrigger }: AdminAnal
       </div>
 
       {/* Filters */}
-      <div className={`rounded-2xl p-4 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
-        <div className="flex flex-wrap items-center gap-2 mb-3">
-          <button
-            onClick={() => setFilterPreset('last_week')}
-            className={`px-3 py-2 rounded-lg text-sm font-semibold border transition-colors ${
-              filterPreset === 'last_week'
-                ? 'bg-emerald-500 text-black border-emerald-500'
-                : isDark
-                  ? 'bg-slate-900 border-slate-700 text-slate-300 hover:border-emerald-500'
-                  : 'bg-white border-slate-200 text-slate-700 hover:border-emerald-500'
-            }`}
-          >
-            Last Week (Default)
-          </button>
-          <button
-            onClick={() => setFilterPreset('current_month')}
-            className={`px-3 py-2 rounded-lg text-sm font-semibold border transition-colors ${
-              filterPreset === 'current_month'
-                ? 'bg-emerald-500 text-black border-emerald-500'
-                : isDark
-                  ? 'bg-slate-900 border-slate-700 text-slate-300 hover:border-emerald-500'
-                  : 'bg-white border-slate-200 text-slate-700 hover:border-emerald-500'
-            }`}
-          >
-            Current Month
-          </button>
-          <button
-            onClick={() => setFilterPreset('last_month')}
-            className={`px-3 py-2 rounded-lg text-sm font-semibold border transition-colors ${
-              filterPreset === 'last_month'
-                ? 'bg-emerald-500 text-black border-emerald-500'
-                : isDark
-                  ? 'bg-slate-900 border-slate-700 text-slate-300 hover:border-emerald-500'
-                  : 'bg-white border-slate-200 text-slate-700 hover:border-emerald-500'
-            }`}
-          >
-            Last Month
-          </button>
-          <button
-            onClick={() => setFilterPreset('compare_last_week')}
-            className={`px-3 py-2 rounded-lg text-sm font-semibold border transition-colors ${
-              filterPreset === 'compare_last_week'
-                ? 'bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-500 text-white border-blue-500'
-                : isDark
-                  ? 'bg-slate-900 border-slate-700 text-slate-300 hover:border-blue-500'
-                  : 'bg-white border-slate-200 text-slate-700 hover:border-blue-500'
-            }`}
-          >
-            Compare Last Week vs Week Before
-          </button>
-          <button
-            onClick={() => setFilterPreset('compare_last_month')}
-            className={`px-3 py-2 rounded-lg text-sm font-semibold border transition-colors ${
-              filterPreset === 'compare_last_month'
-                ? 'bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-500 text-white border-blue-500'
-                : isDark
-                  ? 'bg-slate-900 border-slate-700 text-slate-300 hover:border-blue-500'
-                  : 'bg-white border-slate-200 text-slate-700 hover:border-blue-500'
-            }`}
-          >
-            Compare Last Month vs Month Before
-          </button>
-        </div>
-        <button
-          onClick={() => setFilterPreset('last_week')}
-          className="px-4 py-2 rounded-lg bg-emerald-500 text-black font-bold hover:bg-emerald-400"
-        >
-          Reset Filters
-        </button>
-      </div>
+      <AnalyticsDateFilter
+        isDark={isDark}
+        onChange={handleFilterChange}
+        initialPreset="last_week"
+      />
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">

@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   LineChart, Line, BarChart, Bar, AreaChart, Area, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
 import { Loader2, Building2, TrendingUp, Users, Globe, MousePointerClick, Eye, BarChart3, Search } from 'lucide-react';
+import AnalyticsDateFilter, { type DateRange, type FilterPreset } from './AnalyticsDateFilter';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface WeeklyAnalytics {
@@ -78,6 +79,27 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false, o
   const [gbpData, setGbpData] = useState<GBPRow[]>([]);
   const [googleLoading, setGoogleLoading] = useState(false);
 
+  // Date filter state
+  const [dateRange, setDateRange] = useState<DateRange>(() => {
+    const now = new Date();
+    const day = now.getDay();
+    const diff = day === 0 ? -6 : 1 - day;
+    const monday = new Date(now);
+    monday.setDate(now.getDate() + diff);
+    monday.setHours(0, 0, 0, 0);
+    const start = new Date(monday);
+    start.setDate(monday.getDate() - 7);
+    const end = new Date(start);
+    end.setDate(start.getDate() + 6);
+    return { startDate: start.toISOString().slice(0, 10), endDate: end.toISOString().slice(0, 10) };
+  });
+  const [filterPreset, setFilterPreset] = useState<FilterPreset>('last_week');
+
+  const handleFilterChange = useCallback((range: DateRange, preset: FilterPreset) => {
+    setDateRange(range);
+    setFilterPreset(preset);
+  }, []);
+
   useEffect(() => { onLoadingStateChange?.(loading); }, [loading, onLoadingStateChange]);
 
   // Fetch clinics
@@ -128,7 +150,12 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false, o
       setGoogleLoading(true);
       try {
         const apiBase = isAdmin ? '/api/admin/gmb/analytics-data' : '/api/client/analytics-data';
-        const res = await fetch(`${apiBase}?clinicId=${selectedClinic}&days=90`);
+        const params = new URLSearchParams({
+          clinicId: selectedClinic,
+          startDate: dateRange.startDate,
+          endDate: dateRange.endDate,
+        });
+        const res = await fetch(`${apiBase}?${params.toString()}`);
         if (!res.ok) { setGa4Data([]); setScData([]); setGbpData([]); return; }
         const json = await res.json();
         setGa4Data(json.ga4Data || []);
@@ -138,7 +165,7 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false, o
       finally { setGoogleLoading(false); }
     };
     fetchGoogleData();
-  }, [selectedClinic, refreshTrigger, isAdmin]);
+  }, [selectedClinic, refreshTrigger, isAdmin, dateRange]);
 
   if (loading) {
     return (
@@ -285,13 +312,20 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false, o
         </div>
       )}
 
+      {/* Date Filter */}
+      <AnalyticsDateFilter
+        isDark={true}
+        onChange={handleFilterChange}
+        initialPreset="last_week"
+      />
+
       {/* ═══════════════════ GOOGLE ANALYTICS (GA4) SECTION ═══════════════════ */}
       {ga4Summary && (
         <>
           <div className="flex items-center gap-2 pt-2">
             <BarChart3 className="h-5 w-5 text-blue-400" />
             <h2 className="text-lg font-bold text-white">Google Analytics (GA4)</h2>
-            <span className="text-xs text-slate-500 ml-2">Last 90 days</span>
+            <span className="text-xs text-slate-500 ml-2">Filtered range</span>
           </div>
 
           {/* GA4 Summary Cards */}
@@ -396,7 +430,7 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false, o
           <div className="flex items-center gap-2 pt-4">
             <Search className="h-5 w-5 text-purple-400" />
             <h2 className="text-lg font-bold text-white">Google Search Console</h2>
-            <span className="text-xs text-slate-500 ml-2">Last 90 days</span>
+            <span className="text-xs text-slate-500 ml-2">Filtered range</span>
           </div>
 
           {/* SC Summary Cards */}
@@ -501,7 +535,7 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false, o
           <div className="flex items-center gap-2 pt-4">
             <Globe className="h-5 w-5 text-emerald-400" />
             <h2 className="text-lg font-bold text-white">Google Business Profile</h2>
-            <span className="text-xs text-slate-500 ml-2">Last 90 days</span>
+            <span className="text-xs text-slate-500 ml-2">Filtered range</span>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <div className="rounded-xl p-4 bg-slate-800 border border-slate-700">
