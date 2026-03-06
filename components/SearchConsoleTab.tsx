@@ -22,18 +22,14 @@ interface SCRow {
 }
 
 type Period = '7d' | '30d' | '90d' | '365d';
-
-const PERIOD_OPTIONS: { value: Period; label: string }[] = [
-  { value: '7d', label: 'Last 7 days' },
-  { value: '30d', label: 'Last 30 days' },
-  { value: '90d', label: 'Last 90 days' },
-  { value: '365d', label: 'Last year' },
+const PERIOD_OPTIONS: { value: Period; label: string; short: string }[] = [
+  { value: '7d', label: 'Last 7 days', short: '7D' },
+  { value: '30d', label: 'Last 30 days', short: '30D' },
+  { value: '90d', label: 'Last 90 days', short: '90D' },
+  { value: '365d', label: 'Last year', short: '1Y' },
 ];
 
-interface SearchConsoleTabProps {
-  clinicId: string;
-  isDark?: boolean;
-}
+interface SearchConsoleTabProps { clinicId: string; isDark?: boolean; }
 
 export default function SearchConsoleTab({ clinicId, isDark = false }: SearchConsoleTabProps) {
   const [data, setData] = useState<SCRow[]>([]);
@@ -64,72 +60,72 @@ export default function SearchConsoleTab({ clinicId, isDark = false }: SearchCon
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  // ─── Empty / Loading / Error states ─────────────────────
-
+  // Not connected
   if (!searchConsoleSite && !loading) {
     return (
-      <div className={`rounded-2xl p-10 border text-center ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
-        <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/30 dark:to-purple-800/20 flex items-center justify-center mx-auto mb-5 shadow-sm">
-          <Globe className="h-8 w-8 text-purple-400" />
-        </div>
-        <p className={`text-lg font-bold mb-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>Search Console Not Connected</p>
-        <p className={`text-sm max-w-md mx-auto leading-relaxed ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-          Your administrator hasn&apos;t connected a Search Console site for this clinic yet. Data will appear here automatically once configured.
-        </p>
-      </div>
-    );
-  }
-
-  if (loading) {
-    return (
-      <div className={`rounded-2xl p-10 border text-center ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
-        <Loader2 className="h-8 w-8 animate-spin text-purple-500 mx-auto mb-4" />
-        <p className={`text-sm font-semibold ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>Loading Search Console data...</p>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className={`rounded-2xl p-8 border text-center ${isDark ? 'bg-red-900/20 border-red-800' : 'bg-red-50 border-red-200'}`}>
-        <p className={`text-sm font-bold mb-2 ${isDark ? 'text-red-400' : 'text-red-700'}`}>Failed to load Search Console data</p>
-        <p className={`text-xs mb-4 ${isDark ? 'text-red-400/70' : 'text-red-500'}`}>{error}</p>
-        <button onClick={() => fetchData()} className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-sm font-bold hover:bg-red-200 transition-colors">
-          <RefreshCw className="h-4 w-4" /> Retry
-        </button>
-      </div>
-    );
-  }
-
-  if (data.length === 0) {
-    return (
-      <div className="space-y-4">
-        <PeriodSelector period={period} onChange={setPeriod} isDark={isDark} />
-        <div className={`rounded-2xl p-10 border text-center ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
-          <BarChart3 className="h-8 w-8 text-slate-400 mx-auto mb-4" />
-          <p className={`text-lg font-bold mb-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>No Search Console Data Yet</p>
-          <p className={`text-sm max-w-md mx-auto ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-            No Search Console data has been synced for this period. Data is synced automatically — check back soon.
+      <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} className="relative overflow-hidden rounded-3xl border border-slate-200/60 dark:border-slate-700/60 bg-gradient-to-br from-white via-purple-50/30 to-indigo-50/40 dark:from-slate-800 dark:via-slate-800 dark:to-purple-950/20 p-14 text-center shadow-sm">
+        <div className="absolute -top-20 -right-20 h-60 w-60 rounded-full bg-gradient-to-br from-purple-200/20 to-indigo-200/10 blur-3xl" />
+        <div className="relative z-10">
+          <div className="mx-auto mb-6 h-20 w-20 rounded-3xl bg-gradient-to-br from-purple-400 to-indigo-500 p-[2px] shadow-lg shadow-purple-500/20">
+            <div className="flex h-full w-full items-center justify-center rounded-3xl bg-white dark:bg-slate-800">
+              <Globe className="h-9 w-9 text-purple-500" />
+            </div>
+          </div>
+          <p className="text-xl font-extrabold text-slate-900 dark:text-white mb-2">Search Console Not Connected</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto leading-relaxed">
+            Your administrator hasn&apos;t connected a Search Console site for this clinic yet.
           </p>
         </div>
+      </motion.div>
+    );
+  }
+
+  // Loading
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-24">
+        <div className="relative">
+          <div className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-500 to-indigo-500 blur-xl opacity-20 animate-pulse" />
+          <Loader2 className="relative h-10 w-10 animate-spin text-purple-500" />
+        </div>
+        <p className="mt-5 text-sm font-semibold text-slate-500 dark:text-slate-400">Loading Search Console data...</p>
       </div>
     );
   }
 
-  // ─── Compute summaries ──────────────────────────────────
+  // Error
+  if (error) {
+    return (
+      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="rounded-3xl border border-red-200 dark:border-red-800/50 bg-gradient-to-br from-red-50 to-rose-50 dark:from-red-950/20 dark:to-rose-950/10 p-8 text-center">
+        <p className="text-sm font-bold text-red-700 dark:text-red-400 mb-1">Failed to load Search Console data</p>
+        <p className="text-xs text-red-500/80 dark:text-red-400/60 mb-5">{error}</p>
+        <button onClick={() => fetchData()} className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-red-500 text-white text-sm font-bold shadow-lg shadow-red-500/20 hover:bg-red-600 transition-all active:scale-95">
+          <RefreshCw className="h-4 w-4" /> Retry
+        </button>
+      </motion.div>
+    );
+  }
 
-  const totals = data.reduce(
-    (acc, d) => ({
-      clicks: acc.clicks + d.clicks,
-      impressions: acc.impressions + d.impressions,
-    }),
-    { clicks: 0, impressions: 0 },
-  );
+  // No data
+  if (data.length === 0) {
+    return (
+      <div className="space-y-5">
+        <PeriodSelector period={period} onChange={setPeriod} isDark={isDark} />
+        <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} className="rounded-3xl border border-slate-200/60 dark:border-slate-700/60 bg-gradient-to-br from-white to-slate-50 dark:from-slate-800 dark:to-slate-900 p-14 text-center">
+          <BarChart3 className="h-10 w-10 text-slate-300 dark:text-slate-600 mx-auto mb-4" />
+          <p className="text-lg font-bold text-slate-900 dark:text-white mb-2">No Search Console Data Yet</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto">
+            No data synced for this period. Click <strong>Refresh</strong> or check back soon.
+          </p>
+        </motion.div>
+      </div>
+    );
+  }
 
+  // Summaries
+  const totals = data.reduce((acc, d) => ({ clicks: acc.clicks + d.clicks, impressions: acc.impressions + d.impressions }), { clicks: 0, impressions: 0 });
   const avgCtr = totals.impressions ? totals.clicks / totals.impressions : 0;
   const avgPosition = data.reduce((s, d) => s + d.avgPosition, 0) / data.length;
-
-  // Find the latest row that has topQueries/topPages
   const latestWithQueries = [...data].reverse().find(d => d.topQueries && (d.topQueries as any[]).length > 0);
   const topQueries: any[] = (latestWithQueries?.topQueries as any[]) || [];
   const latestWithPages = [...data].reverse().find(d => d.topPages && (d.topPages as any[]).length > 0);
@@ -139,37 +135,51 @@ export default function SearchConsoleTab({ clinicId, isDark = false }: SearchCon
     const dt = new Date(d + 'T00:00:00');
     return dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
+  const chartData = data.map(d => ({ ...d, label: formatDate(d.date), ctrPct: Math.round(d.ctr * 10000) / 100 }));
 
-  const chartData = data.map(d => ({
-    ...d,
-    label: formatDate(d.date),
-    ctrPct: Math.round(d.ctr * 10000) / 100,
-  }));
+  const glassCard = `rounded-3xl p-6 border backdrop-blur-sm shadow-sm ${isDark ? 'bg-slate-800/80 border-slate-700/60' : 'bg-white/80 border-slate-200/60'}`;
+  const headingClass = `text-[15px] font-bold mb-5 flex items-center gap-2.5 ${isDark ? 'text-white' : 'text-slate-900'}`;
+  const tooltipStyle = { backgroundColor: isDark ? '#0f172a' : '#ffffff', border: `1px solid ${isDark ? '#334155' : '#e2e8f0'}`, borderRadius: '16px', boxShadow: '0 8px 32px rgba(0,0,0,0.12)', padding: '12px 16px' };
 
-  const cardClass = `rounded-2xl p-6 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`;
-  const headingClass = `text-lg font-bold mb-5 flex items-center gap-2 ${isDark ? 'text-white' : 'text-slate-900'}`;
-  const tooltipStyle = {
-    backgroundColor: isDark ? '#1e293b' : '#ffffff',
-    border: `1px solid ${isDark ? '#475569' : '#e2e8f0'}`,
-    borderRadius: '12px',
+  const kpis = [
+    { label: 'Total Clicks', value: totals.clicks.toLocaleString(), icon: <MousePointerClick className="h-5 w-5" />, color: 'emerald' },
+    { label: 'Impressions', value: totals.impressions.toLocaleString(), icon: <Search className="h-5 w-5" />, color: 'blue' },
+    { label: 'Avg CTR', value: `${(avgCtr * 100).toFixed(2)}%`, icon: <Target className="h-5 w-5" />, color: 'amber' },
+    { label: 'Avg Position', value: avgPosition.toFixed(1), icon: <Target className="h-5 w-5" />, color: 'purple' },
+  ];
+
+  const iconColor: Record<string, string> = { emerald: 'text-emerald-500', blue: 'text-blue-500', amber: 'text-amber-500', purple: 'text-purple-500' };
+  const iconBg: Record<string, string> = { emerald: 'bg-emerald-500/10', blue: 'bg-blue-500/10', amber: 'bg-amber-500/10', purple: 'bg-purple-500/10' };
+  const gradBg: Record<string, string> = { emerald: 'from-emerald-500/10 to-emerald-500/5', blue: 'from-blue-500/10 to-blue-500/5', amber: 'from-amber-500/10 to-amber-500/5', purple: 'from-purple-500/10 to-purple-500/5' };
+
+  const positionBadge = (pos: number) => {
+    const cls = pos <= 3 ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400'
+      : pos <= 10 ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
+      : pos <= 20 ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'
+      : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400';
+    return (
+      <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold ${cls}`}>
+        {pos <= 10 ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
+        {pos.toFixed(1)}
+      </span>
+    );
   };
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h2 className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>Search Console</h2>
-          <p className={`text-sm mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-            {searchConsoleSite ? `${searchConsoleSite}` : 'Google Search Console performance data'}
-          </p>
+        <div className="flex items-center gap-4">
+          <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-purple-400 to-indigo-500 flex items-center justify-center shadow-lg shadow-purple-500/20">
+            <Globe className="h-6 w-6 text-white" />
+          </div>
+          <div>
+            <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">Search Console</h2>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{searchConsoleSite || 'Google Search Console performance'}</p>
+          </div>
         </div>
         <div className="flex items-center gap-3">
-          <button
-            onClick={() => fetchData(true)}
-            disabled={syncing}
-            className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition-all border ${isDark ? 'border-slate-600 bg-slate-700 text-slate-200 hover:bg-slate-600' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'} disabled:opacity-50`}
-          >
+          <button onClick={() => fetchData(true)} disabled={syncing} className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl text-xs font-bold transition-all border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:border-purple-300 dark:hover:border-purple-700 hover:shadow-md disabled:opacity-50 active:scale-95">
             <RefreshCw className={`h-3.5 w-3.5 ${syncing ? 'animate-spin' : ''}`} />
             {syncing ? 'Syncing...' : 'Refresh'}
           </button>
@@ -177,89 +187,79 @@ export default function SearchConsoleTab({ clinicId, isDark = false }: SearchCon
         </div>
       </div>
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <KPI label="Total Clicks" value={totals.clicks.toLocaleString()} icon={<MousePointerClick className="h-5 w-5 text-emerald-500" />} isDark={isDark} />
-        <KPI label="Total Impressions" value={totals.impressions.toLocaleString()} icon={<Search className="h-5 w-5 text-blue-500" />} isDark={isDark} />
-        <KPI label="Avg CTR" value={`${(avgCtr * 100).toFixed(2)}%`} icon={<Target className="h-5 w-5 text-amber-500" />} isDark={isDark} />
-        <KPI label="Avg Position" value={avgPosition.toFixed(1)} icon={<Search className="h-5 w-5 text-purple-500" />} isDark={isDark} />
+      {/* KPIs */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {kpis.map((kpi, i) => (
+          <motion.div key={kpi.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
+            className={`relative overflow-hidden rounded-2xl p-4 border backdrop-blur-sm group hover:shadow-lg transition-all ${isDark ? 'bg-slate-800/80 border-slate-700/60' : 'bg-white/80 border-slate-200/60'}`}>
+            <div className={`absolute inset-0 bg-gradient-to-br ${gradBg[kpi.color]} opacity-0 group-hover:opacity-100 transition-opacity`} />
+            <div className="relative z-10">
+              <div className={`inline-flex h-9 w-9 items-center justify-center rounded-xl ${iconBg[kpi.color]} mb-3`}>
+                <span className={iconColor[kpi.color]}>{kpi.icon}</span>
+              </div>
+              <p className="text-xl font-black text-slate-900 dark:text-white mb-0.5">{kpi.value}</p>
+              <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">{kpi.label}</p>
+            </div>
+          </motion.div>
+        ))}
       </div>
 
-      {/* Clicks & Impressions chart */}
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className={cardClass}>
-        <h3 className={headingClass}>
-          <Search className="h-5 w-5 text-purple-500" />
-          Clicks & Impressions
-        </h3>
+      {/* Clicks & Impressions BarChart */}
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className={glassCard}>
+        <h3 className={headingClass}><div className="h-8 w-8 rounded-xl bg-purple-500/10 flex items-center justify-center"><Search className="h-4 w-4 text-purple-500" /></div>Clicks & Impressions</h3>
         <ResponsiveContainer width="100%" height={300}>
           <BarChart data={chartData}>
-            <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#334155' : '#e2e8f0'} />
-            <XAxis dataKey="label" stroke={isDark ? '#94a3b8' : '#64748b'} fontSize={12} />
-            <YAxis yAxisId="left" stroke={isDark ? '#94a3b8' : '#64748b'} />
-            <YAxis yAxisId="right" orientation="right" stroke={isDark ? '#94a3b8' : '#64748b'} />
+            <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#1e293b' : '#f1f5f9'} />
+            <XAxis dataKey="label" stroke={isDark ? '#64748b' : '#94a3b8'} fontSize={11} tickLine={false} axisLine={false} />
+            <YAxis yAxisId="left" stroke={isDark ? '#64748b' : '#94a3b8'} fontSize={11} tickLine={false} axisLine={false} />
+            <YAxis yAxisId="right" orientation="right" stroke={isDark ? '#64748b' : '#94a3b8'} fontSize={11} tickLine={false} axisLine={false} />
             <Tooltip contentStyle={tooltipStyle} />
-            <Legend />
-            <Bar yAxisId="left" dataKey="clicks" name="Clicks" fill="#10b981" radius={[6, 6, 0, 0]} />
-            <Bar yAxisId="left" dataKey="impressions" name="Impressions" fill="#3b82f6" radius={[6, 6, 0, 0]} />
+            <Legend wrapperStyle={{ fontSize: '12px', fontWeight: 600 }} />
+            <Bar yAxisId="left" dataKey="clicks" name="Clicks" fill="#10b981" radius={[8, 8, 0, 0]} />
+            <Bar yAxisId="left" dataKey="impressions" name="Impressions" fill="#3b82f6" radius={[8, 8, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </motion.div>
 
-      {/* Avg Position line chart */}
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className={cardClass}>
-        <h3 className={headingClass}>
-          <Target className="h-5 w-5 text-amber-500" />
-          Average Position (lower is better)
-        </h3>
+      {/* Avg Position LineChart */}
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className={glassCard}>
+        <h3 className={headingClass}><div className="h-8 w-8 rounded-xl bg-amber-500/10 flex items-center justify-center"><Target className="h-4 w-4 text-amber-500" /></div>Average Position <span className="text-xs font-normal text-slate-400 ml-1">(lower is better)</span></h3>
         <ResponsiveContainer width="100%" height={250}>
           <LineChart data={chartData}>
-            <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#334155' : '#e2e8f0'} />
-            <XAxis dataKey="label" stroke={isDark ? '#94a3b8' : '#64748b'} fontSize={12} />
-            <YAxis reversed stroke={isDark ? '#94a3b8' : '#64748b'} />
+            <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#1e293b' : '#f1f5f9'} />
+            <XAxis dataKey="label" stroke={isDark ? '#64748b' : '#94a3b8'} fontSize={11} tickLine={false} axisLine={false} />
+            <YAxis reversed stroke={isDark ? '#64748b' : '#94a3b8'} fontSize={11} tickLine={false} axisLine={false} />
             <Tooltip contentStyle={tooltipStyle} />
-            <Line type="monotone" dataKey="avgPosition" name="Avg Position" stroke="#f59e0b" strokeWidth={3} dot={{ fill: '#f59e0b', r: 3 }} />
+            <Line type="monotone" dataKey="avgPosition" name="Avg Position" stroke="#f59e0b" strokeWidth={2.5} dot={false} activeDot={{ r: 5, fill: '#f59e0b', stroke: '#fff', strokeWidth: 2 }} />
           </LineChart>
         </ResponsiveContainer>
       </motion.div>
 
-      {/* Top queries */}
+      {/* Top Queries */}
       {topQueries.length > 0 && (
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className={cardClass}>
-          <h3 className={headingClass}>
-            <Target className="h-5 w-5 text-red-500" />
-            Top Search Queries
-          </h3>
-          <div className="overflow-x-auto">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className={glassCard}>
+          <h3 className={headingClass}><div className="h-8 w-8 rounded-xl bg-red-500/10 flex items-center justify-center"><Target className="h-4 w-4 text-red-500" /></div>Top Search Queries</h3>
+          <div className="overflow-x-auto -mx-6 px-6">
             <table className="w-full text-sm">
               <thead>
-                <tr className={isDark ? 'text-slate-400 border-b border-slate-700' : 'text-slate-500 border-b border-slate-200'}>
-                  <th className="text-left py-3 px-2">#</th>
-                  <th className="text-left py-3 px-2">Query</th>
-                  <th className="text-right py-3 px-2">Clicks</th>
-                  <th className="text-right py-3 px-2">Impressions</th>
-                  <th className="text-right py-3 px-2">CTR</th>
-                  <th className="text-right py-3 px-2">Position</th>
+                <tr className={`text-[11px] uppercase tracking-wider ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                  <th className="text-left py-3 px-3 font-semibold">#</th>
+                  <th className="text-left py-3 px-3 font-semibold">Query</th>
+                  <th className="text-right py-3 px-3 font-semibold">Clicks</th>
+                  <th className="text-right py-3 px-3 font-semibold hidden sm:table-cell">Impressions</th>
+                  <th className="text-right py-3 px-3 font-semibold hidden md:table-cell">CTR</th>
+                  <th className="text-right py-3 px-3 font-semibold">Position</th>
                 </tr>
               </thead>
               <tbody>
                 {topQueries.slice(0, 20).map((q: any, i: number) => (
-                  <tr key={i} className={`${isDark ? 'border-b border-slate-700/50 hover:bg-slate-700/30' : 'border-b border-slate-100 hover:bg-slate-50'} transition`}>
-                    <td className={`py-2 px-2 font-mono ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{i + 1}</td>
-                    <td className={`py-2 px-2 font-medium ${isDark ? 'text-white' : 'text-slate-900'}`}>{q.query}</td>
-                    <td className="py-2 px-2 text-right text-emerald-500 font-semibold">{q.clicks}</td>
-                    <td className={`py-2 px-2 text-right ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>{q.impressions?.toLocaleString()}</td>
-                    <td className="py-2 px-2 text-right text-blue-500">{((q.ctr || 0) * 100).toFixed(1)}%</td>
-                    <td className="py-2 px-2 text-right">
-                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold ${
-                        q.position <= 3 ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400' :
-                        q.position <= 10 ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400' :
-                        q.position <= 20 ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400' :
-                        'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
-                      }`}>
-                        {q.position <= 10 ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
-                        {(q.position || 0).toFixed(1)}
-                      </span>
-                    </td>
+                  <tr key={i} className={`group transition-colors ${i % 2 === 0 ? (isDark ? 'bg-slate-900/30' : 'bg-slate-50/50') : ''} ${isDark ? 'hover:bg-slate-700/40' : 'hover:bg-slate-100/60'}`}>
+                    <td className={`py-3 px-3 font-mono text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{i + 1}</td>
+                    <td className={`py-3 px-3 font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>{q.query}</td>
+                    <td className="py-3 px-3 text-right"><span className="font-bold text-emerald-500">{q.clicks}</span></td>
+                    <td className={`py-3 px-3 text-right hidden sm:table-cell ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>{q.impressions?.toLocaleString()}</td>
+                    <td className="py-3 px-3 text-right hidden md:table-cell text-blue-500 font-medium">{((q.ctr || 0) * 100).toFixed(1)}%</td>
+                    <td className="py-3 px-3 text-right">{positionBadge(q.position || 0)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -268,23 +268,20 @@ export default function SearchConsoleTab({ clinicId, isDark = false }: SearchCon
         </motion.div>
       )}
 
-      {/* Top pages */}
+      {/* Top Pages */}
       {topPages.length > 0 && (
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }} className={cardClass}>
-          <h3 className={headingClass}>
-            <BarChart3 className="h-5 w-5 text-indigo-500" />
-            Top Landing Pages
-          </h3>
-          <div className="overflow-x-auto">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }} className={glassCard}>
+          <h3 className={headingClass}><div className="h-8 w-8 rounded-xl bg-indigo-500/10 flex items-center justify-center"><BarChart3 className="h-4 w-4 text-indigo-500" /></div>Top Landing Pages</h3>
+          <div className="overflow-x-auto -mx-6 px-6">
             <table className="w-full text-sm">
               <thead>
-                <tr className={isDark ? 'text-slate-400 border-b border-slate-700' : 'text-slate-500 border-b border-slate-200'}>
-                  <th className="text-left py-3 px-2">#</th>
-                  <th className="text-left py-3 px-2">Page</th>
-                  <th className="text-right py-3 px-2">Clicks</th>
-                  <th className="text-right py-3 px-2">Impressions</th>
-                  <th className="text-right py-3 px-2">CTR</th>
-                  <th className="text-right py-3 px-2">Position</th>
+                <tr className={`text-[11px] uppercase tracking-wider ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                  <th className="text-left py-3 px-3 font-semibold">#</th>
+                  <th className="text-left py-3 px-3 font-semibold">Page</th>
+                  <th className="text-right py-3 px-3 font-semibold">Clicks</th>
+                  <th className="text-right py-3 px-3 font-semibold hidden sm:table-cell">Impressions</th>
+                  <th className="text-right py-3 px-3 font-semibold hidden md:table-cell">CTR</th>
+                  <th className="text-right py-3 px-3 font-semibold">Position</th>
                 </tr>
               </thead>
               <tbody>
@@ -292,13 +289,13 @@ export default function SearchConsoleTab({ clinicId, isDark = false }: SearchCon
                   let displayUrl = p.page;
                   try { displayUrl = new URL(p.page).pathname; } catch { /* keep full */ }
                   return (
-                    <tr key={i} className={`${isDark ? 'border-b border-slate-700/50 hover:bg-slate-700/30' : 'border-b border-slate-100 hover:bg-slate-50'} transition`}>
-                      <td className={`py-2 px-2 font-mono ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{i + 1}</td>
-                      <td className={`py-2 px-2 font-medium truncate max-w-xs ${isDark ? 'text-white' : 'text-slate-900'}`} title={p.page}>{displayUrl}</td>
-                      <td className="py-2 px-2 text-right text-emerald-500 font-semibold">{p.clicks}</td>
-                      <td className={`py-2 px-2 text-right ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>{p.impressions?.toLocaleString()}</td>
-                      <td className="py-2 px-2 text-right text-blue-500">{((p.ctr || 0) * 100).toFixed(1)}%</td>
-                      <td className={`py-2 px-2 text-right font-semibold ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>{(p.position || 0).toFixed(1)}</td>
+                    <tr key={i} className={`group transition-colors ${i % 2 === 0 ? (isDark ? 'bg-slate-900/30' : 'bg-slate-50/50') : ''} ${isDark ? 'hover:bg-slate-700/40' : 'hover:bg-slate-100/60'}`}>
+                      <td className={`py-3 px-3 font-mono text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{i + 1}</td>
+                      <td className={`py-3 px-3 font-semibold truncate max-w-xs ${isDark ? 'text-white' : 'text-slate-900'}`} title={p.page}>{displayUrl}</td>
+                      <td className="py-3 px-3 text-right"><span className="font-bold text-emerald-500">{p.clicks}</span></td>
+                      <td className={`py-3 px-3 text-right hidden sm:table-cell ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>{p.impressions?.toLocaleString()}</td>
+                      <td className="py-3 px-3 text-right hidden md:table-cell text-blue-500 font-medium">{((p.ctr || 0) * 100).toFixed(1)}%</td>
+                      <td className={`py-3 px-3 text-right font-bold ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>{(p.position || 0).toFixed(1)}</td>
                     </tr>
                   );
                 })}
@@ -311,36 +308,21 @@ export default function SearchConsoleTab({ clinicId, isDark = false }: SearchCon
   );
 }
 
-/* ─── Sub-components ─────────────────────────────────────────── */
-
+/* Period Selector */
 function PeriodSelector({ period, onChange, isDark }: { period: Period; onChange: (p: Period) => void; isDark: boolean }) {
   return (
-    <div className="flex items-center gap-1 p-1 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+    <div className="inline-flex items-center gap-0.5 p-1 rounded-2xl bg-slate-100/80 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60 backdrop-blur-sm">
       {PERIOD_OPTIONS.map(opt => (
-        <button
-          key={opt.value}
-          onClick={() => onChange(opt.value)}
-          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+        <button key={opt.value} onClick={() => onChange(opt.value)}
+          className={`relative px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
             period === opt.value
-              ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm'
-              : `${isDark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-500 hover:text-slate-900'}`
-          }`}
-        >
-          {opt.label}
+              ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm shadow-black/5'
+              : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+          }`}>
+          <span className="hidden sm:inline">{opt.label}</span>
+          <span className="sm:hidden">{opt.short}</span>
         </button>
       ))}
-    </div>
-  );
-}
-
-function KPI({ label, value, icon, isDark }: { label: string; value: string; icon: React.ReactNode; isDark: boolean }) {
-  return (
-    <div className={`rounded-xl p-4 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
-      <div className="flex items-center gap-2 mb-2">
-        {icon}
-        <span className={`text-xs font-semibold ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{label}</span>
-      </div>
-      <p className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{value}</p>
     </div>
   );
 }
