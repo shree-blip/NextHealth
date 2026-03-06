@@ -65,24 +65,29 @@ import Image from 'next/image';
 import ClientErrorBoundary from '@/components/ClientErrorBoundary';
 
 // Modal Component
-function Modal({ isOpen, onClose, title, children }: { isOpen: boolean; onClose: () => void; title: string; children: React.ReactNode }) {
+function Modal({ isOpen, onClose, title, children, size = 'default' }: { isOpen: boolean; onClose: () => void; title: string; children: React.ReactNode; size?: 'default' | 'large' }) {
   if (!isOpen) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
       <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.95 }}
-        className="relative bg-white dark:bg-slate-900 rounded-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-xl border border-slate-200 dark:border-slate-700 z-10"
+        initial={{ opacity: 0, scale: 0.95, y: 10 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 10 }}
+        transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+        className={`relative bg-white dark:bg-slate-900 rounded-2xl w-full shadow-2xl border border-slate-200 dark:border-slate-700 z-10 flex flex-col ${
+          size === 'large' ? 'max-w-3xl max-h-[92vh]' : 'max-w-2xl max-h-[90vh]'
+        }`}
       >
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-bold">{title}</h3>
-          <button onClick={onClose} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800 shrink-0">
+          <h3 className="text-lg font-bold text-slate-900 dark:text-white">{title}</h3>
+          <button onClick={onClose} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors">
             <X className="h-5 w-5" />
           </button>
         </div>
-        {children}
+        <div className="flex-1 overflow-y-auto px-6 py-5">
+          {children}
+        </div>
       </motion.div>
     </div>
   );
@@ -760,6 +765,10 @@ function AdminDashboardContent() {
     analyticsSaving: false,
     confirmSyncing: false,
     syncCooldownSeconds: 0, // Countdown timer for sync cooldown
+    syncProgress: 0, // 0-100% progress indicator for sync/save
+    syncProgressLabel: '', // Current progress step label
+    showProgress: false, // Whether to show full-screen progress
+    clinicSaving: false, // Whether clinic details are being saved
   });
 
   // Delete confirmation modal state
@@ -1210,6 +1219,7 @@ function AdminDashboardContent() {
 
   const handleEditClinic = async () => {
     if (!editingClinic) return;
+    setGmbState(prev => ({ ...prev, clinicSaving: true, error: '', message: '' }));
 
     try {
       const res = await fetch(`/api/admin/clinics/${editingClinic.id}`, {
@@ -1229,11 +1239,11 @@ function AdminDashboardContent() {
         throw new Error(data.error || 'Failed to update clinic');
       }
 
-      setGmbState(prev => ({ ...prev, message: 'Clinic details saved successfully!' }));
+      setGmbState(prev => ({ ...prev, clinicSaving: false, message: 'Clinic details saved successfully!' }));
       fetchAdminData();
     } catch (error) {
       console.error('Error updating clinic:', error);
-      setGmbState(prev => ({ ...prev, error: `Failed to save: ${error instanceof Error ? error.message : 'Unknown error'}` }));
+      setGmbState(prev => ({ ...prev, clinicSaving: false, error: `Failed to save: ${error instanceof Error ? error.message : 'Unknown error'}` }));
     }
   };
 
@@ -2046,41 +2056,115 @@ function AdminDashboardContent() {
       </div>
     </Modal>
 
-    {/* Edit Clinic Modal */}
-    <Modal isOpen={showEditClinicModal} onClose={() => setShowEditClinicModal(false)} title="Clinic Profile">
-      {editingClinic && (
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium mb-1">Clinic Name</label>
-            <input
-              type="text"
-              value={editingClinic.name}
-              onChange={(e) => setEditingClinic({ ...editingClinic, name: e.target.value })}
-              className="w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 bg-white dark:bg-slate-800"
-            />
+    {/* Full-screen progress overlay */}
+    {gmbState.showProgress && (
+      <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 backdrop-blur-md">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="bg-white dark:bg-slate-900 rounded-3xl p-8 w-full max-w-md shadow-2xl border border-slate-200 dark:border-slate-700"
+        >
+          <div className="flex flex-col items-center gap-5">
+            <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/25">
+              <RefreshCw className="h-7 w-7 text-white animate-spin" />
+            </div>
+            <div className="text-center">
+              <p className="text-lg font-bold text-slate-900 dark:text-white mb-1">
+                {gmbState.syncProgressLabel || 'Processing...'}
+              </p>
+              <p className="text-sm text-slate-500 dark:text-slate-400">Please wait while we communicate with Google APIs</p>
+            </div>
+            <div className="w-full">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Progress</span>
+                <span className="text-sm font-black tabular-nums text-blue-600 dark:text-blue-400">{gmbState.syncProgress}%</span>
+              </div>
+              <div className="h-3 w-full rounded-full overflow-hidden bg-slate-100 dark:bg-slate-800">
+                <motion.div
+                  className="h-full rounded-full bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500"
+                  initial={{ width: 0 }}
+                  animate={{ width: `${gmbState.syncProgress}%` }}
+                  transition={{ duration: 0.4, ease: 'easeOut' }}
+                />
+              </div>
+            </div>
           </div>
-            <AdminSelect
-              label="Type"
-              value={editingClinic.type}
-              onChange={(value) => setEditingClinic({ ...editingClinic, type: value })}
-              options={[
-                { value: 'ER', label: 'Emergency Room (ER)' },
-                { value: 'Urgent Care', label: 'Urgent Care' },
-                { value: 'Wellness', label: 'Wellness Center' },
-                { value: 'MedSpa', label: 'MedSpa' },
-                { value: 'Dental', label: 'Dental Practice' },
-                { value: 'Specialty', label: 'Specialty Clinic' },
-              ]}
-              required
-            />
-          <div>
-            <label className="block text-sm font-medium mb-1">Location</label>
-            <input
-              type="text"
-              value={editingClinic.location}
-              onChange={(e) => setEditingClinic({ ...editingClinic, location: e.target.value })}
-              className="w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 bg-white dark:bg-slate-800"
-            />
+        </motion.div>
+      </div>
+    )}
+
+    {/* Edit Clinic Modal */}
+    <Modal isOpen={showEditClinicModal} onClose={() => setShowEditClinicModal(false)} title="Clinic Profile" size="large">
+      {editingClinic && (
+        <div className="space-y-6">
+          {/* Modern Clinic Details Form */}
+          <div className="rounded-2xl border border-slate-200/80 dark:border-slate-700/80 overflow-hidden bg-white/80 dark:bg-slate-800/40">
+            <div className="px-5 py-4 bg-slate-50 dark:bg-slate-800/60 border-b border-slate-100 dark:border-slate-700/50">
+              <h4 className="text-sm font-bold text-slate-900 dark:text-white">Clinic Details</h4>
+              <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">Basic information about this clinic</p>
+            </div>
+            <div className="p-5 space-y-4">
+              <div>
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">Clinic Name</label>
+                <input
+                  type="text"
+                  value={editingClinic.name}
+                  onChange={(e) => setEditingClinic({ ...editingClinic, name: e.target.value })}
+                  placeholder="Enter clinic name"
+                  className="w-full appearance-none rounded-xl border border-slate-200/80 dark:border-slate-700/80 bg-white dark:bg-slate-900/60 px-4 py-3 text-sm font-semibold text-slate-800 dark:text-slate-200 placeholder:text-slate-400 shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">
+                  Type <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <select
+                    value={editingClinic.type}
+                    onChange={(e) => setEditingClinic({ ...editingClinic, type: e.target.value })}
+                    className="w-full appearance-none rounded-xl border border-slate-200/80 dark:border-slate-700/80 bg-white dark:bg-slate-900/60 px-4 py-3 pr-10 text-sm font-semibold text-slate-800 dark:text-slate-200 shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400"
+                  >
+                    <option value="">Select clinic type...</option>
+                    <option value="ER">Emergency Room (ER)</option>
+                    <option value="Urgent Care">Urgent Care</option>
+                    <option value="Wellness">Wellness Center</option>
+                    <option value="MedSpa">MedSpa</option>
+                    <option value="Dental">Dental Practice</option>
+                    <option value="Specialty">Specialty Clinic</option>
+                  </select>
+                  <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                </div>
+                {!editingClinic.type && (
+                  <p className="text-[11px] text-amber-500 mt-1.5 font-medium">Please select a clinic type</p>
+                )}
+              </div>
+              <div>
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">Location</label>
+                <input
+                  type="text"
+                  value={editingClinic.location}
+                  onChange={(e) => setEditingClinic({ ...editingClinic, location: e.target.value })}
+                  placeholder="e.g., Houston, TX"
+                  className="w-full appearance-none rounded-xl border border-slate-200/80 dark:border-slate-700/80 bg-white dark:bg-slate-900/60 px-4 py-3 text-sm font-semibold text-slate-800 dark:text-slate-200 placeholder:text-slate-400 shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400"
+                />
+              </div>
+              {/* Save Clinic Details button - now inside the card */}
+              <button
+                onClick={handleEditClinic}
+                disabled={gmbState.clinicSaving}
+                className={`w-full px-4 py-3 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 ${
+                  gmbState.clinicSaving
+                    ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 cursor-wait'
+                    : 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-sm hover:shadow-md'
+                }`}
+              >
+                {gmbState.clinicSaving ? (
+                  <><RefreshCw className="h-4 w-4 animate-spin" /> Saving...</>
+                ) : (
+                  <><Save className="h-4 w-4" /> Save Clinic Details</>
+                )}
+              </button>
+            </div>
           </div>
 
           {/* ═══ Google Integrations — Modernized UI ═══ */}
@@ -2429,10 +2513,11 @@ function AdminDashboardContent() {
                     <button
                       onClick={async () => {
                         if (!editingClinic?.id) return;
-                        setGmbState(prev => ({ ...prev, analyticsSaving: true, error: '', message: '' }));
+                        setGmbState(prev => ({ ...prev, analyticsSaving: true, error: '', message: '', showProgress: true, syncProgress: 0, syncProgressLabel: 'Saving Configuration...' }));
                         try {
                           // Save GBP selection if changed
                           if (gmbState.selectedAccount && gmbState.selectedLocation) {
+                            setGmbState(prev => ({ ...prev, syncProgress: 20, syncProgressLabel: 'Saving Business Profile selection...' }));
                             const gbpRes = await fetch('/api/admin/gmb/select-location', {
                               method: 'POST',
                               headers: { 'Content-Type': 'application/json' },
@@ -2447,6 +2532,7 @@ function AdminDashboardContent() {
                               throw new Error(err.error || 'Failed to save Business Profile selection');
                             }
                           }
+                          setGmbState(prev => ({ ...prev, syncProgress: 50, syncProgressLabel: 'Saving analytics settings...' }));
                           // Save GA4 + SC selections
                           if (gmbState.selectedGA4Property || gmbState.selectedSCSite) {
                             const analyticsRes = await fetch('/api/admin/gmb/select-analytics', {
@@ -2463,16 +2549,23 @@ function AdminDashboardContent() {
                               throw new Error(err.error || 'Failed to save analytics configuration');
                             }
                           }
+                          setGmbState(prev => ({ ...prev, syncProgress: 80, syncProgressLabel: 'Refreshing connection data...' }));
                           await fetchGmbConnection(editingClinic.id, true);
+                          setGmbState(prev => ({ ...prev, syncProgress: 100, syncProgressLabel: 'Configuration saved!' }));
+                          await new Promise(r => setTimeout(r, 600));
                           setGmbState(prev => ({
                             ...prev,
                             analyticsSaving: false,
+                            showProgress: false,
+                            syncProgress: 0,
                             message: 'Configuration saved successfully. You can now sync data.',
                           }));
                         } catch (err: any) {
                           setGmbState(prev => ({
                             ...prev,
                             analyticsSaving: false,
+                            showProgress: false,
+                            syncProgress: 0,
                             error: err?.message || 'Failed to save configuration',
                           }));
                         }
@@ -2495,45 +2588,53 @@ function AdminDashboardContent() {
                     <button
                       onClick={async () => {
                         if (!editingClinic?.id) return;
-                        setGmbState(prev => ({ ...prev, confirmSyncing: true, error: '', message: '' }));
+                        setGmbState(prev => ({ ...prev, confirmSyncing: true, error: '', message: '', showProgress: true, syncProgress: 0, syncProgressLabel: 'Starting data sync...' }));
                         try {
-                          const syncPromises: Promise<void>[] = [];
+                          let step = 0;
+                          const totalSteps = (gmbState.connection.businessLocationId ? 1 : 0) + (gmbState.selectedGA4Property || gmbState.selectedSCSite ? 1 : 0);
+                          if (totalSteps === 0) throw new Error('No integrations configured to sync');
+
                           if (gmbState.connection.businessLocationId) {
-                            syncPromises.push(
-                              fetch('/api/admin/gmb/sync', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ clinicId: editingClinic.id }),
-                              }).then(async r => {
-                                if (r.status === 429) {
-                                  const data = await r.json();
-                                  throw new Error(data.error || 'Sync cooldown active. Please wait before retrying.');
-                                }
-                                if (!r.ok) throw new Error('GBP sync failed');
-                              }).catch(() => {})
-                            );
+                            step++;
+                            setGmbState(prev => ({ ...prev, syncProgress: Math.round((step / (totalSteps + 1)) * 70), syncProgressLabel: 'Syncing Business Profile data...' }));
+                            const r = await fetch('/api/admin/gmb/sync', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ clinicId: editingClinic.id }),
+                            });
+                            if (r.status === 429) {
+                              const data = await r.json();
+                              throw new Error(data.error || 'Sync cooldown active. Please wait before retrying.');
+                            }
+                            if (!r.ok) throw new Error('GBP sync failed');
                           }
                           if (gmbState.selectedGA4Property || gmbState.selectedSCSite) {
-                            syncPromises.push(
-                              fetch('/api/admin/gmb/sync-analytics', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ clinicId: editingClinic.id }),
-                              }).then(r => { if (!r.ok) throw new Error('Analytics sync failed'); }).catch(() => {})
-                            );
+                            step++;
+                            setGmbState(prev => ({ ...prev, syncProgress: Math.round((step / (totalSteps + 1)) * 70), syncProgressLabel: 'Syncing Analytics & Search Console...' }));
+                            const r = await fetch('/api/admin/gmb/sync-analytics', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ clinicId: editingClinic.id }),
+                            });
+                            if (!r.ok) throw new Error('Analytics sync failed');
                           }
-                          if (syncPromises.length === 0) throw new Error('No integrations configured to sync');
-                          await Promise.allSettled(syncPromises);
+                          setGmbState(prev => ({ ...prev, syncProgress: 85, syncProgressLabel: 'Refreshing connection status...' }));
                           await fetchGmbConnection(editingClinic.id, true);
+                          setGmbState(prev => ({ ...prev, syncProgress: 100, syncProgressLabel: 'Sync complete!' }));
+                          await new Promise(r => setTimeout(r, 600));
                           setGmbState(prev => ({
                             ...prev,
                             confirmSyncing: false,
+                            showProgress: false,
+                            syncProgress: 0,
                             message: `Data synced successfully at ${new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}. Dashboard charts will update shortly.`,
                           }));
                         } catch (err: any) {
                           setGmbState(prev => ({
                             ...prev,
                             confirmSyncing: false,
+                            showProgress: false,
+                            syncProgress: 0,
                             error: err?.message || 'Sync failed. Please try again.',
                           }));
                         }
@@ -2587,18 +2688,12 @@ function AdminDashboardContent() {
             </div>
           </div>
 
-          <div className="flex gap-3 pt-2">
-            <button
-              onClick={handleEditClinic}
-              className="flex-1 bg-emerald-500 text-black font-bold py-2.5 rounded-xl hover:bg-emerald-400 transition-colors"
-            >
-              Save Clinic Details
-            </button>
+          <div className="flex justify-end pt-2">
             <button
               onClick={() => setShowEditClinicModal(false)}
-              className="px-6 py-2.5 bg-slate-200 dark:bg-slate-700 rounded-xl font-semibold hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors"
+              className="px-6 py-2.5 bg-slate-200 dark:bg-slate-700 rounded-xl font-semibold hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors text-sm"
             >
-              Cancel
+              Close
             </button>
           </div>
         </div>
