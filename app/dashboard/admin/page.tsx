@@ -4477,9 +4477,9 @@ function GoogleAnalyticsSection({ clinics, isDark }: { clinics: any[]; isDark: b
   return (
     <div className="space-y-4">
       <div className={`pt-6 border-t ${isDark ? 'border-slate-700' : 'border-slate-200'}`}>
-        <h2 className="text-2xl font-black mb-2">📊 Google Analytics & Search Console</h2>
+        <h2 className="text-2xl font-black mb-2">📊 Google Analytics, Search Console & Business Profile</h2>
         <p className={`text-sm mb-4 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
-          Select a clinic to view GA4 and Search Console data. Configure analytics sources in the clinic&apos;s Edit modal.
+          Select a clinic to view GA4, Search Console, and Google Business Profile data. Configure analytics sources in the clinic&apos;s Edit modal.
         </p>
         <select
           value={selectedClinicId}

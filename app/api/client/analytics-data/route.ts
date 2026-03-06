@@ -2,10 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAuthenticatedDbUser } from '@/lib/auth';
 import prisma from '@/lib/prisma';
 import { syncGA4Data, syncSearchConsoleData } from '@/lib/google-analytics';
+import { syncGmbConnection } from '@/lib/gmb';
 
 /**
  * Client-facing analytics data endpoint.
- * Returns GA4 + Search Console data for clinics assigned to the authenticated user.
+ * Returns GA4 + Search Console + GMB data for clinics assigned to the authenticated user.
  */
 export async function GET(req: NextRequest) {
   try {
@@ -58,6 +59,7 @@ export async function GET(req: NextRequest) {
         const syncPromises: Promise<any>[] = [];
         if (connection.ga4PropertyId) syncPromises.push(syncGA4Data(connection.id, syncDays).catch(e => console.error('GA4 sync error:', e.message)));
         if (connection.searchConsoleSite) syncPromises.push(syncSearchConsoleData(connection.id, syncDays).catch(e => console.error('SC sync error:', e.message)));
+        if (connection.businessLocationId) syncPromises.push(syncGmbConnection(connection.id).catch(e => console.error('GMB sync error:', e.message)));
         if (syncPromises.length > 0) await Promise.allSettled(syncPromises);
         await prisma.gMBConnection.update({
           where: { id: connection.id },
@@ -77,7 +79,7 @@ export async function GET(req: NextRequest) {
 
     const dateFilter = { gte: since, lte: until };
 
-    const [ga4Data, scData] = await Promise.all([
+    const [ga4Data, scData, gmbData] = await Promise.all([
       prisma.gA4Data.findMany({
         where: { gmbConnectionId: connection.id, date: dateFilter },
         orderBy: { date: 'asc' },
@@ -86,11 +88,16 @@ export async function GET(req: NextRequest) {
         where: { gmbConnectionId: connection.id, date: dateFilter },
         orderBy: { date: 'asc' },
       }),
+      prisma.gMBData.findMany({
+        where: { gmbConnectionId: connection.id, date: dateFilter },
+        orderBy: { date: 'asc' },
+      }),
     ]);
 
     return NextResponse.json({
       ga4PropertyId: connection.ga4PropertyId,
       searchConsoleSite: connection.searchConsoleSite,
+      businessLocationId: connection.businessLocationId,
       ga4Data: ga4Data.map(d => ({
         date: d.date.toISOString().slice(0, 10),
         activeUsers: d.activeUsers,
@@ -115,6 +122,18 @@ export async function GET(req: NextRequest) {
         avgPosition: d.avgPosition,
         topQueries: d.topQueries,
         topPages: d.topPages,
+      })),
+      gmbData: gmbData.map(d => ({
+        date: d.date.toISOString().slice(0, 10),
+        views: d.views,
+        discovery: d.discovery,
+        directionRequests: d.directionRequests,
+        phoneCalls: d.phoneCalls,
+        websiteClicks: d.websiteClicks,
+        messageCount: d.messageCount,
+        totalReviews: d.totalReviews,
+        averageRating: d.averageRating,
+        newReviews: d.newReviews,
       })),
     });
   } catch (error: any) {

@@ -9,7 +9,7 @@ import {
 import {
   TrendingUp, Users, Globe, Search, RefreshCw, Loader2, FileText,
   ArrowUpRight, ArrowDownRight, BarChart3, MousePointerClick,
-  Eye, Target, Zap,
+  Eye, Target, Zap, MapPin, Phone, Navigation, ExternalLink,
 } from 'lucide-react';
 
 const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
@@ -41,6 +41,19 @@ interface SCRow {
   topPages?: { page: string; clicks: number; impressions: number; ctr: number; position: number }[];
 }
 
+interface GMBRow {
+  date: string;
+  views: number;
+  discovery: number;
+  directionRequests: number;
+  phoneCalls: number;
+  websiteClicks: number;
+  messageCount: number;
+  totalReviews: number;
+  averageRating: number;
+  newReviews: number;
+}
+
 interface GoogleAnalyticsViewProps {
   clinicId: string;
   isDark?: boolean;
@@ -50,8 +63,10 @@ interface GoogleAnalyticsViewProps {
 export default function GoogleAnalyticsView({ clinicId, isDark = false, isClient = false }: GoogleAnalyticsViewProps) {
   const [ga4Data, setGa4Data] = useState<GA4Row[]>([]);
   const [scData, setScData] = useState<SCRow[]>([]);
+  const [gmbData, setGmbData] = useState<GMBRow[]>([]);
   const [ga4PropertyId, setGa4PropertyId] = useState<string | null>(null);
   const [searchConsoleSite, setSearchConsoleSite] = useState<string | null>(null);
+  const [businessLocationId, setBusinessLocationId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -70,8 +85,10 @@ export default function GoogleAnalyticsView({ clinicId, isDark = false, isClient
       if (!res.ok) throw new Error(json.error);
       setGa4Data(json.ga4Data || []);
       setScData(json.searchConsoleData || []);
+      setGmbData(json.gmbData || []);
       setGa4PropertyId(json.ga4PropertyId);
       setSearchConsoleSite(json.searchConsoleSite);
+      setBusinessLocationId(json.businessLocationId || null);
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -135,7 +152,7 @@ export default function GoogleAnalyticsView({ clinicId, isDark = false, isClient
     }
   };
 
-  if (!ga4PropertyId && !searchConsoleSite) {
+  if (!ga4PropertyId && !searchConsoleSite && !businessLocationId) {
     if (loading) {
       return (
         <div className={`rounded-2xl p-10 border text-center ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
@@ -195,7 +212,7 @@ export default function GoogleAnalyticsView({ clinicId, isDark = false, isClient
   }
 
   // Empty data state — integration is configured but no data yet
-  if (ga4Data.length === 0 && scData.length === 0) {
+  if (ga4Data.length === 0 && scData.length === 0 && gmbData.length === 0) {
     return (
       <div className={`rounded-2xl p-10 border text-center ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
         <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-900/30 dark:to-emerald-800/20 flex items-center justify-center mx-auto mb-5 shadow-sm">
@@ -246,6 +263,17 @@ export default function GoogleAnalyticsView({ clinicId, isDark = false, isClient
   const avgCtr = scTotals.impressions ? scTotals.clicks / scTotals.impressions : 0;
   const avgPosition = scData.length ? scData.reduce((s, d) => s + d.avgPosition, 0) / scData.length : 0;
 
+  // GMB totals
+  const gmbTotals = gmbData.reduce(
+    (acc, d) => ({
+      views: acc.views + d.views,
+      phoneCalls: acc.phoneCalls + d.phoneCalls,
+      directionRequests: acc.directionRequests + d.directionRequests,
+      websiteClicks: acc.websiteClicks + d.websiteClicks,
+    }),
+    { views: 0, phoneCalls: 0, directionRequests: 0, websiteClicks: 0 },
+  );
+
   // Traffic source pie data
   const trafficSources = [
     { name: 'Organic', value: ga4Data.reduce((s, d) => s + d.organicSessions, 0) },
@@ -286,6 +314,11 @@ export default function GoogleAnalyticsView({ clinicId, isDark = false, isClient
     ctrPct: Math.round(d.ctr * 10000) / 100,
   }));
 
+  const chartGMB = gmbData.map(d => ({
+    ...d,
+    label: formatDate(d.date),
+  }));
+
   const cardClass = `rounded-2xl p-6 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`;
   const headingClass = `text-xl font-bold mb-6 ${isDark ? 'text-white' : 'text-slate-900'}`;
   const tooltipStyle = {
@@ -301,7 +334,7 @@ export default function GoogleAnalyticsView({ clinicId, isDark = false, isClient
         <div className="flex items-center justify-between">
           <div>
             <h2 className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>
-              Google Analytics & Search Console
+              Google Analytics, Search Console & Business Profile
             </h2>
             <p className={`text-sm mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
               {lastSyncTime ? `Last synced at ${lastSyncTime}` : '30-day performance overview'}
@@ -309,6 +342,8 @@ export default function GoogleAnalyticsView({ clinicId, isDark = false, isClient
               {ga4PropertyId && <span className="font-medium">GA4</span>}
               {searchConsoleSite && <span className="mx-1.5">·</span>}
               {searchConsoleSite && <span className="font-medium">Search Console</span>}
+              {businessLocationId && <span className="mx-1.5">·</span>}
+              {businessLocationId && <span className="font-medium">Business Profile</span>}
             </p>
           </div>
           {!isClient && (
@@ -371,6 +406,16 @@ export default function GoogleAnalyticsView({ clinicId, isDark = false, isClient
         <KPICard icon={<MousePointerClick className="h-8 w-8 text-amber-500" />} label="SC Clicks" value={scTotals.clicks.toLocaleString()} accent="amber" isDark={isDark} />
         <KPICard icon={<Search className="h-8 w-8 text-purple-500" />} label="Avg Position" value={avgPosition.toFixed(1)} accent="purple" isDark={isDark} />
       </div>
+
+      {/* ═══ GMB KPI Cards ═══ */}
+      {gmbData.length > 0 && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <KPICard icon={<MapPin className="h-8 w-8 text-rose-500" />} label="Profile Views" value={gmbTotals.views.toLocaleString()} accent="rose" isDark={isDark} />
+          <KPICard icon={<Phone className="h-8 w-8 text-teal-500" />} label="Phone Calls" value={gmbTotals.phoneCalls.toLocaleString()} accent="teal" isDark={isDark} />
+          <KPICard icon={<Navigation className="h-8 w-8 text-indigo-500" />} label="Direction Requests" value={gmbTotals.directionRequests.toLocaleString()} accent="indigo" isDark={isDark} />
+          <KPICard icon={<ExternalLink className="h-8 w-8 text-cyan-500" />} label="Website Clicks" value={gmbTotals.websiteClicks.toLocaleString()} accent="cyan" isDark={isDark} />
+        </div>
+      )}
 
       {/* ═══ GA4 Users & Sessions Line Chart ═══ */}
       {ga4Data.length > 0 && (
@@ -474,6 +519,35 @@ export default function GoogleAnalyticsView({ clinicId, isDark = false, isClient
         </motion.div>
       )}
 
+      {/* ═══ Google Business Profile Performance ═══ */}
+      {gmbData.length > 0 && (
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }} className={cardClass}>
+          <h3 className={headingClass}>
+            <MapPin className="inline h-5 w-5 mr-2 text-rose-500" />
+            Google Business Profile Performance
+          </h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <MiniStat label="Profile Views" value={gmbTotals.views.toLocaleString()} isDark={isDark} />
+            <MiniStat label="Phone Calls" value={gmbTotals.phoneCalls.toLocaleString()} isDark={isDark} />
+            <MiniStat label="Direction Requests" value={gmbTotals.directionRequests.toLocaleString()} isDark={isDark} />
+            <MiniStat label="Website Clicks" value={gmbTotals.websiteClicks.toLocaleString()} isDark={isDark} />
+          </div>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={chartGMB}>
+              <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#334155' : '#e2e8f0'} />
+              <XAxis dataKey="label" stroke={isDark ? '#94a3b8' : '#64748b'} fontSize={12} />
+              <YAxis stroke={isDark ? '#94a3b8' : '#64748b'} />
+              <Tooltip contentStyle={tooltipStyle} />
+              <Legend />
+              <Bar dataKey="views" name="Profile Views" fill="#f43f5e" radius={[6, 6, 0, 0]} />
+              <Bar dataKey="websiteClicks" name="Website Clicks" fill="#06b6d4" radius={[6, 6, 0, 0]} />
+              <Bar dataKey="phoneCalls" name="Phone Calls" fill="#14b8a6" radius={[6, 6, 0, 0]} />
+              <Bar dataKey="directionRequests" name="Directions" fill="#6366f1" radius={[6, 6, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </motion.div>
+      )}
+
       {/* ═══ Top Blogs Visited ═══ */}
       {topBlogs.length > 0 && (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }} className={cardClass}>
@@ -517,7 +591,7 @@ export default function GoogleAnalyticsView({ clinicId, isDark = false, isClient
         </motion.div>
       )}
 
-      {ga4Data.length === 0 && scData.length === 0 && (
+      {ga4Data.length === 0 && scData.length === 0 && gmbData.length === 0 && (
         <div className={`rounded-2xl p-10 border text-center ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
           <div className="h-14 w-14 rounded-2xl bg-slate-100 dark:bg-slate-700/50 flex items-center justify-center mx-auto mb-4">
             <BarChart3 className="h-7 w-7 text-slate-400" />
