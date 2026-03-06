@@ -30,6 +30,8 @@ export async function GET(req: NextRequest) {
             lastSyncedAt: connection.lastSyncedAt,
             nextSyncAt: connection.nextSyncAt,
             lastSyncError: connection.lastSyncError,
+            ga4PropertyId: connection.ga4PropertyId,
+            searchConsoleSite: connection.searchConsoleSite,
             recentData: connection.gmbData,
           }
         : null,

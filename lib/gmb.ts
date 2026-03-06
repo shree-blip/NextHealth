@@ -8,6 +8,8 @@ export const GMB_SCOPES = [
   'email',
   'profile',
   'https://www.googleapis.com/auth/business.manage',
+  'https://www.googleapis.com/auth/analytics.readonly',
+  'https://www.googleapis.com/auth/webmasters.readonly',
 ];
 
 const DAILY_METRICS = [

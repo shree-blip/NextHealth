@@ -271,6 +271,8 @@ model GMBConnection {
   locationName       String?
   locationAddress    String?
   googleEmail        String?
+  ga4PropertyId      String?
+  searchConsoleSite  String?
   connectionStatus   String    @default("connected")
   lastSyncedAt       DateTime?
   nextSyncAt         DateTime?
@@ -280,6 +282,8 @@ model GMBConnection {
   updatedAt          DateTime  @updatedAt
   clinic             Clinic    @relation(fields: [clinicId], references: [id], onDelete: Cascade)
   gmbData            GMBData[]
+  ga4Data            GA4Data[]
+  searchConsoleData  SearchConsoleData[]
 
   @@index([clinicId])
   @@index([businessAccountId])
@@ -326,4 +330,49 @@ model AiHistory {
   @@index([userId])
   @@index([generatorType])
   @@index([createdAt])
+}
+
+model GA4Data {
+  id                String        @id @default(cuid())
+  gmbConnectionId   String
+  date              DateTime
+  activeUsers       Int           @default(0)
+  newUsers          Int           @default(0)
+  sessions          Int           @default(0)
+  pageViews         Int           @default(0)
+  avgSessionDuration Float        @default(0)
+  bounceRate        Float         @default(0)
+  engagementRate    Float         @default(0)
+  conversions       Int           @default(0)
+  organicSessions   Int           @default(0)
+  paidSessions      Int           @default(0)
+  directSessions    Int           @default(0)
+  referralSessions  Int           @default(0)
+  socialSessions    Int           @default(0)
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  gmbConnection     GMBConnection @relation(fields: [gmbConnectionId], references: [id], onDelete: Cascade)
+
+  @@unique([gmbConnectionId, date])
+  @@index([gmbConnectionId])
+  @@index([date])
+}
+
+model SearchConsoleData {
+  id                String        @id @default(cuid())
+  gmbConnectionId   String
+  date              DateTime
+  clicks            Int           @default(0)
+  impressions       Int           @default(0)
+  ctr               Float         @default(0)
+  avgPosition       Float         @default(0)
+  topQueries        Json?
+  topPages          Json?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  gmbConnection     GMBConnection @relation(fields: [gmbConnectionId], references: [id], onDelete: Cascade)
+
+  @@unique([gmbConnectionId, date])
+  @@index([gmbConnectionId])
+  @@index([date])
 }

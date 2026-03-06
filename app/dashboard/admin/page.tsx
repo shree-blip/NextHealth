@@ -46,6 +46,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import AnalyticsForm from './analytics';
 import ClientAnalyticsView from '@/components/ClientAnalyticsView';
+import GoogleAnalyticsView from '@/components/GoogleAnalyticsView';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import DeleteConfirmationModal from '@/components/DeleteConfirmationModal';
@@ -741,6 +742,13 @@ function AdminDashboardContent() {
     locations: [] as any[],
     selectedAccount: '',
     selectedLocation: '',
+    // GA4 & Search Console
+    ga4Properties: [] as { propertyId: string; displayName: string; account: string }[],
+    scSites: [] as { siteUrl: string; permissionLevel: string }[],
+    selectedGA4Property: '',
+    selectedSCSite: '',
+    analyticsLoading: false,
+    analyticsSaving: false,
   });
 
   // Delete confirmation modal state
@@ -1298,6 +1306,24 @@ function AdminDashboardContent() {
         locations = locationsData.locations || [];
       }
 
+      // Fetch GA4 properties and Search Console sites in parallel
+      let ga4Properties: any[] = [];
+      let scSites: any[] = [];
+      try {
+        const [ga4Res, scRes] = await Promise.all([
+          fetch(`/api/admin/gmb/ga4-properties?clinicId=${encodeURIComponent(clinicId)}`),
+          fetch(`/api/admin/gmb/sc-sites?clinicId=${encodeURIComponent(clinicId)}`),
+        ]);
+        if (ga4Res.ok) {
+          const ga4Data = await ga4Res.json();
+          ga4Properties = ga4Data.properties || [];
+        }
+        if (scRes.ok) {
+          const scData = await scRes.json();
+          scSites = scData.sites || [];
+        }
+      } catch { /* non-critical */ }
+
       setGmbState(prev => ({
         ...prev,
         loading: false,
@@ -1306,6 +1332,10 @@ function AdminDashboardContent() {
         locations,
         selectedAccount,
         selectedLocation: connection.businessLocationId || '',
+        ga4Properties,
+        scSites,
+        selectedGA4Property: connection.ga4PropertyId || '',
+        selectedSCSite: connection.searchConsoleSite || '',
         message: connection.businessLocationId
           ? 'Google Business Profile connected. Daily sync is active.'
           : 'Google connected. Select account and location to complete setup.',
@@ -1828,7 +1858,7 @@ function AdminDashboardContent() {
             </div>
 
             <p className="text-[11px] text-slate-500 dark:text-slate-400">
-              Required scopes: business.manage, openid, email, profile.
+              Required scopes: business.manage, analytics.readonly, webmasters.readonly, openid, email, profile.
             </p>
 
             {gmbState.connection && (
@@ -1894,6 +1924,75 @@ function AdminDashboardContent() {
               <p className="text-xs text-red-600 dark:text-red-400">{gmbState.error}</p>
             )}
           </div>
+
+          {/* GA4 & Search Console Analytics Sources */}
+          {gmbState.connection && (
+            <div className="border border-slate-200 dark:border-slate-700 rounded-xl p-3 space-y-3">
+              <p className="text-sm font-semibold">📊 Analytics Sources (GA4 & Search Console)</p>
+
+              {gmbState.ga4Properties.length > 0 && (
+                <AdminSelect
+                  label="GA4 Property"
+                  value={gmbState.selectedGA4Property}
+                  onChange={(value) => setGmbState(prev => ({ ...prev, selectedGA4Property: value }))}
+                  options={[
+                    { value: '', label: 'Select GA4 property...' },
+                    ...gmbState.ga4Properties.map((p) => ({
+                      value: p.propertyId,
+                      label: `${p.displayName} (${p.account})`
+                    }))
+                  ]}
+                />
+              )}
+
+              {gmbState.scSites.length > 0 && (
+                <AdminSelect
+                  label="Search Console Site"
+                  value={gmbState.selectedSCSite}
+                  onChange={(value) => setGmbState(prev => ({ ...prev, selectedSCSite: value }))}
+                  options={[
+                    { value: '', label: 'Select site...' },
+                    ...gmbState.scSites.map((s) => ({
+                      value: s.siteUrl,
+                      label: s.siteUrl
+                    }))
+                  ]}
+                />
+              )}
+
+              {gmbState.ga4Properties.length === 0 && gmbState.scSites.length === 0 && !gmbState.loading && (
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                  No GA4 properties or Search Console sites found. Make sure the connected Google account has access to Google Analytics and Search Console.
+                </p>
+              )}
+
+              <button
+                onClick={async () => {
+                  setGmbState(prev => ({ ...prev, analyticsSaving: true }));
+                  try {
+                    const res = await fetch('/api/admin/gmb/select-analytics', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        clinicId: editingClinic?.id,
+                        ga4PropertyId: gmbState.selectedGA4Property,
+                        searchConsoleSite: gmbState.selectedSCSite,
+                      }),
+                    });
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.error);
+                    setGmbState(prev => ({ ...prev, analyticsSaving: false, message: 'Analytics sources saved!' }));
+                  } catch (err: any) {
+                    setGmbState(prev => ({ ...prev, analyticsSaving: false, error: err?.message || 'Failed to save analytics sources' }));
+                  }
+                }}
+                disabled={gmbState.analyticsSaving || (!gmbState.selectedGA4Property && !gmbState.selectedSCSite)}
+                className="w-full px-3 py-2 rounded-lg bg-purple-500 hover:bg-purple-600 text-white text-xs font-bold disabled:opacity-50 transition-colors"
+              >
+                {gmbState.analyticsSaving ? 'Saving...' : 'Save Analytics Sources'}
+              </button>
+            </div>
+          )}
 
           <div className="flex gap-3 pt-2">
             <button
@@ -3078,6 +3177,9 @@ function ContentForSection(props: {
               <ClientAnalyticsView isAdmin refreshTrigger={analyticsRefreshKey} />
             </div>
           </div>
+
+          {/* Google Analytics & Search Console (per-clinic) */}
+          <GoogleAnalyticsSection clinics={clinics} isDark={isDark} />
         </div>
       );
 
@@ -3882,6 +3984,35 @@ function NewsManagementSection({
         onConfirm={confirmDelete}
         onCancel={() => setDeleteModal({ isOpen: false, articleId: 0, articleTitle: '', isLoading: false })}
       />
+    </div>
+  );
+}
+
+/* ─── Google Analytics + Search Console section (clinic picker + graphs) ─── */
+function GoogleAnalyticsSection({ clinics, isDark }: { clinics: any[]; isDark: boolean }) {
+  const [selectedClinicId, setSelectedClinicId] = useState('');
+
+  return (
+    <div className="space-y-4">
+      <div className={`pt-6 border-t ${isDark ? 'border-slate-700' : 'border-slate-200'}`}>
+        <h2 className="text-2xl font-black mb-2">📊 Google Analytics & Search Console</h2>
+        <p className={`text-sm mb-4 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+          Select a clinic to view GA4 and Search Console data. Configure analytics sources in the clinic&apos;s Edit modal.
+        </p>
+        <select
+          value={selectedClinicId}
+          onChange={(e) => setSelectedClinicId(e.target.value)}
+          className={`w-64 rounded-xl border p-2 ${isDark ? 'border-slate-700 bg-slate-800 text-slate-200' : 'border-slate-200 bg-white'}`}
+        >
+          <option value="">Select a clinic...</option>
+          {clinics.map(c => (
+            <option key={c.id} value={c.id}>{c.name}</option>
+          ))}
+        </select>
+      </div>
+      {selectedClinicId && (
+        <GoogleAnalyticsView clinicId={selectedClinicId} isDark={isDark} />
+      )}
     </div>
   );
 }
