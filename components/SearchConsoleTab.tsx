@@ -7,9 +7,10 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
 } from 'recharts';
 import {
-  Search, Globe, RefreshCw, Loader2,
+  Search, Globe, RefreshCw, Loader2, FileText,
   ArrowUpRight, ArrowDownRight, Target, BarChart3, MousePointerClick,
 } from 'lucide-react';
+import GoogleDataProgressLoader from './GoogleDataProgressLoader';
 
 interface SCRow {
   date: string;
@@ -83,12 +84,8 @@ export default function SearchConsoleTab({ clinicId, isDark = false }: SearchCon
   // Loading
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center py-24">
-        <div className="relative">
-          <div className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-500 to-indigo-500 blur-xl opacity-20 animate-pulse" />
-          <Loader2 className="relative h-10 w-10 animate-spin text-purple-500" />
-        </div>
-        <p className="mt-5 text-sm font-semibold text-slate-500 dark:text-slate-400">Loading Search Console data...</p>
+      <div className="space-y-5">
+        <GoogleDataProgressLoader isLoading={true} isDark={isDark} />
       </div>
     );
   }
@@ -126,10 +123,16 @@ export default function SearchConsoleTab({ clinicId, isDark = false }: SearchCon
   const totals = data.reduce((acc, d) => ({ clicks: acc.clicks + d.clicks, impressions: acc.impressions + d.impressions }), { clicks: 0, impressions: 0 });
   const avgCtr = totals.impressions ? totals.clicks / totals.impressions : 0;
   const avgPosition = data.reduce((s, d) => s + d.avgPosition, 0) / data.length;
-  const latestWithQueries = [...data].reverse().find(d => d.topQueries && (d.topQueries as any[]).length > 0);
-  const topQueries: any[] = (latestWithQueries?.topQueries as any[]) || [];
   const latestWithPages = [...data].reverse().find(d => d.topPages && (d.topPages as any[]).length > 0);
-  const topPages: any[] = (latestWithPages?.topPages as any[]) || [];
+  const allPages: any[] = (latestWithPages?.topPages as any[]) || [];
+  // Filter to blog pages only (top 5)
+  const topBlogs = allPages
+    .filter((p: any) => {
+      let path = p.page;
+      try { path = new URL(p.page).pathname; } catch { /* keep full */ }
+      return path.includes('/blog');
+    })
+    .slice(0, 5);
 
   const formatDate = (d: string) => {
     const dt = new Date(d + 'T00:00:00');
@@ -235,67 +238,37 @@ export default function SearchConsoleTab({ clinicId, isDark = false }: SearchCon
         </ResponsiveContainer>
       </motion.div>
 
-      {/* Top Queries */}
-      {topQueries.length > 0 && (
+      {/* Top Blogs Visited */}
+      {topBlogs.length > 0 && (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className={glassCard}>
-          <h3 className={headingClass}><div className="h-8 w-8 rounded-xl bg-red-500/10 flex items-center justify-center"><Target className="h-4 w-4 text-red-500" /></div>Top Search Queries</h3>
+          <h3 className={headingClass}><div className="h-8 w-8 rounded-xl bg-emerald-500/10 flex items-center justify-center"><FileText className="h-4 w-4 text-emerald-500" /></div>Top Blogs Visited</h3>
           <div className="overflow-x-auto -mx-6 px-6">
             <table className="w-full text-sm">
               <thead>
                 <tr className={`text-[11px] uppercase tracking-wider ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
                   <th className="text-left py-3 px-3 font-semibold">#</th>
-                  <th className="text-left py-3 px-3 font-semibold">Query</th>
+                  <th className="text-left py-3 px-3 font-semibold">Blog Page</th>
                   <th className="text-right py-3 px-3 font-semibold">Clicks</th>
-                  <th className="text-right py-3 px-3 font-semibold hidden sm:table-cell">Impressions</th>
-                  <th className="text-right py-3 px-3 font-semibold hidden md:table-cell">CTR</th>
-                  <th className="text-right py-3 px-3 font-semibold">Position</th>
+                  <th className="text-right py-3 px-3 font-semibold">Impressions</th>
                 </tr>
               </thead>
               <tbody>
-                {topQueries.slice(0, 20).map((q: any, i: number) => (
-                  <tr key={i} className={`group transition-colors ${i % 2 === 0 ? (isDark ? 'bg-slate-900/30' : 'bg-slate-50/50') : ''} ${isDark ? 'hover:bg-slate-700/40' : 'hover:bg-slate-100/60'}`}>
-                    <td className={`py-3 px-3 font-mono text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{i + 1}</td>
-                    <td className={`py-3 px-3 font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>{q.query}</td>
-                    <td className="py-3 px-3 text-right"><span className="font-bold text-emerald-500">{q.clicks}</span></td>
-                    <td className={`py-3 px-3 text-right hidden sm:table-cell ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>{q.impressions?.toLocaleString()}</td>
-                    <td className="py-3 px-3 text-right hidden md:table-cell text-blue-500 font-medium">{((q.ctr || 0) * 100).toFixed(1)}%</td>
-                    <td className="py-3 px-3 text-right">{positionBadge(q.position || 0)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </motion.div>
-      )}
-
-      {/* Top Pages */}
-      {topPages.length > 0 && (
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }} className={glassCard}>
-          <h3 className={headingClass}><div className="h-8 w-8 rounded-xl bg-indigo-500/10 flex items-center justify-center"><BarChart3 className="h-4 w-4 text-indigo-500" /></div>Top Landing Pages</h3>
-          <div className="overflow-x-auto -mx-6 px-6">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className={`text-[11px] uppercase tracking-wider ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
-                  <th className="text-left py-3 px-3 font-semibold">#</th>
-                  <th className="text-left py-3 px-3 font-semibold">Page</th>
-                  <th className="text-right py-3 px-3 font-semibold">Clicks</th>
-                  <th className="text-right py-3 px-3 font-semibold hidden sm:table-cell">Impressions</th>
-                  <th className="text-right py-3 px-3 font-semibold hidden md:table-cell">CTR</th>
-                  <th className="text-right py-3 px-3 font-semibold">Position</th>
-                </tr>
-              </thead>
-              <tbody>
-                {topPages.slice(0, 15).map((p: any, i: number) => {
+                {topBlogs.map((p: any, i: number) => {
                   let displayUrl = p.page;
                   try { displayUrl = new URL(p.page).pathname; } catch { /* keep full */ }
+                  // Prettify blog path — strip '/blog/' prefix and trailing slash, replace hyphens
+                  const blogTitle = displayUrl
+                    .replace(/^\/blog\//, '')
+                    .replace(/\/$/, '')
+                    .split('-')
+                    .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1))
+                    .join(' ') || displayUrl;
                   return (
                     <tr key={i} className={`group transition-colors ${i % 2 === 0 ? (isDark ? 'bg-slate-900/30' : 'bg-slate-50/50') : ''} ${isDark ? 'hover:bg-slate-700/40' : 'hover:bg-slate-100/60'}`}>
                       <td className={`py-3 px-3 font-mono text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{i + 1}</td>
-                      <td className={`py-3 px-3 font-semibold truncate max-w-xs ${isDark ? 'text-white' : 'text-slate-900'}`} title={p.page}>{displayUrl}</td>
-                      <td className="py-3 px-3 text-right"><span className="font-bold text-emerald-500">{p.clicks}</span></td>
-                      <td className={`py-3 px-3 text-right hidden sm:table-cell ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>{p.impressions?.toLocaleString()}</td>
-                      <td className="py-3 px-3 text-right hidden md:table-cell text-blue-500 font-medium">{((p.ctr || 0) * 100).toFixed(1)}%</td>
-                      <td className={`py-3 px-3 text-right font-bold ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>{(p.position || 0).toFixed(1)}</td>
+                      <td className={`py-3 px-3 font-semibold truncate max-w-xs ${isDark ? 'text-white' : 'text-slate-900'}`} title={p.page}>{blogTitle}</td>
+                      <td className="py-3 px-3 text-right"><span className="font-bold text-emerald-500">{p.clicks?.toLocaleString()}</span></td>
+                      <td className={`py-3 px-3 text-right ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>{p.impressions?.toLocaleString()}</td>
                     </tr>
                   );
                 })}

@@ -54,9 +54,10 @@ export async function GET(req: NextRequest) {
           where: { id: connection.id },
           data: { syncStatus: 'syncing' },
         });
+        const syncDays = Math.max(days, 90); // Sync at least 90 days for cache coverage
         const syncPromises: Promise<any>[] = [];
-        if (connection.ga4PropertyId) syncPromises.push(syncGA4Data(connection.id).catch(e => console.error('GA4 sync error:', e.message)));
-        if (connection.searchConsoleSite) syncPromises.push(syncSearchConsoleData(connection.id).catch(e => console.error('SC sync error:', e.message)));
+        if (connection.ga4PropertyId) syncPromises.push(syncGA4Data(connection.id, syncDays).catch(e => console.error('GA4 sync error:', e.message)));
+        if (connection.searchConsoleSite) syncPromises.push(syncSearchConsoleData(connection.id, syncDays).catch(e => console.error('SC sync error:', e.message)));
         if (syncPromises.length > 0) await Promise.allSettled(syncPromises);
         await prisma.gMBConnection.update({
           where: { id: connection.id },

@@ -316,13 +316,13 @@ export async function fetchTopPages(connectionId: string, siteUrl: string, start
 // ══════════════════════════════════════════════════════════════
 // Sync — Store GA4 + Search Console data in database
 // ══════════════════════════════════════════════════════════════
-export async function syncGA4Data(connectionId: string) {
+export async function syncGA4Data(connectionId: string, syncDays = 90) {
   const conn = await prisma.gMBConnection.findUnique({ where: { id: connectionId } });
   if (!conn?.ga4PropertyId) return { synced: 0 };
 
   const endDate = new Date();
   const startDate = new Date();
-  startDate.setDate(startDate.getDate() - 30);
+  startDate.setDate(startDate.getDate() - syncDays);
 
   const format = (d: Date) => d.toISOString().slice(0, 10);
 
@@ -382,13 +382,13 @@ export async function syncGA4Data(connectionId: string) {
   return { synced };
 }
 
-export async function syncSearchConsoleData(connectionId: string) {
+export async function syncSearchConsoleData(connectionId: string, syncDays = 90) {
   const conn = await prisma.gMBConnection.findUnique({ where: { id: connectionId } });
   if (!conn?.searchConsoleSite) return { synced: 0 };
 
   const endDate = new Date();
   const startDate = new Date();
-  startDate.setDate(startDate.getDate() - 30);
+  startDate.setDate(startDate.getDate() - syncDays);
 
   const format = (d: Date) => d.toISOString().slice(0, 10);
 

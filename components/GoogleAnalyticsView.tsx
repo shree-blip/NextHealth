@@ -7,7 +7,7 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
 } from 'recharts';
 import {
-  TrendingUp, Users, Globe, Search, RefreshCw, Loader2,
+  TrendingUp, Users, Globe, Search, RefreshCw, Loader2, FileText,
   ArrowUpRight, ArrowDownRight, BarChart3, MousePointerClick,
   Eye, Target, Zap,
 } from 'lucide-react';
@@ -255,11 +255,16 @@ export default function GoogleAnalyticsView({ clinicId, isDark = false, isClient
     { name: 'Social', value: ga4Data.reduce((s, d) => s + d.socialSessions, 0) },
   ].filter(s => s.value > 0);
 
-  // Top queries from the latest SC row that has them
-  const latestSCWithQueries = [...scData].reverse().find(d => d.topQueries && d.topQueries.length > 0);
-  const topQueries = latestSCWithQueries?.topQueries || [];
+  // Top blog pages from the latest SC row that has them
   const latestSCWithPages = [...scData].reverse().find(d => d.topPages && d.topPages.length > 0);
-  const topPages = latestSCWithPages?.topPages || [];
+  const allPages = latestSCWithPages?.topPages || [];
+  const topBlogs = allPages
+    .filter(p => {
+      let path = p.page;
+      try { path = new URL(p.page).pathname; } catch { /* keep full */ }
+      return path.includes('/blog');
+    })
+    .slice(0, 5);
 
   // Format date for chart X axis
   const formatDate = (d: string) => {
@@ -468,84 +473,39 @@ export default function GoogleAnalyticsView({ clinicId, isDark = false, isClient
         </motion.div>
       )}
 
-      {/* ═══ Top Search Queries (AI Ranking Data) ═══ */}
-      {topQueries.length > 0 && (
+      {/* ═══ Top Blogs Visited ═══ */}
+      {topBlogs.length > 0 && (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }} className={cardClass}>
           <h3 className={headingClass}>
-            <Target className="inline h-5 w-5 mr-2 text-red-500" />
-            Top Search Queries (AI Ranking)
+            <FileText className="inline h-5 w-5 mr-2 text-emerald-500" />
+            Top Blogs Visited
           </h3>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className={isDark ? 'text-slate-400 border-b border-slate-700' : 'text-slate-500 border-b border-slate-200'}>
                   <th className="text-left py-3 px-2">#</th>
-                  <th className="text-left py-3 px-2">Query</th>
+                  <th className="text-left py-3 px-2">Blog Page</th>
                   <th className="text-right py-3 px-2">Clicks</th>
                   <th className="text-right py-3 px-2">Impressions</th>
-                  <th className="text-right py-3 px-2">CTR</th>
-                  <th className="text-right py-3 px-2">Position</th>
                 </tr>
               </thead>
               <tbody>
-                {topQueries.slice(0, 15).map((q, i) => (
-                  <tr key={i} className={`${isDark ? 'border-b border-slate-700/50 hover:bg-slate-700/30' : 'border-b border-slate-100 hover:bg-slate-50'} transition`}>
-                    <td className={`py-2 px-2 font-mono ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{i + 1}</td>
-                    <td className={`py-2 px-2 font-medium ${isDark ? 'text-white' : 'text-slate-900'}`}>{q.query}</td>
-                    <td className="py-2 px-2 text-right text-emerald-500 font-semibold">{q.clicks}</td>
-                    <td className={`py-2 px-2 text-right ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>{q.impressions.toLocaleString()}</td>
-                    <td className="py-2 px-2 text-right text-blue-500">{(q.ctr * 100).toFixed(1)}%</td>
-                    <td className="py-2 px-2 text-right">
-                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold ${
-                        q.position <= 3 ? 'bg-emerald-100 text-emerald-700' :
-                        q.position <= 10 ? 'bg-blue-100 text-blue-700' :
-                        q.position <= 20 ? 'bg-amber-100 text-amber-700' :
-                        'bg-red-100 text-red-700'
-                      }`}>
-                        {q.position <= 10 ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
-                        {q.position.toFixed(1)}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </motion.div>
-      )}
-
-      {/* ═══ Top Pages ═══ */}
-      {topPages.length > 0 && (
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className={cardClass}>
-          <h3 className={headingClass}>
-            <BarChart3 className="inline h-5 w-5 mr-2 text-indigo-500" />
-            Top Landing Pages
-          </h3>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className={isDark ? 'text-slate-400 border-b border-slate-700' : 'text-slate-500 border-b border-slate-200'}>
-                  <th className="text-left py-3 px-2">#</th>
-                  <th className="text-left py-3 px-2">Page</th>
-                  <th className="text-right py-3 px-2">Clicks</th>
-                  <th className="text-right py-3 px-2">Impressions</th>
-                  <th className="text-right py-3 px-2">CTR</th>
-                  <th className="text-right py-3 px-2">Position</th>
-                </tr>
-              </thead>
-              <tbody>
-                {topPages.slice(0, 10).map((p, i) => {
-                  // Show just the path portion
+                {topBlogs.map((p, i) => {
                   let displayUrl = p.page;
                   try { displayUrl = new URL(p.page).pathname; } catch { /* keep full */ }
+                  const blogTitle = displayUrl
+                    .replace(/^\/blog\//, '')
+                    .replace(/\/$/, '')
+                    .split('-')
+                    .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1))
+                    .join(' ') || displayUrl;
                   return (
                     <tr key={i} className={`${isDark ? 'border-b border-slate-700/50 hover:bg-slate-700/30' : 'border-b border-slate-100 hover:bg-slate-50'} transition`}>
                       <td className={`py-2 px-2 font-mono ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{i + 1}</td>
-                      <td className={`py-2 px-2 font-medium truncate max-w-xs ${isDark ? 'text-white' : 'text-slate-900'}`} title={p.page}>{displayUrl}</td>
-                      <td className="py-2 px-2 text-right text-emerald-500 font-semibold">{p.clicks}</td>
-                      <td className={`py-2 px-2 text-right ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>{p.impressions.toLocaleString()}</td>
-                      <td className="py-2 px-2 text-right text-blue-500">{(p.ctr * 100).toFixed(1)}%</td>
-                      <td className={`py-2 px-2 text-right font-semibold ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>{p.position.toFixed(1)}</td>
+                      <td className={`py-2 px-2 font-medium truncate max-w-xs ${isDark ? 'text-white' : 'text-slate-900'}`} title={p.page}>{blogTitle}</td>
+                      <td className="py-2 px-2 text-right text-emerald-500 font-semibold">{p.clicks?.toLocaleString()}</td>
+                      <td className={`py-2 px-2 text-right ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>{p.impressions?.toLocaleString()}</td>
                     </tr>
                   );
                 })}

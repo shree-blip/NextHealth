@@ -10,6 +10,7 @@ import {
   TrendingUp, Users, Globe, RefreshCw, Loader2,
   Eye, Zap, BarChart3, Activity,
 } from 'lucide-react';
+import GoogleDataProgressLoader from './GoogleDataProgressLoader';
 
 const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
@@ -92,12 +93,8 @@ export default function GA4AnalyticsTab({ clinicId, isDark = false }: GA4Analyti
   // Loading
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center py-24">
-        <div className="relative">
-          <div className="absolute inset-0 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 blur-xl opacity-20 animate-pulse" />
-          <Loader2 className="relative h-10 w-10 animate-spin text-orange-500" />
-        </div>
-        <p className="mt-5 text-sm font-semibold text-slate-500 dark:text-slate-400">Loading GA4 analytics...</p>
+      <div className="space-y-5">
+        <GoogleDataProgressLoader isLoading={true} isDark={isDark} />
       </div>
     );
   }
