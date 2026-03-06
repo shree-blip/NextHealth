@@ -6,7 +6,7 @@ import {
   LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, AreaChart, Area,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
-import { TrendingUp, FileText, Globe, Phone, DollarSign, Users, Loader2, Building2, ChevronDown, ArrowUpRight, Database, MousePointerClick, Target } from 'lucide-react';
+import { TrendingUp, FileText, Globe, Phone, DollarSign, Users, Loader2, Building2, ChevronDown, ArrowUpRight, Database, MousePointerClick, Target, Eye, BarChart3, Search } from 'lucide-react';
 import SearchConsolePerformanceChart from './SearchConsolePerformanceChart';
 
 interface WeeklyAnalytics {
@@ -93,6 +93,14 @@ export default function AdminAnalyticsView({ isDark, refreshTrigger }: AdminAnal
   const [scSummary, setScSummary] = useState<{ clicks: number; impressions: number; avgPosition: number } | null>(null);
   const [gmbDbData, setGmbDbData] = useState<any[]>([]); // GBP data from database
   const [gmbSummary, setGmbSummary] = useState<{ views: number; phoneCalls: number; websiteClicks: number } | null>(null); // GBP summary
+
+  // GA4 data from database
+  const [ga4Data, setGa4Data] = useState<any[]>([]);
+  const [ga4Summary, setGa4Summary] = useState<{ totalUsers: number; newUsers: number; totalSessions: number; totalPageViews: number; avgBounceRate: number; avgEngagement: number; totalConversions: number } | null>(null);
+  const [trafficSources, setTrafficSources] = useState<{ name: string; value: number }[]>([]);
+  const [topPages, setTopPages] = useState<{ page: string; clicks: number; impressions: number; position: number }[]>([]);
+  const [topQueries, setTopQueries] = useState<{ query: string; clicks: number; impressions: number; position: number }[]>([]);
+  const [scDailyData, setScDailyData] = useState<any[]>([]);
 
   useEffect(() => {
     fetchClinics();
@@ -265,9 +273,9 @@ export default function AdminAnalyticsView({ isDark, refreshTrigger }: AdminAnal
     }
   }, [filterPreset]);
 
-  // Fetch Search Console summary for the selected date range to populate summary cards
+  // Fetch ALL Google data (GA4 + SC + GBP) from database for the selected date range
   useEffect(() => {
-    const fetchScSummary = async () => {
+    const fetchGoogleData = async () => {
       try {
         const params = new URLSearchParams({
           startDate: scDateRange.startDate,
@@ -277,49 +285,95 @@ export default function AdminAnalyticsView({ isDark, refreshTrigger }: AdminAnal
           params.set('clinicId', selectedClinic);
         }
         const res = await fetch(`/api/admin/gmb/analytics-data?${params.toString()}`);
-        if (!res.ok) { setScSummary(null); return; }
+        if (!res.ok) { setGmbDbData([]); setGmbSummary(null); setGa4Data([]); setGa4Summary(null); setTrafficSources([]); setTopPages([]); setTopQueries([]); setScDailyData([]); setScSummary(null); return; }
         const json = await res.json();
-        const scData: { clicks: number; impressions: number; avgPosition: number }[] = json.searchConsoleData || [];
-        if (scData.length === 0) { setScSummary(null); return; }
-        const totalClicks = scData.reduce((s, d) => s + d.clicks, 0);
-        const totalImpressions = scData.reduce((s, d) => s + d.impressions, 0);
-        const avgPos = scData.reduce((s, d) => s + d.avgPosition, 0) / scData.length;
-        setScSummary({ clicks: totalClicks, impressions: totalImpressions, avgPosition: Number(avgPos.toFixed(1)) });
-      } catch {
-        setScSummary(null);
-      }
-    };
-    fetchScSummary();
-  }, [scDateRange, selectedClinic]);
 
-  // Fetch GBP data from database for the selected date range
-  useEffect(() => {
-    const fetchGmbSummary = async () => {
-      try {
-        const params = new URLSearchParams({
-          startDate: scDateRange.startDate,
-          endDate: scDateRange.endDate,
-        });
-        if (selectedClinic && selectedClinic !== 'all') {
-          params.set('clinicId', selectedClinic);
-        }
-        const res = await fetch(`/api/admin/gmb/analytics-data?${params.toString()}`);
-        if (!res.ok) { setGmbDbData([]); setGmbSummary(null); return; }
-        const json = await res.json();
+        // GBP data
         const gmbRows: any[] = json.gmbData || [];
         setGmbDbData(gmbRows);
-        
-        if (gmbRows.length === 0) { setGmbSummary(null); return; }
-        const totalViews = gmbRows.reduce((s, d) => s + (d.views || 0), 0);
-        const totalCalls = gmbRows.reduce((s, d) => s + (d.phoneCalls || 0), 0);
-        const totalClicks = gmbRows.reduce((s, d) => s + (d.websiteClicks || 0), 0);
-        setGmbSummary({ views: totalViews, phoneCalls: totalCalls, websiteClicks: totalClicks });
+        if (gmbRows.length === 0) { setGmbSummary(null); }
+        else {
+          const totalViews = gmbRows.reduce((s: number, d: any) => s + (d.views || 0), 0);
+          const totalCalls = gmbRows.reduce((s: number, d: any) => s + (d.phoneCalls || 0), 0);
+          const totalClicks = gmbRows.reduce((s: number, d: any) => s + (d.websiteClicks || 0), 0);
+          setGmbSummary({ views: totalViews, phoneCalls: totalCalls, websiteClicks: totalClicks });
+        }
+
+        // GA4 data
+        const ga4Rows: any[] = json.ga4Data || [];
+        setGa4Data(ga4Rows);
+        if (ga4Rows.length > 0) {
+          setGa4Summary({
+            totalUsers: ga4Rows.reduce((s: number, d: any) => s + d.activeUsers, 0),
+            newUsers: ga4Rows.reduce((s: number, d: any) => s + d.newUsers, 0),
+            totalSessions: ga4Rows.reduce((s: number, d: any) => s + d.sessions, 0),
+            totalPageViews: ga4Rows.reduce((s: number, d: any) => s + d.pageViews, 0),
+            avgBounceRate: +(ga4Rows.reduce((s: number, d: any) => s + d.bounceRate, 0) / ga4Rows.length).toFixed(1),
+            avgEngagement: +(ga4Rows.reduce((s: number, d: any) => s + d.engagementRate, 0) / ga4Rows.length).toFixed(1),
+            totalConversions: ga4Rows.reduce((s: number, d: any) => s + d.conversions, 0),
+          });
+          const sources = [
+            { name: 'Organic', value: ga4Rows.reduce((s: number, d: any) => s + d.organicSessions, 0) },
+            { name: 'Direct', value: ga4Rows.reduce((s: number, d: any) => s + d.directSessions, 0) },
+            { name: 'Paid', value: ga4Rows.reduce((s: number, d: any) => s + d.paidSessions, 0) },
+            { name: 'Referral', value: ga4Rows.reduce((s: number, d: any) => s + d.referralSessions, 0) },
+            { name: 'Social', value: ga4Rows.reduce((s: number, d: any) => s + d.socialSessions, 0) },
+          ].filter(s => s.value > 0);
+          setTrafficSources(sources);
+        } else {
+          setGa4Summary(null);
+          setTrafficSources([]);
+        }
+
+        // Search Console daily + top pages/queries
+        const scRows: any[] = json.searchConsoleData || [];
+        setScDailyData(scRows);
+        // Compute SC summary for cards
+        if (scRows.length > 0) {
+          const totalClicks = scRows.reduce((s: number, d: any) => s + d.clicks, 0);
+          const totalImpressions = scRows.reduce((s: number, d: any) => s + d.impressions, 0);
+          const avgPos = scRows.reduce((s: number, d: any) => s + d.avgPosition, 0) / scRows.length;
+          setScSummary({ clicks: totalClicks, impressions: totalImpressions, avgPosition: Number(avgPos.toFixed(1)) });
+        } else {
+          setScSummary(null);
+        }
+        // Merge top pages
+        const pagesMap = new Map<string, { page: string; clicks: number; impressions: number; position: number }>();
+        for (const row of scRows) {
+          if (Array.isArray(row.topPages)) {
+            for (const p of row.topPages) {
+              const existing = pagesMap.get(p.page);
+              if (existing) { existing.clicks += p.clicks; existing.impressions += p.impressions; }
+              else pagesMap.set(p.page, { page: p.page, clicks: p.clicks, impressions: p.impressions, position: p.position });
+            }
+          }
+        }
+        setTopPages([...pagesMap.values()].sort((a, b) => b.clicks - a.clicks).slice(0, 10));
+        // Merge top queries
+        const queriesMap = new Map<string, { query: string; clicks: number; impressions: number; position: number }>();
+        for (const row of scRows) {
+          if (Array.isArray(row.topQueries)) {
+            for (const q of row.topQueries) {
+              const existing = queriesMap.get(q.query);
+              if (existing) { existing.clicks += q.clicks; existing.impressions += q.impressions; }
+              else queriesMap.set(q.query, { query: q.query, clicks: q.clicks, impressions: q.impressions, position: q.position });
+            }
+          }
+        }
+        setTopQueries([...queriesMap.values()].sort((a, b) => b.clicks - a.clicks).slice(0, 10));
       } catch {
         setGmbDbData([]);
         setGmbSummary(null);
+        setGa4Data([]);
+        setGa4Summary(null);
+        setTrafficSources([]);
+        setTopPages([]);
+        setTopQueries([]);
+        setScDailyData([]);
+        setScSummary(null);
       }
     };
-    fetchGmbSummary();
+    fetchGoogleData();
   }, [scDateRange, selectedClinic]);
 
   // Conditional render states
@@ -653,6 +707,189 @@ export default function AdminAnalyticsView({ isDark, refreshTrigger }: AdminAnal
           <p className={`text-sm font-semibold ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>Total Investment</p>
         </motion.div>
       </div>
+
+      {/* ═══════════════════ GOOGLE ANALYTICS (GA4) ═══════════════════ */}
+      {ga4Summary && (
+        <>
+          <div className="flex items-center gap-2 pt-2">
+            <BarChart3 className="h-5 w-5 text-blue-400" />
+            <h2 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Google Analytics (GA4)</h2>
+          </div>
+
+          {/* GA4 Summary Cards */}
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-3">
+            {[
+              { label: 'Active Users', value: ga4Summary.totalUsers.toLocaleString(), icon: <Users className="h-5 w-5 text-emerald-400" /> },
+              { label: 'New Users', value: ga4Summary.newUsers.toLocaleString(), icon: <Users className="h-5 w-5 text-cyan-400" /> },
+              { label: 'Sessions', value: ga4Summary.totalSessions.toLocaleString(), icon: <Globe className="h-5 w-5 text-blue-400" /> },
+              { label: 'Page Views', value: ga4Summary.totalPageViews.toLocaleString(), icon: <Eye className="h-5 w-5 text-purple-400" /> },
+              { label: 'Bounce Rate', value: `${ga4Summary.avgBounceRate}%`, icon: <TrendingUp className="h-5 w-5 text-red-400" /> },
+              { label: 'Engagement', value: `${ga4Summary.avgEngagement}%`, icon: <TrendingUp className="h-5 w-5 text-green-400" /> },
+              { label: 'Conversions', value: ga4Summary.totalConversions.toLocaleString(), icon: <MousePointerClick className="h-5 w-5 text-amber-400" /> },
+            ].map((card) => (
+              <motion.div
+                key={card.label}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className={`rounded-xl p-4 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}
+              >
+                <div className="flex items-center gap-2 mb-2">{card.icon}</div>
+                <p className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{card.value}</p>
+                <p className={`text-xs mt-1 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{card.label}</p>
+              </motion.div>
+            ))}
+          </div>
+
+          {/* GA4 Users / Sessions / Page Views Chart */}
+          {ga4Data.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className={`rounded-2xl p-6 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}
+            >
+              <h3 className={`text-xl font-bold mb-4 ${isDark ? 'text-white' : 'text-slate-900'}`}>📈 Website Traffic (Daily)</h3>
+              <ResponsiveContainer width="100%" height={300}>
+                <AreaChart data={ga4Data.map((d: any) => ({ date: d.date?.slice?.(5) || d.date, users: d.activeUsers, sessions: d.sessions, pageViews: d.pageViews }))}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#334155' : '#e2e8f0'} />
+                  <XAxis dataKey="date" stroke={isDark ? '#94a3b8' : '#64748b'} fontSize={11} />
+                  <YAxis stroke={isDark ? '#94a3b8' : '#64748b'} />
+                  <Tooltip contentStyle={{ backgroundColor: isDark ? '#1e293b' : '#fff', border: `1px solid ${isDark ? '#475569' : '#e2e8f0'}`, borderRadius: '12px' }} />
+                  <Legend />
+                  <Area type="monotone" dataKey="users" name="Active Users" stroke="#10b981" fill="#10b981" fillOpacity={0.3} />
+                  <Area type="monotone" dataKey="sessions" name="Sessions" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.2} />
+                  <Area type="monotone" dataKey="pageViews" name="Page Views" stroke="#8b5cf6" fill="#8b5cf6" fillOpacity={0.15} />
+                </AreaChart>
+              </ResponsiveContainer>
+            </motion.div>
+          )}
+
+          {/* Traffic Sources Pie + Table */}
+          {trafficSources.length > 0 && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className={`rounded-2xl p-6 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}
+              >
+                <h3 className={`text-xl font-bold mb-4 ${isDark ? 'text-white' : 'text-slate-900'}`}>🎯 Traffic Sources</h3>
+                <ResponsiveContainer width="100%" height={280}>
+                  <PieChart>
+                    <Pie
+                      data={trafficSources}
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={90}
+                      labelLine={false}
+                      label={(e) => `${e.name}: ${((e.percent ?? 0) * 100).toFixed(0)}%`}
+                      dataKey="value"
+                    >
+                      {trafficSources.map((_, i) => (
+                        <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip contentStyle={{ backgroundColor: isDark ? '#1e293b' : '#fff', border: `1px solid ${isDark ? '#475569' : '#e2e8f0'}`, borderRadius: '12px' }} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </motion.div>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className={`rounded-2xl p-6 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}
+              >
+                <h3 className={`text-xl font-bold mb-4 ${isDark ? 'text-white' : 'text-slate-900'}`}>📊 Session Breakdown</h3>
+                <table className={`w-full text-sm ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                  <thead>
+                    <tr className={`border-b ${isDark ? 'border-slate-700' : 'border-slate-200'}`}>
+                      <th className={`text-left py-2 px-3 ${isDark ? 'text-white' : 'text-slate-900'}`}>Source</th>
+                      <th className={`text-right py-2 px-3 ${isDark ? 'text-white' : 'text-slate-900'}`}>Sessions</th>
+                      <th className={`text-right py-2 px-3 ${isDark ? 'text-white' : 'text-slate-900'}`}>%</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {trafficSources.map((src, i) => {
+                      const total = trafficSources.reduce((s, t) => s + t.value, 0);
+                      return (
+                        <tr key={src.name} className={`border-b ${isDark ? 'border-slate-700/50' : 'border-slate-100'}`}>
+                          <td className="py-2 px-3 flex items-center gap-2">
+                            <span className="w-3 h-3 rounded-full inline-block" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
+                            {src.name}
+                          </td>
+                          <td className="text-right py-2 px-3">{src.value.toLocaleString()}</td>
+                          <td className="text-right py-2 px-3">{total > 0 ? ((src.value / total) * 100).toFixed(1) : 0}%</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </motion.div>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* ═══════════════════ TOP PAGES & QUERIES ═══════════════════ */}
+      {(topPages.length > 0 || topQueries.length > 0) && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {topPages.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className={`rounded-2xl p-6 border overflow-x-auto ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}
+            >
+              <h3 className={`text-xl font-bold mb-4 ${isDark ? 'text-white' : 'text-slate-900'}`}>📄 Top Visited Pages</h3>
+              <table className={`w-full text-sm ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                <thead>
+                  <tr className={`border-b ${isDark ? 'border-slate-700' : 'border-slate-200'}`}>
+                    <th className={`text-left py-2 px-3 ${isDark ? 'text-white' : 'text-slate-900'}`}>Page</th>
+                    <th className={`text-right py-2 px-3 ${isDark ? 'text-white' : 'text-slate-900'}`}>Clicks</th>
+                    <th className={`text-right py-2 px-3 ${isDark ? 'text-white' : 'text-slate-900'}`}>Impressions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {topPages.map((p, i) => {
+                    let path = p.page;
+                    try { path = new URL(p.page).pathname; } catch {}
+                    return (
+                      <tr key={i} className={`border-b ${isDark ? 'border-slate-700/50 hover:bg-slate-700/30' : 'border-slate-100 hover:bg-slate-50'}`}>
+                        <td className="py-2 px-3 truncate max-w-[200px]" title={p.page}>{path}</td>
+                        <td className="text-right py-2 px-3 font-semibold text-emerald-400">{p.clicks.toLocaleString()}</td>
+                        <td className="text-right py-2 px-3">{p.impressions.toLocaleString()}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </motion.div>
+          )}
+          {topQueries.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className={`rounded-2xl p-6 border overflow-x-auto ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}
+            >
+              <h3 className={`text-xl font-bold mb-4 ${isDark ? 'text-white' : 'text-slate-900'}`}>🔎 Top Search Queries</h3>
+              <table className={`w-full text-sm ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                <thead>
+                  <tr className={`border-b ${isDark ? 'border-slate-700' : 'border-slate-200'}`}>
+                    <th className={`text-left py-2 px-3 ${isDark ? 'text-white' : 'text-slate-900'}`}>Query</th>
+                    <th className={`text-right py-2 px-3 ${isDark ? 'text-white' : 'text-slate-900'}`}>Clicks</th>
+                    <th className={`text-right py-2 px-3 ${isDark ? 'text-white' : 'text-slate-900'}`}>Position</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {topQueries.map((q, i) => (
+                    <tr key={i} className={`border-b ${isDark ? 'border-slate-700/50 hover:bg-slate-700/30' : 'border-slate-100 hover:bg-slate-50'}`}>
+                      <td className="py-2 px-3">{q.query}</td>
+                      <td className="text-right py-2 px-3 font-semibold text-blue-400">{q.clicks.toLocaleString()}</td>
+                      <td className="text-right py-2 px-3">{q.position.toFixed(1)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </motion.div>
+          )}
+        </div>
+      )}
 
       {/* Search Console Performance */}
       <SearchConsolePerformanceChart
