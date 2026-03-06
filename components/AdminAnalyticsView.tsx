@@ -6,7 +6,7 @@ import {
   LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, AreaChart, Area,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
-import { TrendingUp, FileText, Globe, Phone, DollarSign, Users, Loader2, Building2, ChevronDown, ArrowUpRight, Database } from 'lucide-react';
+import { TrendingUp, FileText, Globe, Phone, DollarSign, Users, Loader2, Building2, ChevronDown, ArrowUpRight, Database, MousePointerClick, Target } from 'lucide-react';
 import SearchConsolePerformanceChart from './SearchConsolePerformanceChart';
 
 interface WeeklyAnalytics {
@@ -90,6 +90,7 @@ export default function AdminAnalyticsView({ isDark, refreshTrigger }: AdminAnal
   const [loading, setLoading] = useState(true);
   const [showDropdown, setShowDropdown] = useState(false);
   const [filterPreset, setFilterPreset] = useState<FilterPreset>('last_week');
+  const [scSummary, setScSummary] = useState<{ clicks: number; impressions: number; avgPosition: number } | null>(null);
 
   useEffect(() => {
     fetchClinics();
@@ -193,8 +194,6 @@ export default function AdminAnalyticsView({ isDark, refreshTrigger }: AdminAnal
         year: week.year,
         month: week.month,
         weekNumber: week.weekNumber,
-        traffic: 0,
-        ranking: 0,
         blogs: 0,
         calls: 0,
         visits: 0,
@@ -210,8 +209,6 @@ export default function AdminAnalyticsView({ isDark, refreshTrigger }: AdminAnal
       };
     }
 
-    acc[key].traffic += week.totalTraffic;
-    acc[key].ranking += week.avgRanking;
     acc[key].blogs += week.blogsPublished;
     acc[key].calls += week.callsRequested;
     acc[key].visits += week.websiteVisits;
@@ -265,6 +262,33 @@ export default function AdminAnalyticsView({ isDark, refreshTrigger }: AdminAnal
       }
     }
   }, [filterPreset]);
+
+  // Fetch Search Console summary for the selected date range to populate summary cards
+  useEffect(() => {
+    const fetchScSummary = async () => {
+      try {
+        const params = new URLSearchParams({
+          startDate: scDateRange.startDate,
+          endDate: scDateRange.endDate,
+        });
+        if (selectedClinic && selectedClinic !== 'all') {
+          params.set('clinicId', selectedClinic);
+        }
+        const res = await fetch(`/api/admin/gmb/analytics-data?${params.toString()}`);
+        if (!res.ok) { setScSummary(null); return; }
+        const json = await res.json();
+        const scData: { clicks: number; impressions: number; avgPosition: number }[] = json.searchConsoleData || [];
+        if (scData.length === 0) { setScSummary(null); return; }
+        const totalClicks = scData.reduce((s, d) => s + d.clicks, 0);
+        const totalImpressions = scData.reduce((s, d) => s + d.impressions, 0);
+        const avgPos = scData.reduce((s, d) => s + d.avgPosition, 0) / scData.length;
+        setScSummary({ clicks: totalClicks, impressions: totalImpressions, avgPosition: Number(avgPos.toFixed(1)) });
+      } catch {
+        setScSummary(null);
+      }
+    };
+    fetchScSummary();
+  }, [scDateRange, selectedClinic]);
 
   // Conditional render states
   if (loading && clinics.length === 0) {
@@ -322,32 +346,23 @@ export default function AdminAnalyticsView({ isDark, refreshTrigger }: AdminAnal
   }
 
   const weeklyData = Object.values(weeklyAggregated)
-    .map((w: any) => ({
-      ...w,
-      ranking: w.count > 0 ? w.ranking / w.count : 0,
-    }))
+    .map((w: any) => ({ ...w }))
     .sort((a: any, b: any) => (a.year - b.year) || (a.month - b.month) || (a.weekNumber - b.weekNumber));
 
   // Calculate totals from filtered dataset
   const totals = filteredAnalytics.reduce((acc, week) => ({
-    traffic: acc.traffic + week.totalTraffic,
     blogs: acc.blogs + week.blogsPublished,
     calls: acc.calls + week.callsRequested,
     metaSpend: acc.metaSpend + week.metaAdSpend,
     googleSpend: acc.googleSpend + week.googleTotalCost,
   }), {
-    traffic: 0,
     blogs: 0,
     calls: 0,
     metaSpend: 0,
     googleSpend: 0,
   });
 
-  const trafficData = weeklyData.map((w) => ({
-    week: w.weekLabel,
-    traffic: w.traffic,
-    ranking: Number(w.ranking.toFixed(1)),
-  }));
+  const trafficData = undefined; // Removed — traffic & ranking now sourced from Search Console
 
   const gmbData = weeklyData.map((w) => ({
     week: w.weekLabel,
@@ -373,7 +388,6 @@ export default function AdminAnalyticsView({ isDark, refreshTrigger }: AdminAnal
 
   const trafficSourcesData = [
     { name: 'GMB Visits', value: weeklyData.reduce((sum, w) => sum + w.visits, 0) },
-    { name: 'Direct Traffic', value: weeklyData.reduce((sum, w) => sum + w.traffic, 0) },
     { name: 'Directions', value: weeklyData.reduce((sum, w) => sum + w.directions, 0) },
   ].filter((item) => item.value > 0);
 
@@ -506,7 +520,7 @@ export default function AdminAnalyticsView({ isDark, refreshTrigger }: AdminAnal
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -527,11 +541,31 @@ export default function AdminAnalyticsView({ isDark, refreshTrigger }: AdminAnal
           className={`rounded-2xl p-6 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}
         >
           <div className="flex items-center justify-between mb-3">
-            <Globe className="h-8 w-8 text-blue-500" />
-            <ArrowUpRight className="h-5 w-5 text-emerald-500" />
+            <MousePointerClick className="h-8 w-8 text-blue-500" />
+            <span className={`text-xs font-bold px-2 py-1 rounded-full ${isDark ? 'bg-blue-900/30 text-blue-400' : 'bg-blue-100 text-blue-600'}`}>
+              Search Console
+            </span>
           </div>
-          <h3 className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{totals.traffic.toLocaleString()}</h3>
-          <p className={`text-sm font-semibold ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>Total Traffic</p>
+          <h3 className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{scSummary ? scSummary.clicks.toLocaleString() : '—'}</h3>
+          <p className={`text-sm font-semibold ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>Organic Clicks</p>
+          <p className={`text-xs mt-1 ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>Auto-synced from Google Search Console</p>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+          className={`rounded-2xl p-6 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}
+        >
+          <div className="flex items-center justify-between mb-3">
+            <Target className="h-8 w-8 text-purple-500" />
+            <span className={`text-xs font-bold px-2 py-1 rounded-full ${isDark ? 'bg-purple-900/30 text-purple-400' : 'bg-purple-100 text-purple-600'}`}>
+              Search Console
+            </span>
+          </div>
+          <h3 className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{scSummary ? scSummary.avgPosition : '—'}</h3>
+          <p className={`text-sm font-semibold ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>Avg Position</p>
+          <p className={`text-xs mt-1 ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>Lower is better</p>
         </motion.div>
 
         <motion.div

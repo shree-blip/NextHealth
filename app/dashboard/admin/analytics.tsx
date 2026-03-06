@@ -27,8 +27,6 @@ const MONTH_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Se
 
 const METRIC_FIELDS = [
   'blogsPublished',
-  'avgRanking',
-  'totalTraffic',
   'callsRequested',
   'websiteVisits',
   'directionClicks',
@@ -59,7 +57,6 @@ type MetricField = typeof METRIC_FIELDS[number];
 type FormMetrics = Record<MetricField, string>;
 
 const FLOAT_FIELDS = new Set<MetricField>([
-  'avgRanking',
   'metaCTR',
   'metaAdSpend',
   'metaCPC',
@@ -321,9 +318,10 @@ function MetricsInputGrid({ metrics, onChange }: { metrics: FormMetrics; onChang
         <h4 className="font-bold text-blue-700 dark:text-blue-300 mb-4 text-xs uppercase tracking-widest flex items-center gap-2"><span>📊</span> Content & SEO</h4>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <SectionInput label="Blogs Published" name="blogsPublished" value={metrics.blogsPublished} onChange={onChange} />
-          <SectionInput label="Avg Ranking" name="avgRanking" value={metrics.avgRanking} onChange={onChange} helperText="Supports decimals (e.g., 4.5)" />
-          <SectionInput label="Total Traffic" name="totalTraffic" value={metrics.totalTraffic} onChange={onChange} />
         </div>
+        <p className="text-xs text-blue-600 dark:text-blue-400 mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800/50">
+          ℹ️ Avg Ranking & Total Traffic are now pulled automatically from Google Search Console and shown on the dashboard.
+        </p>
       </div>
 
       {/* SECTION 2: Google My Business (GMB) */}

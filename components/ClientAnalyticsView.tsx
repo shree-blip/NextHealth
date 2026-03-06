@@ -6,7 +6,7 @@ import {
   LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, AreaChart, Area,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
-import { TrendingUp, FileText, Globe, Phone, DollarSign, Users, Loader2, Building2, ChevronDown, ArrowUpRight, RefreshCw, Filter, RotateCcw, Clock, ChevronUp } from 'lucide-react';
+import { TrendingUp, FileText, Globe, Phone, DollarSign, Users, Loader2, Building2, ChevronDown, ArrowUpRight, RefreshCw, Filter, RotateCcw, Clock, ChevronUp, MousePointerClick, Target } from 'lucide-react';
 import SearchConsolePerformanceChart from './SearchConsolePerformanceChart';
 import { useSitePreferences } from '@/components/SitePreferencesProvider';
 import io, { Socket } from 'socket.io-client';
@@ -114,6 +114,7 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false, o
   const [endDate, setEndDate] = useState<string>('');
   const [isSearchingDateRange, setIsSearchingDateRange] = useState(false);
   const [hasDateRangeFilter, setHasDateRangeFilter] = useState(false);
+  const [scSummary, setScSummary] = useState<{ clicks: number; impressions: number; avgPosition: number } | null>(null);
   const locale = language === 'es' ? 'es-US' : 'en-US';
   const socketRef = useRef<Socket | null>(null);
   const clinicIdRef = useRef<string>('');
@@ -427,6 +428,32 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false, o
     return { startDate: `${yr}-01-01`, endDate: `${yr}-12-31` };
   }, [selectedYear, selectedMonth, selectedWeek, hasDateRangeFilter, startDate, endDate]);
 
+  // Fetch Search Console summary for the selected date range (auto-synced data)
+  useEffect(() => {
+    const fetchScSummary = async () => {
+      if (!selectedClinic) { setScSummary(null); return; }
+      try {
+        const params = new URLSearchParams({
+          clinicId: selectedClinic,
+          startDate: scClientDateRange.startDate,
+          endDate: scClientDateRange.endDate,
+        });
+        const res = await fetch(`/api/client/analytics-data?${params.toString()}`);
+        if (!res.ok) { setScSummary(null); return; }
+        const json = await res.json();
+        const scData: { clicks: number; impressions: number; avgPosition: number }[] = json.searchConsoleData || [];
+        if (scData.length === 0) { setScSummary(null); return; }
+        const totalClicks = scData.reduce((s, d) => s + d.clicks, 0);
+        const totalImpressions = scData.reduce((s, d) => s + d.impressions, 0);
+        const avgPos = scData.reduce((s, d) => s + d.avgPosition, 0) / scData.length;
+        setScSummary({ clicks: totalClicks, impressions: totalImpressions, avgPosition: Number(avgPos.toFixed(1)) });
+      } catch {
+        setScSummary(null);
+      }
+    };
+    fetchScSummary();
+  }, [scClientDateRange, selectedClinic]);
+
   const filteredAnalytics = analytics.filter((entry) => {
     // Date range filter takes precedence
     if (hasDateRangeFilter && startDate && endDate) {
@@ -612,13 +639,12 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false, o
 
   // Calculate totals with safeguards for null/undefined values
   const totals = filteredAnalytics.reduce((acc, week) => ({
-    traffic: acc.traffic + (week.totalTraffic || 0),
     blogs: acc.blogs + (week.blogsPublished || 0),
     calls: acc.calls + (week.callsRequested || 0),
     metaSpend: acc.metaSpend + (Number(week.metaAdSpend) || 0),
     googleSpend: acc.googleSpend + (Number(week.googleTotalCost) || 0),
     socialViews: acc.socialViews + (week.socialViews || 0),
-  }), { traffic: 0, blogs: 0, calls: 0, metaSpend: 0, googleSpend: 0, socialViews: 0 });
+  }), { blogs: 0, calls: 0, metaSpend: 0, googleSpend: 0, socialViews: 0 });
 
   console.log('[Client Analytics] Filtered', filteredAnalytics.length, 'weeks, Totals:', totals);
 
@@ -634,11 +660,7 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false, o
   const totalAdSpend = totals.metaSpend + totals.googleSpend;
 
   // Prepare chart data
-  const trafficData = filteredAnalytics.map(w => ({
-    week: formatStandardWeekLabel(w.year, w.weekNumber),
-    traffic: w.totalTraffic,
-    ranking: w.avgRanking,
-  }));
+  const trafficData = undefined; // Removed — traffic & ranking now sourced from Search Console
 
   const gmbData = filteredAnalytics.map(w => ({
     week: formatStandardWeekLabel(w.year, w.weekNumber),
@@ -663,14 +685,8 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false, o
   }));
 
   // Pie chart data - Traffic Sources
-  const directTrafficValue = filteredAnalytics.reduce((sum, w) => {
-    const directTraffic = w.totalTraffic - w.websiteVisits;
-    return sum + (directTraffic > 0 ? directTraffic : 0);
-  }, 0);
-
   const trafficSourcesData = [
     { name: t('GMB Visits'), value: filteredAnalytics.reduce((sum, w) => sum + w.websiteVisits, 0) },
-    { name: t('Direct Traffic'), value: directTrafficValue },
     { name: t('Directions'), value: filteredAnalytics.reduce((sum, w) => sum + w.directionClicks, 0) },
   ].filter(item => item.value > 0);
 
@@ -900,19 +916,38 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false, o
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className={`rounded-2xl p-6 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}
         >
           <div className="flex items-center justify-between mb-3">
-            <Globe className="h-8 w-8 text-blue-500" />
-            <ArrowUpRight className="h-5 w-5 text-emerald-500" />
+            <MousePointerClick className="h-8 w-8 text-blue-500" />
+            <span className={`text-xs font-bold px-2 py-1 rounded-full ${isDark ? 'bg-blue-900/30 text-blue-400' : 'bg-blue-100 text-blue-600'}`}>
+              {t('Search Console')}
+            </span>
           </div>
-          <h3 className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{totals.traffic.toLocaleString()}</h3>
-          <p className={`text-sm font-semibold ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{t(periodPrefix)} {t('Traffic')}</p>
-          <p className={`text-xs mt-1 ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>{t('Includes website visits and direct traffic for selected filters.')}</p>
+          <h3 className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{scSummary ? scSummary.clicks.toLocaleString() : '—'}</h3>
+          <p className={`text-sm font-semibold ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{t('Organic Clicks')}</p>
+          <p className={`text-xs mt-1 ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>{t('Auto-synced from Google Search Console')}</p>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.05 }}
+          className={`rounded-2xl p-6 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}
+        >
+          <div className="flex items-center justify-between mb-3">
+            <Target className="h-8 w-8 text-purple-500" />
+            <span className={`text-xs font-bold px-2 py-1 rounded-full ${isDark ? 'bg-purple-900/30 text-purple-400' : 'bg-purple-100 text-purple-600'}`}>
+              {t('Search Console')}
+            </span>
+          </div>
+          <h3 className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{scSummary ? scSummary.avgPosition : '—'}</h3>
+          <p className={`text-sm font-semibold ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{t('Avg Position')}</p>
+          <p className={`text-xs mt-1 ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>{t('Lower is better')}</p>
         </motion.div>
 
         <motion.div
