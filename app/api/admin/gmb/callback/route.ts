@@ -26,11 +26,22 @@ function popupHtml(success: boolean, message: string, clinicId?: string) {
       <p style="font-size: 14px; color: #666; margin: 0;">${message}</p>
     </div>
     <script>
+      // Try postMessage first (works when window.opener is available)
       if (window.opener) {
-        window.opener.postMessage(${payload}, window.location.origin);
+        try {
+          window.opener.postMessage(${payload}, window.location.origin);
+        } catch (e) {
+          console.warn('postMessage to opener failed:', e);
+        }
       }
-      // Close popup after 2 seconds
-      setTimeout(() => window.close(), 2000);
+      // Always write to localStorage as fallback (works cross-origin navigation)
+      try {
+        localStorage.setItem('gmb_oauth_result', JSON.stringify(${payload}));
+      } catch (e) {
+        console.warn('localStorage fallback failed:', e);
+      }
+      // Close popup after 1.5 seconds
+      setTimeout(() => window.close(), 1500);
     </script>
   </body>
 </html>

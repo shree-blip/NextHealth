@@ -1311,6 +1311,7 @@ function AdminDashboardContent() {
       let locations: any[] = [];
       let ga4Properties: any[] = [];
       let scSites: any[] = [];
+      const apiWarnings: string[] = [];
 
       const selectedAccountId = connection.businessAccountId || '';
 
@@ -1320,31 +1321,43 @@ function AdminDashboardContent() {
       fetches.push(
         fetch(`/api/admin/gmb/accounts?clinicId=${encodeURIComponent(clinicId)}`)
           .then(r => r.json())
-          .then(d => { if (d.accounts) accounts = d.accounts; })
-          .catch(() => { /* quota or network error — skip */ })
+          .then(d => {
+            if (d.accounts) accounts = d.accounts;
+            else if (d.error) { console.warn('[GMB] accounts error:', d.error); apiWarnings.push(`Accounts: ${d.error}`); }
+          })
+          .catch(e => { console.warn('[GMB] accounts fetch failed:', e); apiWarnings.push('Failed to load business accounts'); })
       );
 
       if (selectedAccountId) {
         fetches.push(
           fetch(`/api/admin/gmb/locations?clinicId=${encodeURIComponent(clinicId)}&accountName=${encodeURIComponent(selectedAccountId)}`)
             .then(r => r.json())
-            .then(d => { if (d.locations) locations = d.locations; })
-            .catch(() => { /* skip */ })
+            .then(d => {
+              if (d.locations) locations = d.locations;
+              else if (d.error) { console.warn('[GMB] locations error:', d.error); apiWarnings.push(`Locations: ${d.error}`); }
+            })
+            .catch(e => { console.warn('[GMB] locations fetch failed:', e); })
         );
       }
 
       fetches.push(
         fetch(`/api/admin/gmb/ga4-properties?clinicId=${encodeURIComponent(clinicId)}`)
           .then(r => r.json())
-          .then(d => { if (d.properties) ga4Properties = d.properties; })
-          .catch(() => { /* skip */ })
+          .then(d => {
+            if (d.properties) ga4Properties = d.properties;
+            else if (d.error) { console.warn('[GA4] properties error:', d.error); apiWarnings.push(`GA4: ${d.error}`); }
+          })
+          .catch(e => { console.warn('[GA4] properties fetch failed:', e); apiWarnings.push('Failed to load GA4 properties'); })
       );
 
       fetches.push(
         fetch(`/api/admin/gmb/sc-sites?clinicId=${encodeURIComponent(clinicId)}`)
           .then(r => r.json())
-          .then(d => { if (d.sites) scSites = d.sites; })
-          .catch(() => { /* skip */ })
+          .then(d => {
+            if (d.sites) scSites = d.sites;
+            else if (d.error) { console.warn('[SC] sites error:', d.error); apiWarnings.push(`Search Console: ${d.error}`); }
+          })
+          .catch(e => { console.warn('[SC] sites fetch failed:', e); apiWarnings.push('Failed to load Search Console sites'); })
       );
 
       await Promise.allSettled(fetches);
@@ -1360,6 +1373,11 @@ function AdminDashboardContent() {
         } catch { /* skip */ }
       }
 
+      // Log API warnings for debugging
+      if (apiWarnings.length > 0) {
+        console.warn('[Google Integrations] API warnings:', apiWarnings);
+      }
+
       lastLoadedClinicRef.current = clinicId;
       setGmbState(prev => ({
         ...prev,
@@ -1373,9 +1391,12 @@ function AdminDashboardContent() {
         scSites,
         selectedGA4Property: connection.ga4PropertyId || '',
         selectedSCSite: connection.searchConsoleSite || '',
-        message: connection.businessLocationId
-          ? 'Google Business Profile connected. Daily sync is active.'
-          : 'Google connected. Select account and location to complete setup.',
+        message: apiWarnings.length > 0
+          ? `Connected but some APIs returned errors: ${apiWarnings.join('; ')}`
+          : connection.businessLocationId
+            ? 'Google Business Profile connected. Daily sync is active.'
+            : 'Google connected. Select account and location to complete setup.',
+        error: '',
       }));
     } catch (error: any) {
       const msg = error?.message || 'Failed to load GMB status';
@@ -1392,41 +1413,44 @@ function AdminDashboardContent() {
 
   const handleGmbConnect = async () => {
     if (!editingClinic?.id) return;
+    const clinicIdForOAuth = editingClinic.id;
 
     setGmbState(prev => ({ ...prev, connecting: true, error: '', message: '' }));
 
+    // Helper: called when OAuth completes (via postMessage, localStorage, or popup close)
+    const onOAuthComplete = (success: boolean, message?: string) => {
+      lastLoadedClinicRef.current = null; // force refresh on next fetch
+      setGmbState(prev => ({
+        ...prev,
+        connecting: false,
+        message: success ? (message || 'Google Business Profile connected successfully!') : '',
+        error: success ? '' : (message || 'Failed to connect Google account'),
+      }));
+      // Always re-fetch with forceRefresh after OAuth
+      fetchGmbConnection(clinicIdForOAuth, true);
+    };
+
     try {
       // Get the OAuth URL from our endpoint
-      const urlRes = await fetch(`/api/admin/gmb/auth-url?clinicId=${encodeURIComponent(editingClinic.id)}`);
+      const urlRes = await fetch(`/api/admin/gmb/auth-url?clinicId=${encodeURIComponent(clinicIdForOAuth)}`);
       const urlData = await urlRes.json();
 
       if (!urlRes.ok) {
         throw new Error(urlData.error || 'Failed to generate auth URL');
       }
 
-      // Set up message listener before opening popup
+      // Clear any stale localStorage result before opening popup
+      try { localStorage.removeItem('gmb_oauth_result'); } catch { /* ignore */ }
+
+      let oauthHandled = false;
+
+      // Handler for postMessage (primary channel)
       const handlePopupMessage = (event: MessageEvent) => {
         if (event.origin !== window.location.origin) return;
-        if (event.data?.type === 'gmb_auth_complete') {
+        if (event.data?.type === 'gmb_auth_complete' && !oauthHandled) {
+          oauthHandled = true;
           window.removeEventListener('message', handlePopupMessage);
-          if (event.data.success) {
-            setGmbState(prev => ({
-              ...prev,
-              connecting: false,
-              message: 'Google Business Profile connected successfully!',
-              error: '',
-            }));
-            // Refresh GMB data
-            if (editingClinic?.id) {
-              fetchGmbConnection(editingClinic.id);
-            }
-          } else {
-            setGmbState(prev => ({
-              ...prev,
-              connecting: false,
-              error: event.data.error || 'Failed to connect GMB',
-            }));
-          }
+          onOAuthComplete(event.data.success, event.data.message);
         }
       };
 
@@ -1446,7 +1470,49 @@ function AdminDashboardContent() {
           connecting: false,
           error: 'Popup blocked. Please allow popups and try again.',
         }));
+        return;
       }
+
+      // Poll for popup close + check localStorage fallback
+      // This handles the case where window.opener is null (cross-origin navigation)
+      const pollInterval = setInterval(() => {
+        // Check localStorage fallback first
+        try {
+          const stored = localStorage.getItem('gmb_oauth_result');
+          if (stored && !oauthHandled) {
+            oauthHandled = true;
+            localStorage.removeItem('gmb_oauth_result');
+            clearInterval(pollInterval);
+            window.removeEventListener('message', handlePopupMessage);
+            const result = JSON.parse(stored);
+            onOAuthComplete(result.success, result.message);
+            return;
+          }
+        } catch { /* ignore localStorage errors */ }
+
+        // Check if popup was closed without sending a message
+        if (popup.closed && !oauthHandled) {
+          oauthHandled = true;
+          clearInterval(pollInterval);
+          window.removeEventListener('message', handlePopupMessage);
+          // Popup closed — check if OAuth actually succeeded by re-fetching connection
+          onOAuthComplete(true, 'Checking connection status...');
+        }
+      }, 500);
+
+      // Safety timeout: clear polling after 5 minutes
+      setTimeout(() => {
+        if (!oauthHandled) {
+          oauthHandled = true;
+          clearInterval(pollInterval);
+          window.removeEventListener('message', handlePopupMessage);
+          setGmbState(prev => ({
+            ...prev,
+            connecting: false,
+            error: 'OAuth timed out. Please try again.',
+          }));
+        }
+      }, 5 * 60 * 1000);
     } catch (error: any) {
       console.error('Error starting GMB connection:', error);
       setGmbState(prev => ({
@@ -1555,32 +1621,29 @@ function AdminDashboardContent() {
     fetchGmbConnection(editingClinic.id);
   }, [showEditClinicModal, editingClinic?.id]);
 
+  // Listen for localStorage-based OAuth results (backup for tab/window focus events)
   useEffect(() => {
-    const onMessage = async (event: MessageEvent) => {
-      if (event.origin !== window.location.origin) return;
+    if (!editingClinic?.id) return;
+    const clinicId = editingClinic.id;
 
-      const data = event.data;
-      if (data?.type === 'GMB_OAUTH_SUCCESS' && editingClinic?.id && data.clinicId === editingClinic.id) {
-        lastLoadedClinicRef.current = null; // force refresh after new OAuth
-        await fetchGmbConnection(editingClinic.id, true);
+    const handleStorageChange = (event: StorageEvent) => {
+      if (event.key !== 'gmb_oauth_result' || !event.newValue) return;
+      try {
+        const result = JSON.parse(event.newValue);
+        localStorage.removeItem('gmb_oauth_result');
+        lastLoadedClinicRef.current = null;
         setGmbState(prev => ({
           ...prev,
           connecting: false,
-          message: data.message || 'Google connected. Select account and location to finish setup.',
+          message: result.success ? (result.message || 'Google connected!') : '',
+          error: result.success ? '' : (result.message || 'Connection failed'),
         }));
-      }
-
-      if (data?.type === 'GMB_OAUTH_ERROR') {
-        setGmbState(prev => ({
-          ...prev,
-          connecting: false,
-          error: data.message || 'Google connection failed',
-        }));
-      }
+        fetchGmbConnection(clinicId, true);
+      } catch { /* ignore parse errors */ }
     };
 
-    window.addEventListener('message', onMessage);
-    return () => window.removeEventListener('message', onMessage);
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
   }, [editingClinic?.id]);
 
   if (!user) return <div className={`min-h-screen flex items-center justify-center ${dark ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-900'}`}>Loading...</div>;
