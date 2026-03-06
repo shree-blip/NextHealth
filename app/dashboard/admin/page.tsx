@@ -749,6 +749,9 @@ function AdminDashboardContent() {
     scSites: [] as { siteUrl: string; permissionLevel: string }[],
     selectedGA4Property: '',
     selectedSCSite: '',
+    accountsError: '',
+    ga4Error: '',
+    scError: '',
     analyticsLoading: false,
     analyticsSaving: false,
     confirmSyncing: false,
@@ -1301,6 +1304,9 @@ function AdminDashboardContent() {
           selectedLocation: '',
           selectedGA4Property: '',
           selectedSCSite: '',
+          accountsError: '',
+          ga4Error: '',
+          scError: '',
           message: 'Connect Google to choose the correct business account and location.',
         }));
         return;
@@ -1312,6 +1318,9 @@ function AdminDashboardContent() {
       let ga4Properties: any[] = [];
       let scSites: any[] = [];
       const apiWarnings: string[] = [];
+      let accountsError = '';
+      let ga4Error = '';
+      let scError = '';
 
       const selectedAccountId = connection.businessAccountId || '';
 
@@ -1323,9 +1332,17 @@ function AdminDashboardContent() {
           .then(r => r.json())
           .then(d => {
             if (d.accounts) accounts = d.accounts;
-            else if (d.error) { console.warn('[GMB] accounts error:', d.error); apiWarnings.push(`Accounts: ${d.error}`); }
+            else if (d.error) {
+              console.warn('[GMB] accounts error:', d.error);
+              accountsError = d.error;
+              apiWarnings.push(`Accounts: ${d.error}`);
+            }
           })
-          .catch(e => { console.warn('[GMB] accounts fetch failed:', e); apiWarnings.push('Failed to load business accounts'); })
+          .catch(e => {
+            console.warn('[GMB] accounts fetch failed:', e);
+            accountsError = 'Failed to load business accounts';
+            apiWarnings.push('Accounts: Failed to load business accounts');
+          })
       );
 
       if (selectedAccountId) {
@@ -1345,9 +1362,17 @@ function AdminDashboardContent() {
           .then(r => r.json())
           .then(d => {
             if (d.properties) ga4Properties = d.properties;
-            else if (d.error) { console.warn('[GA4] properties error:', d.error); apiWarnings.push(`GA4: ${d.error}`); }
+            else if (d.error) {
+              console.warn('[GA4] properties error:', d.error);
+              ga4Error = d.error;
+              apiWarnings.push(`GA4: ${d.error}`);
+            }
           })
-          .catch(e => { console.warn('[GA4] properties fetch failed:', e); apiWarnings.push('Failed to load GA4 properties'); })
+          .catch(e => {
+            console.warn('[GA4] properties fetch failed:', e);
+            ga4Error = 'Failed to load GA4 properties';
+            apiWarnings.push('GA4: Failed to load GA4 properties');
+          })
       );
 
       fetches.push(
@@ -1355,9 +1380,17 @@ function AdminDashboardContent() {
           .then(r => r.json())
           .then(d => {
             if (d.sites) scSites = d.sites;
-            else if (d.error) { console.warn('[SC] sites error:', d.error); apiWarnings.push(`Search Console: ${d.error}`); }
+            else if (d.error) {
+              console.warn('[SC] sites error:', d.error);
+              scError = d.error;
+              apiWarnings.push(`Search Console: ${d.error}`);
+            }
           })
-          .catch(e => { console.warn('[SC] sites fetch failed:', e); apiWarnings.push('Failed to load Search Console sites'); })
+          .catch(e => {
+            console.warn('[SC] sites fetch failed:', e);
+            scError = 'Failed to load Search Console sites';
+            apiWarnings.push('Search Console: Failed to load Search Console sites');
+          })
       );
 
       await Promise.allSettled(fetches);
@@ -1391,6 +1424,9 @@ function AdminDashboardContent() {
         scSites,
         selectedGA4Property: connection.ga4PropertyId || '',
         selectedSCSite: connection.searchConsoleSite || '',
+        accountsError,
+        ga4Error,
+        scError,
         message: apiWarnings.length > 0
           ? `Connected but some APIs returned errors: ${apiWarnings.join('; ')}`
           : connection.businessLocationId
@@ -2095,6 +2131,11 @@ function AdminDashboardContent() {
                             <RefreshCw className="h-4 w-4 animate-spin text-slate-400" />
                             <span className="text-xs text-slate-400">Loading business accounts...</span>
                           </div>
+                        ) : gmbState.accountsError ? (
+                          <div className="flex items-center gap-2.5 p-3 rounded-lg bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800/40">
+                            <Search className="h-4 w-4 text-rose-500 shrink-0" />
+                            <p className="text-xs text-rose-700 dark:text-rose-400">{gmbState.accountsError}</p>
+                          </div>
                         ) : gmbState.accounts.length > 0 ? (
                           <>
                             <AdminSelect
@@ -2161,6 +2202,11 @@ function AdminDashboardContent() {
                             <RefreshCw className="h-4 w-4 animate-spin text-slate-400" />
                             <span className="text-xs text-slate-400">Loading GA4 properties...</span>
                           </div>
+                        ) : gmbState.ga4Error ? (
+                          <div className="flex items-center gap-2.5 p-3 rounded-lg bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800/40">
+                            <Search className="h-4 w-4 text-rose-500 shrink-0" />
+                            <p className="text-xs text-rose-700 dark:text-rose-400">{gmbState.ga4Error}</p>
+                          </div>
                         ) : gmbState.ga4Properties.length > 0 ? (
                           <AdminSelect
                             label="GA4 Property"
@@ -2204,6 +2250,11 @@ function AdminDashboardContent() {
                           <div className="flex items-center gap-2 py-3 justify-center">
                             <RefreshCw className="h-4 w-4 animate-spin text-slate-400" />
                             <span className="text-xs text-slate-400">Loading Search Console sites...</span>
+                          </div>
+                        ) : gmbState.scError ? (
+                          <div className="flex items-center gap-2.5 p-3 rounded-lg bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800/40">
+                            <Globe className="h-4 w-4 text-rose-500 shrink-0" />
+                            <p className="text-xs text-rose-700 dark:text-rose-400">{gmbState.scError}</p>
                           </div>
                         ) : gmbState.scSites.length > 0 ? (
                           <AdminSelect

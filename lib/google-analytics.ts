@@ -14,7 +14,7 @@ import prisma from '@/lib/prisma';
 // ─── Constants ────────────────────────────────────────────────
 const GA4_DATA_API = 'https://analyticsdata.googleapis.com/v1beta';
 const GA4_ADMIN_API = 'https://analyticsadmin.googleapis.com/v1beta';
-const SEARCH_CONSOLE_API = 'https://searchconsole.googleapis.com/v1';
+const SEARCH_CONSOLE_API = 'https://www.googleapis.com/webmasters/v3';
 const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token';
 
 // ─── Token helpers ────────────────────────────────────────────
@@ -70,11 +70,44 @@ async function googleApiRequest(connectionId: string, url: string, init: Request
     },
   });
 
-  const data = await res.json();
-  if (!res.ok) {
-    throw new Error(data?.error?.message || data?.error || `Google API error (${res.status})`);
+  const contentType = res.headers.get('content-type') || '';
+  let data: any = null;
+  let rawBody = '';
+
+  if (contentType.includes('application/json')) {
+    try {
+      data = await res.json();
+    } catch {
+      data = null;
+    }
+  } else {
+    try {
+      rawBody = await res.text();
+    } catch {
+      rawBody = '';
+    }
   }
-  return data;
+
+  if (!res.ok) {
+    const apiMessage = data?.error?.message || data?.error;
+    if (apiMessage) {
+      throw new Error(apiMessage);
+    }
+
+    if (rawBody) {
+      if (rawBody.includes('<!DOCTYPE') || rawBody.includes('<html')) {
+        throw new Error(
+          `Google API returned HTML instead of JSON (${res.status}). Verify required Google APIs are enabled and OAuth scopes are granted.`
+        );
+      }
+
+      throw new Error(`Google API error (${res.status}): ${rawBody.slice(0, 200)}`);
+    }
+
+    throw new Error(`Google API error (${res.status})`);
+  }
+
+  return data ?? {};
 }
 
 // ══════════════════════════════════════════════════════════════
