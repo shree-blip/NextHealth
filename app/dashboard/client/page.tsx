@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   BarChart3, 
+  BarChart2,
   Users, 
   TrendingUp, 
   Calendar, 
@@ -1186,28 +1187,50 @@ function ClientGoogleSection({ clinics }: { clinics: any[] }) {
 
   return (
     <div className="mt-10 space-y-4">
-      <div className={`pt-6 border-t ${isDark ? 'border-slate-700' : 'border-slate-200'}`}>
-        <h2 className={`text-2xl font-black mb-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
-          📊 Google Analytics & Search Console
-        </h2>
-        <p className={`text-sm mb-4 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+      <div className={`pt-8 border-t ${isDark ? 'border-slate-700' : 'border-slate-200'}`}>
+        <div className="flex items-center justify-between mb-2">
+          <h2 className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>
+            📊 Google Analytics & Search Console
+          </h2>
+          {clinics.length > 1 && selectedClinicId && (
+            <span className={`text-xs font-medium px-3 py-1 rounded-full ${isDark ? 'bg-slate-700 text-slate-300' : 'bg-slate-100 text-slate-600'}`}>
+              {clinics.find((c: any) => c.id === selectedClinicId)?.name || 'Selected'}
+            </span>
+          )}
+        </div>
+        <p className={`text-sm mb-5 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
           Live data from your connected Google Analytics and Search Console properties.
         </p>
         {clinics.length > 1 && (
-          <select
-            value={selectedClinicId}
-            onChange={(e) => setSelectedClinicId(e.target.value)}
-            className={`w-64 rounded-xl border p-2.5 text-sm font-medium ${isDark ? 'border-slate-700 bg-slate-800 text-slate-200' : 'border-slate-200 bg-white text-slate-900'}`}
-          >
-            <option value="">Select a clinic...</option>
-            {clinics.map((c: any) => (
-              <option key={c.id} value={c.id}>{c.name}</option>
-            ))}
-          </select>
+          <div className="mb-6">
+            <label className={`block text-xs font-semibold uppercase tracking-wider mb-2 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+              Select Clinic
+            </label>
+            <select
+              value={selectedClinicId}
+              onChange={(e) => setSelectedClinicId(e.target.value)}
+              className={`w-full max-w-sm rounded-xl border p-2.5 text-sm font-medium transition-colors ${isDark ? 'border-slate-700 bg-slate-800 text-slate-200 focus:border-emerald-500' : 'border-slate-200 bg-white text-slate-900 focus:border-emerald-500'} focus:outline-none focus:ring-2 focus:ring-emerald-500/20`}
+            >
+              <option value="">Select a clinic...</option>
+              {clinics.map((c: any) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+          </div>
         )}
       </div>
-      {selectedClinicId && (
+      {selectedClinicId ? (
         <GoogleAnalyticsView clinicId={selectedClinicId} isDark={isDark} isClient />
+      ) : (
+        <div className={`rounded-2xl p-10 border text-center ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
+          <div className="h-14 w-14 rounded-2xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center mx-auto mb-4">
+            <BarChart2 className="h-7 w-7 text-blue-400" />
+          </div>
+          <p className={`text-lg font-bold mb-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>Select a Clinic</p>
+          <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+            Choose a clinic above to view its Google Analytics and Search Console data.
+          </p>
+        </div>
       )}
     </div>
   );

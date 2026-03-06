@@ -42,6 +42,7 @@ import {
   RefreshCw,
   Sparkles,
   Check,
+  Search,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -1885,16 +1886,14 @@ function AdminDashboardContent() {
             />
           </div>
 
-          {/* ═══ Google Integrations ═══ */}
+          {/* ═══ Google Integrations — Redesigned ═══ */}
           <div className="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden">
-            {/* Header with connection status badge */}
-            <div className="flex items-center justify-between px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700">
-              <div className="flex items-center gap-2">
+            {/* ── Header ── */}
+            <div className="flex items-center justify-between px-5 py-3.5 bg-gradient-to-r from-slate-50 to-blue-50/50 dark:from-slate-800/80 dark:to-blue-950/30 border-b border-slate-200 dark:border-slate-700">
+              <div className="flex items-center gap-2.5">
                 <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.27-4.74 3.27-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
-                <span className="text-sm font-bold">Google Integrations</span>
+                <span className="text-sm font-bold text-slate-900 dark:text-white">Google Integrations</span>
               </div>
-
-              {/* Connection status badge */}
               {gmbState.connection ? (
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400">
                   <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
@@ -1908,329 +1907,315 @@ function AdminDashboardContent() {
               )}
             </div>
 
-            <div className="p-4 space-y-4">
-              {/* Connected account info */}
-              {gmbState.connection && (
-                <div className="flex items-start justify-between">
-                  <div className="text-xs space-y-0.5">
-                    <p className="font-semibold text-slate-900 dark:text-white">{gmbState.connection.googleEmail}</p>
-                    {gmbState.connection.locationName && (
-                      <p className="text-slate-500 dark:text-slate-400">📍 {gmbState.connection.locationName}</p>
-                    )}
-                    <p className="text-slate-400 dark:text-slate-500">
-                      Last sync: {gmbState.connection.lastSyncedAt ? new Date(gmbState.connection.lastSyncedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : 'Never'}
-                    </p>
-                  </div>
-                  <button
-                    onClick={handleGmbConnect}
-                    disabled={gmbState.connecting || gmbState.loading}
-                    className="text-xs text-blue-500 hover:text-blue-600 font-semibold disabled:opacity-50"
-                  >
-                    Reconnect
-                  </button>
+            <div className="p-5 space-y-5">
+              {/* ── Loading state while fetching connection ── */}
+              {gmbState.loading && !gmbState.connection && (
+                <div className="flex flex-col items-center justify-center py-8 gap-3">
+                  <RefreshCw className="h-6 w-6 animate-spin text-blue-500" />
+                  <p className="text-sm text-slate-500 dark:text-slate-400">Loading Google integrations...</p>
                 </div>
               )}
 
-              {!gmbState.connection && (
-                <div className="text-center py-3">
-                  <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">
-                    Connect your Google account to enable Business Profile, Analytics, and Search Console.
+              {/* ── Not connected state ── */}
+              {!gmbState.loading && !gmbState.connection && (
+                <div className="text-center py-6">
+                  <div className="h-14 w-14 rounded-2xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center mx-auto mb-4">
+                    <Link2 className="h-7 w-7 text-blue-500" />
+                  </div>
+                  <h4 className="font-bold text-slate-900 dark:text-white mb-1">Connect Google Account</h4>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 mb-5 max-w-xs mx-auto">
+                    Link a Google account to enable Business Profile, Analytics, and Search Console for this clinic.
                   </p>
                   <button
                     onClick={handleGmbConnect}
-                    disabled={gmbState.connecting || gmbState.loading}
-                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-500 hover:bg-blue-600 text-white text-sm font-bold disabled:opacity-50 transition-colors"
+                    disabled={gmbState.connecting}
+                    className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-blue-500 hover:bg-blue-600 text-white text-sm font-bold disabled:opacity-50 transition-colors"
                   >
                     {gmbState.connecting ? (
-                      <RefreshCw className="h-4 w-4 animate-spin" />
+                      <><RefreshCw className="h-4 w-4 animate-spin" /> Connecting...</>
                     ) : (
-                      <Link2 className="h-4 w-4" />
+                      <><Link2 className="h-4 w-4" /> Connect Google Account</>
                     )}
-                    {gmbState.connecting ? 'Connecting...' : 'Connect Google Account'}
                   </button>
                 </div>
               )}
 
-              {/* ── Section 1: Business Profile ── */}
+              {/* ── Connected state ── */}
               {gmbState.connection && (
-                <div className="space-y-3 pt-3 border-t border-slate-100 dark:border-slate-700/50">
-                  <p className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Business Profile</p>
-
-                  {gmbState.accounts.length > 0 && (
-                    <AdminSelect
-                      label="Business Account"
-                      value={gmbState.selectedAccount}
-                      onChange={(value) => handleAccountChange(value)}
-                      options={[
-                        { value: '', label: 'Select account...' },
-                        ...gmbState.accounts.map((account) => ({
-                          value: account.name,
-                          label: account.accountName || account.name
-                        }))
-                      ]}
-                    />
-                  )}
-
-                  {gmbState.selectedAccount && (
-                    <AdminSelect
-                      label="Location"
-                      value={gmbState.selectedLocation}
-                      onChange={(value) => setGmbState(prev => ({ ...prev, selectedLocation: value }))}
-                      options={[
-                        { value: '', label: 'Select location...' },
-                        ...gmbState.locations.map((location) => ({
-                          value: location.name,
-                          label: `${location.title || location.name}${location.address ? ` — ${location.address}` : ''}`
-                        }))
-                      ]}
-                    />
-                  )}
-
-                  <div className="flex gap-2">
+                <>
+                  {/* Account info bar */}
+                  <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-100 dark:border-slate-700/50">
+                    <div className="flex items-center gap-3">
+                      <div className="h-9 w-9 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center">
+                        <Mail className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-slate-900 dark:text-white">{gmbState.connection.googleEmail}</p>
+                        <p className="text-xs text-slate-400 dark:text-slate-500">
+                          Last sync: {gmbState.connection.lastSyncedAt ? new Date(gmbState.connection.lastSyncedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : 'Never'}
+                        </p>
+                      </div>
+                    </div>
                     <button
-                      onClick={handleSaveGmbSelection}
-                      disabled={!gmbState.selectedAccount || !gmbState.selectedLocation || gmbState.loading}
-                      className="flex-1 px-3 py-2 rounded-lg bg-emerald-500 text-black text-xs font-bold hover:bg-emerald-400 disabled:opacity-50 transition-colors"
+                      onClick={handleGmbConnect}
+                      disabled={gmbState.connecting}
+                      className="text-xs text-blue-500 hover:text-blue-600 font-semibold px-3 py-1.5 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors disabled:opacity-50"
                     >
-                      {gmbState.loading ? 'Saving...' : 'Save Business Profile'}
-                    </button>
-                    <button
-                      onClick={handleManualGmbSync}
-                      disabled={!gmbState.connection?.businessLocationId || gmbState.syncing}
-                      className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-200 dark:bg-slate-700 text-xs font-bold hover:bg-slate-300 dark:hover:bg-slate-600 disabled:opacity-50 transition-colors"
-                    >
-                      <RefreshCw className={`h-3.5 w-3.5 ${gmbState.syncing ? 'animate-spin' : ''}`} />
-                      Sync
+                      {gmbState.connecting ? 'Reconnecting...' : 'Reconnect'}
                     </button>
                   </div>
-                </div>
-              )}
 
-              {/* ── Section 2: Google Analytics (GA4) ── */}
-              <div className="space-y-3 pt-3 border-t border-slate-100 dark:border-slate-700/50">
-                <div className="flex items-center justify-between">
-                  <p className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Google Analytics (GA4)</p>
-                  {gmbState.selectedGA4Property && (
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 font-semibold">Configured</span>
-                  )}
-                </div>
-
-                {!gmbState.connection ? (
-                  <p className="text-xs text-slate-400 dark:text-slate-500 italic">Connect Google account first to configure GA4.</p>
-                ) : gmbState.ga4Properties.length > 0 ? (
-                  <AdminSelect
-                    label="GA4 Property"
-                    value={gmbState.selectedGA4Property}
-                    onChange={(value) => setGmbState(prev => ({ ...prev, selectedGA4Property: value }))}
-                    options={[
-                      { value: '', label: 'Select GA4 property...' },
-                      ...gmbState.ga4Properties.map((p) => ({
-                        value: p.propertyId,
-                        label: `${p.displayName} (${p.account})`
-                      }))
-                    ]}
-                  />
-                ) : (
-                  <p className="text-xs text-slate-400 dark:text-slate-500">No GA4 properties found for this Google account. Ensure the account has access to a GA4 property.</p>
-                )}
-              </div>
-
-              {/* ── Section 3: Search Console ── */}
-              <div className="space-y-3 pt-3 border-t border-slate-100 dark:border-slate-700/50">
-                <div className="flex items-center justify-between">
-                  <p className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Search Console</p>
-                  {gmbState.selectedSCSite && (
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 font-semibold">Configured</span>
-                  )}
-                </div>
-
-                {!gmbState.connection ? (
-                  <p className="text-xs text-slate-400 dark:text-slate-500 italic">Connect Google account first to configure Search Console.</p>
-                ) : gmbState.scSites.length > 0 ? (
-                  <AdminSelect
-                    label="Search Console Site"
-                    value={gmbState.selectedSCSite}
-                    onChange={(value) => setGmbState(prev => ({ ...prev, selectedSCSite: value }))}
-                    options={[
-                      { value: '', label: 'Select site...' },
-                      ...gmbState.scSites.map((s) => ({
-                        value: s.siteUrl,
-                        label: s.siteUrl
-                      }))
-                    ]}
-                  />
-                ) : (
-                  <p className="text-xs text-slate-400 dark:text-slate-500">No Search Console sites found for this Google account. Verify site ownership in Google Search Console.</p>
-                )}
-              </div>
-
-              {/* Save Analytics Sources button */}
-              {gmbState.connection && (gmbState.ga4Properties.length > 0 || gmbState.scSites.length > 0) && (
-                <button
-                  onClick={async () => {
-                    setGmbState(prev => ({ ...prev, analyticsSaving: true, error: '', message: '' }));
-                    try {
-                      const res = await fetch('/api/admin/gmb/select-analytics', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                          clinicId: editingClinic?.id,
-                          ga4PropertyId: gmbState.selectedGA4Property,
-                          searchConsoleSite: gmbState.selectedSCSite,
-                        }),
-                      });
-                      const data = await res.json();
-                      if (!res.ok) throw new Error(data.error);
-                      setGmbState(prev => ({ ...prev, analyticsSaving: false, message: 'Analytics sources saved successfully!' }));
-                    } catch (err: any) {
-                      setGmbState(prev => ({ ...prev, analyticsSaving: false, error: err?.message || 'Failed to save analytics sources' }));
-                    }
-                  }}
-                  disabled={gmbState.analyticsSaving}
-                  className="w-full px-3 py-2 rounded-lg bg-purple-500 hover:bg-purple-600 text-white text-xs font-bold disabled:opacity-50 transition-colors"
-                >
-                  {gmbState.analyticsSaving ? 'Saving...' : 'Save Analytics Configuration'}
-                </button>
-              )}
-
-              {/* ── Review & Confirm Setup ── */}
-              {gmbState.connection && (gmbState.connection.businessLocationId || gmbState.selectedGA4Property || gmbState.selectedSCSite) && (
-                <div className="space-y-3 pt-3 border-t border-slate-100 dark:border-slate-700/50">
-                  <p className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Review & Confirm</p>
-                  <div className="space-y-2">
-                    {/* GBP status */}
-                    <div className="flex items-center gap-2 text-xs">
-                      {gmbState.connection.businessLocationId ? (
-                        <span className="h-5 w-5 rounded-full bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center text-emerald-600 dark:text-emerald-400 text-[10px] font-bold shrink-0">✓</span>
-                      ) : (
-                        <span className="h-5 w-5 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-400 text-[10px] font-bold shrink-0">—</span>
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <span className="font-semibold text-slate-700 dark:text-slate-300">Business Profile: </span>
-                        <span className="text-slate-500 dark:text-slate-400 truncate">
-                          {gmbState.connection.locationName || gmbState.connection.businessName || (gmbState.connection.businessLocationId ? 'Connected' : 'Not selected')}
+                  {/* ── STEP 1: Google Business Profile ── */}
+                  <div className="rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+                    <div className="flex items-center gap-2 px-4 py-2.5 bg-slate-50 dark:bg-slate-800/50">
+                      <span className="h-6 w-6 rounded-full bg-blue-500 text-white text-xs font-bold flex items-center justify-center shrink-0">1</span>
+                      <span className="text-sm font-bold text-slate-800 dark:text-slate-200">Google Business Profile</span>
+                      {gmbState.connection.businessLocationId && (
+                        <span className="ml-auto inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 font-semibold">
+                          <Check className="h-3 w-3" /> Connected
                         </span>
-                      </div>
+                      )}
                     </div>
-
-                    {/* GA4 status */}
-                    <div className="flex items-center gap-2 text-xs">
-                      {gmbState.selectedGA4Property ? (
-                        <span className="h-5 w-5 rounded-full bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center text-emerald-600 dark:text-emerald-400 text-[10px] font-bold shrink-0">✓</span>
+                    <div className="p-4 space-y-3">
+                      {gmbState.accounts.length > 0 ? (
+                        <>
+                          <AdminSelect
+                            label="Business Account"
+                            value={gmbState.selectedAccount}
+                            onChange={(value) => handleAccountChange(value)}
+                            options={[
+                              { value: '', label: 'Select account...' },
+                              ...gmbState.accounts.map((account) => ({
+                                value: account.name,
+                                label: account.accountName || account.name
+                              }))
+                            ]}
+                          />
+                          {gmbState.selectedAccount && gmbState.locations.length > 0 && (
+                            <AdminSelect
+                              label="Location"
+                              value={gmbState.selectedLocation}
+                              onChange={(value) => setGmbState(prev => ({ ...prev, selectedLocation: value }))}
+                              options={[
+                                { value: '', label: 'Select location...' },
+                                ...gmbState.locations.map((location) => ({
+                                  value: location.name,
+                                  label: `${location.title || location.name}${location.address ? ` — ${location.address}` : ''}`
+                                }))
+                              ]}
+                            />
+                          )}
+                          {gmbState.selectedAccount && gmbState.locations.length === 0 && (
+                            <p className="text-xs text-amber-600 dark:text-amber-400 italic">No locations found for this account.</p>
+                          )}
+                          <button
+                            onClick={handleSaveGmbSelection}
+                            disabled={!gmbState.selectedAccount || !gmbState.selectedLocation || gmbState.loading}
+                            className="w-full px-3 py-2 rounded-lg bg-blue-500 hover:bg-blue-600 text-white text-xs font-bold disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
+                          >
+                            {gmbState.loading ? <><RefreshCw className="h-3.5 w-3.5 animate-spin" /> Saving...</> : 'Save Business Profile'}
+                          </button>
+                        </>
                       ) : (
-                        <span className="h-5 w-5 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-400 text-[10px] font-bold shrink-0">—</span>
+                        <p className="text-xs text-slate-400 dark:text-slate-500 italic py-2">No business accounts found. Ensure the connected Google account has access to a Business Profile.</p>
                       )}
-                      <div className="flex-1 min-w-0">
-                        <span className="font-semibold text-slate-700 dark:text-slate-300">Google Analytics (GA4): </span>
-                        <span className="text-slate-500 dark:text-slate-400 truncate">
-                          {gmbState.selectedGA4Property
-                            ? (gmbState.ga4Properties.find(p => p.propertyId === gmbState.selectedGA4Property)?.displayName || gmbState.selectedGA4Property)
-                            : 'Not selected'}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* SC status */}
-                    <div className="flex items-center gap-2 text-xs">
-                      {gmbState.selectedSCSite ? (
-                        <span className="h-5 w-5 rounded-full bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center text-emerald-600 dark:text-emerald-400 text-[10px] font-bold shrink-0">✓</span>
-                      ) : (
-                        <span className="h-5 w-5 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-400 text-[10px] font-bold shrink-0">—</span>
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <span className="font-semibold text-slate-700 dark:text-slate-300">Search Console: </span>
-                        <span className="text-slate-500 dark:text-slate-400 truncate">
-                          {gmbState.selectedSCSite || 'Not selected'}
-                        </span>
-                      </div>
                     </div>
                   </div>
 
-                  {/* Confirm & Sync All button */}
-                  <button
-                    onClick={async () => {
-                      if (!editingClinic?.id) return;
-                      setGmbState(prev => ({ ...prev, confirmSyncing: true, error: '', message: '' }));
-                      try {
-                        // 1. Save analytics sources if selected
-                        if (gmbState.selectedGA4Property || gmbState.selectedSCSite) {
-                          const analyticsRes = await fetch('/api/admin/gmb/select-analytics', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                              clinicId: editingClinic.id,
-                              ga4PropertyId: gmbState.selectedGA4Property,
-                              searchConsoleSite: gmbState.selectedSCSite,
-                            }),
-                          });
-                          if (!analyticsRes.ok) {
-                            const err = await analyticsRes.json();
-                            throw new Error(err.error || 'Failed to save analytics sources');
+                  {/* ── STEP 2: Google Analytics (GA4) ── */}
+                  <div className="rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+                    <div className="flex items-center gap-2 px-4 py-2.5 bg-slate-50 dark:bg-slate-800/50">
+                      <span className="h-6 w-6 rounded-full bg-orange-500 text-white text-xs font-bold flex items-center justify-center shrink-0">2</span>
+                      <span className="text-sm font-bold text-slate-800 dark:text-slate-200">Google Analytics (GA4)</span>
+                      {gmbState.selectedGA4Property && (
+                        <span className="ml-auto inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 font-semibold">
+                          <Check className="h-3 w-3" /> Configured
+                        </span>
+                      )}
+                    </div>
+                    <div className="p-4">
+                      {gmbState.ga4Properties.length > 0 ? (
+                        <AdminSelect
+                          label="GA4 Property"
+                          value={gmbState.selectedGA4Property}
+                          onChange={(value) => setGmbState(prev => ({ ...prev, selectedGA4Property: value }))}
+                          options={[
+                            { value: '', label: 'Select GA4 property...' },
+                            ...gmbState.ga4Properties.map((p) => ({
+                              value: p.propertyId,
+                              label: `${p.displayName} (${p.account})`
+                            }))
+                          ]}
+                        />
+                      ) : (
+                        <div className="flex items-start gap-2.5 py-1">
+                          <Search className="h-4 w-4 text-slate-400 mt-0.5 shrink-0" />
+                          <p className="text-xs text-slate-400 dark:text-slate-500">No GA4 properties found. Ensure the connected account has access to a GA4 property in Google Analytics.</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* ── STEP 3: Search Console ── */}
+                  <div className="rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+                    <div className="flex items-center gap-2 px-4 py-2.5 bg-slate-50 dark:bg-slate-800/50">
+                      <span className="h-6 w-6 rounded-full bg-purple-500 text-white text-xs font-bold flex items-center justify-center shrink-0">3</span>
+                      <span className="text-sm font-bold text-slate-800 dark:text-slate-200">Search Console</span>
+                      {gmbState.selectedSCSite && (
+                        <span className="ml-auto inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 font-semibold">
+                          <Check className="h-3 w-3" /> Configured
+                        </span>
+                      )}
+                    </div>
+                    <div className="p-4">
+                      {gmbState.scSites.length > 0 ? (
+                        <AdminSelect
+                          label="Search Console Site"
+                          value={gmbState.selectedSCSite}
+                          onChange={(value) => setGmbState(prev => ({ ...prev, selectedSCSite: value }))}
+                          options={[
+                            { value: '', label: 'Select site...' },
+                            ...gmbState.scSites.map((s) => ({
+                              value: s.siteUrl,
+                              label: s.siteUrl
+                            }))
+                          ]}
+                        />
+                      ) : (
+                        <div className="flex items-start gap-2.5 py-1">
+                          <Globe className="h-4 w-4 text-slate-400 mt-0.5 shrink-0" />
+                          <p className="text-xs text-slate-400 dark:text-slate-500">No Search Console sites found. Verify site ownership in Google Search Console.</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* ── Save & Sync All ── */}
+                  <div className="rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700 p-4 space-y-4">
+                    {/* Integration Summary */}
+                    <div className="grid grid-cols-3 gap-3">
+                      <div className={`rounded-lg p-3 text-center ${gmbState.connection.businessLocationId ? 'bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800/40' : 'bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700'}`}>
+                        <p className="text-[10px] uppercase tracking-wider font-bold text-slate-500 dark:text-slate-400 mb-1">GBP</p>
+                        {gmbState.connection.businessLocationId ? (
+                          <Check className="h-5 w-5 text-emerald-500 mx-auto" />
+                        ) : (
+                          <span className="text-xs text-slate-400">—</span>
+                        )}
+                      </div>
+                      <div className={`rounded-lg p-3 text-center ${gmbState.selectedGA4Property ? 'bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800/40' : 'bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700'}`}>
+                        <p className="text-[10px] uppercase tracking-wider font-bold text-slate-500 dark:text-slate-400 mb-1">GA4</p>
+                        {gmbState.selectedGA4Property ? (
+                          <Check className="h-5 w-5 text-emerald-500 mx-auto" />
+                        ) : (
+                          <span className="text-xs text-slate-400">—</span>
+                        )}
+                      </div>
+                      <div className={`rounded-lg p-3 text-center ${gmbState.selectedSCSite ? 'bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800/40' : 'bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700'}`}>
+                        <p className="text-[10px] uppercase tracking-wider font-bold text-slate-500 dark:text-slate-400 mb-1">SC</p>
+                        {gmbState.selectedSCSite ? (
+                          <Check className="h-5 w-5 text-emerald-500 mx-auto" />
+                        ) : (
+                          <span className="text-xs text-slate-400">—</span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Confirm & Sync All Button */}
+                    <button
+                      onClick={async () => {
+                        if (!editingClinic?.id) return;
+                        setGmbState(prev => ({ ...prev, confirmSyncing: true, error: '', message: '' }));
+                        try {
+                          // 1. Save analytics sources if selected
+                          if (gmbState.selectedGA4Property || gmbState.selectedSCSite) {
+                            const analyticsRes = await fetch('/api/admin/gmb/select-analytics', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({
+                                clinicId: editingClinic.id,
+                                ga4PropertyId: gmbState.selectedGA4Property,
+                                searchConsoleSite: gmbState.selectedSCSite,
+                              }),
+                            });
+                            if (!analyticsRes.ok) {
+                              const err = await analyticsRes.json();
+                              throw new Error(err.error || 'Failed to save analytics sources');
+                            }
                           }
-                        }
 
-                        // 2. Sync GBP data if connected
-                        const syncPromises: Promise<void>[] = [];
-                        if (gmbState.connection.businessLocationId) {
-                          syncPromises.push(
-                            fetch('/api/admin/gmb/sync', {
-                              method: 'POST',
-                              headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({ clinicId: editingClinic.id }),
-                            }).then(() => {}).catch(() => {})
-                          );
-                        }
+                          // 2. Sync all data in parallel
+                          const syncPromises: Promise<void>[] = [];
+                          if (gmbState.connection.businessLocationId) {
+                            syncPromises.push(
+                              fetch('/api/admin/gmb/sync', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ clinicId: editingClinic.id }),
+                              }).then(() => {}).catch(() => {})
+                            );
+                          }
+                          if (gmbState.selectedGA4Property || gmbState.selectedSCSite) {
+                            syncPromises.push(
+                              fetch('/api/admin/gmb/sync-analytics', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ clinicId: editingClinic.id }),
+                              }).then(() => {}).catch(() => {})
+                            );
+                          }
 
-                        // 3. Sync GA4 + Search Console if configured
-                        if (gmbState.selectedGA4Property || gmbState.selectedSCSite) {
-                          syncPromises.push(
-                            fetch('/api/admin/gmb/sync-analytics', {
-                              method: 'POST',
-                              headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({ clinicId: editingClinic.id }),
-                            }).then(() => {}).catch(() => {})
-                          );
+                          await Promise.allSettled(syncPromises);
+                          await fetchGmbConnection(editingClinic.id, true);
+                          setGmbState(prev => ({
+                            ...prev,
+                            confirmSyncing: false,
+                            message: 'All integrations saved and data sync started! Charts will update shortly.',
+                          }));
+                        } catch (err: any) {
+                          setGmbState(prev => ({
+                            ...prev,
+                            confirmSyncing: false,
+                            error: err?.message || 'Failed to save and sync',
+                          }));
                         }
+                      }}
+                      disabled={gmbState.confirmSyncing || (!gmbState.connection.businessLocationId && !gmbState.selectedGA4Property && !gmbState.selectedSCSite)}
+                      className="w-full px-4 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white text-sm font-bold disabled:opacity-50 transition-all flex items-center justify-center gap-2 shadow-sm hover:shadow-md"
+                    >
+                      {gmbState.confirmSyncing ? (
+                        <><RefreshCw className="h-4 w-4 animate-spin" /> Saving & Syncing...</>
+                      ) : (
+                        <><Check className="h-4 w-4" /> Save All & Sync Data</>
+                      )}
+                    </button>
 
-                        await Promise.allSettled(syncPromises);
-                        await fetchGmbConnection(editingClinic.id, true);
-                        setGmbState(prev => ({
-                          ...prev,
-                          confirmSyncing: false,
-                          message: 'All integrations confirmed and data sync started! Data will appear in dashboards shortly.',
-                        }));
-                      } catch (err: any) {
-                        setGmbState(prev => ({
-                          ...prev,
-                          confirmSyncing: false,
-                          error: err?.message || 'Failed to confirm and sync',
-                        }));
-                      }
-                    }}
-                    disabled={gmbState.confirmSyncing}
-                    className="w-full px-3 py-2.5 rounded-lg bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white text-xs font-bold disabled:opacity-50 transition-all flex items-center justify-center gap-2"
-                  >
-                    {gmbState.confirmSyncing ? (
-                      <>
-                        <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-                        Confirming & Syncing...
-                      </>
-                    ) : (
-                      <>
-                        <Check className="h-3.5 w-3.5" />
-                        Confirm & Sync All Data
-                      </>
+                    {/* Manual GBP Sync shortcut */}
+                    {gmbState.connection.businessLocationId && (
+                      <button
+                        onClick={handleManualGmbSync}
+                        disabled={gmbState.syncing}
+                        className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700/50 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
+                      >
+                        <RefreshCw className={`h-3.5 w-3.5 ${gmbState.syncing ? 'animate-spin' : ''}`} />
+                        {gmbState.syncing ? 'Syncing GBP Data...' : 'Sync GBP Data Only'}
+                      </button>
                     )}
-                  </button>
-                </div>
+                  </div>
+                </>
               )}
 
-              {/* Status messages */}
+              {/* ── Status messages ── */}
               {gmbState.message && (
-                <p className="text-xs text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg px-3 py-2">✅ {gmbState.message}</p>
+                <div className="flex items-start gap-2.5 p-3 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800/40">
+                  <Check className="h-4 w-4 text-emerald-500 mt-0.5 shrink-0" />
+                  <p className="text-xs text-emerald-700 dark:text-emerald-400 font-medium">{gmbState.message}</p>
+                </div>
               )}
               {gmbState.error && (
-                <p className="text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded-lg px-3 py-2">❌ {gmbState.error}</p>
+                <div className="flex items-start gap-2.5 p-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/40">
+                  <X className="h-4 w-4 text-red-500 mt-0.5 shrink-0" />
+                  <p className="text-xs text-red-700 dark:text-red-400 font-medium">{gmbState.error}</p>
+                </div>
               )}
             </div>
           </div>

@@ -55,6 +55,8 @@ export default function GoogleAnalyticsView({ clinicId, isDark = false, isClient
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [syncStatus, setSyncStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [lastSyncTime, setLastSyncTime] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     try {
@@ -79,50 +81,107 @@ export default function GoogleAnalyticsView({ clinicId, isDark = false, isClient
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
+  // Auto-dismiss sync status after 6 seconds
+  useEffect(() => {
+    if (syncStatus) {
+      const timer = setTimeout(() => setSyncStatus(null), 6000);
+      return () => clearTimeout(timer);
+    }
+  }, [syncStatus]);
+
   const handleSync = async () => {
     try {
       setSyncing(true);
-      const res = await fetch('/api/admin/gmb/sync-analytics', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ clinicId }),
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error);
+      setSyncStatus(null);
+      setError(null);
+
+      // Sync both GBP and analytics data
+      const syncPromises: Promise<Response>[] = [];
+
+      syncPromises.push(
+        fetch('/api/admin/gmb/sync-analytics', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ clinicId }),
+        })
+      );
+
+      // Also sync GBP data
+      syncPromises.push(
+        fetch('/api/admin/gmb/sync', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ clinicId }),
+        })
+      );
+
+      const results = await Promise.allSettled(syncPromises);
+
+      // Check if analytics sync succeeded
+      const analyticsResult = results[0];
+      if (analyticsResult.status === 'fulfilled' && !analyticsResult.value.ok) {
+        const errJson = await analyticsResult.value.json().catch(() => ({ error: 'Sync failed' }));
+        throw new Error(errJson.error || 'Sync failed');
+      }
+
       await fetchData();
+      const now = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+      setLastSyncTime(now);
+      setSyncStatus({ type: 'success', message: `Data synced successfully at ${now}` });
     } catch (err: any) {
-      setError(err.message);
+      setSyncStatus({ type: 'error', message: err.message || 'Sync failed. Please try again.' });
     } finally {
       setSyncing(false);
     }
   };
 
   if (!ga4PropertyId && !searchConsoleSite) {
-    if (isClient) {
+    if (loading) {
       return (
-        <div className={`rounded-2xl p-8 border text-center ${isDark ? 'bg-slate-800 border-slate-700 text-slate-400' : 'bg-white border-slate-200 text-slate-500'}`}>
-          <Search className="h-10 w-10 mx-auto mb-3 opacity-40" />
-          <p className="text-lg font-semibold mb-1">Google Analytics Not Configured</p>
-          <p className="text-sm">Your admin has not yet connected Google Analytics or Search Console for this clinic.</p>
+        <div className={`rounded-2xl p-10 border text-center ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
+          <Loader2 className="h-8 w-8 animate-spin text-blue-500 mx-auto mb-3" />
+          <p className={`text-sm font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Loading Google integration data...</p>
         </div>
       );
     }
-    return null; // no analytics sources configured
+    if (isClient) {
+      return (
+        <div className={`rounded-2xl p-10 border text-center ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
+          <div className="h-14 w-14 rounded-2xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center mx-auto mb-4">
+            <Search className="h-7 w-7 text-blue-400" />
+          </div>
+          <p className={`text-lg font-bold mb-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>Google Analytics Not Connected</p>
+          <p className={`text-sm max-w-md mx-auto ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+            Your administrator hasn&apos;t connected Google Analytics or Search Console yet. Once configured, your live analytics data will appear here automatically.
+          </p>
+        </div>
+      );
+    }
+    return null;
   }
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-emerald-500" />
+      <div className={`rounded-2xl p-10 border text-center ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
+        <Loader2 className="h-8 w-8 animate-spin text-emerald-500 mx-auto mb-3" />
+        <p className={`text-sm font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Fetching analytics data...</p>
+        <p className={`text-xs mt-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>This may take a few seconds</p>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className={`rounded-2xl p-6 border text-center ${isDark ? 'bg-red-900/20 border-red-800 text-red-400' : 'bg-red-50 border-red-200 text-red-600'}`}>
-        <p>Error loading analytics: {error}</p>
-        <button onClick={fetchData} className="mt-2 underline">Retry</button>
+      <div className={`rounded-2xl p-8 border text-center ${isDark ? 'bg-red-900/20 border-red-800' : 'bg-red-50 border-red-200'}`}>
+        <p className={`text-sm font-semibold mb-2 ${isDark ? 'text-red-400' : 'text-red-600'}`}>Failed to load analytics data</p>
+        <p className={`text-xs mb-3 ${isDark ? 'text-red-400/70' : 'text-red-500'}`}>{error}</p>
+        <button
+          onClick={fetchData}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-sm font-semibold hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors"
+        >
+          <RefreshCw className="h-4 w-4" />
+          Retry
+        </button>
       </div>
     );
   }
@@ -195,20 +254,69 @@ export default function GoogleAnalyticsView({ clinicId, isDark = false, isClient
 
   return (
     <div className="space-y-6 mt-6">
-      {/* Section header */}
-      <div className="flex items-center justify-between">
-        <h2 className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>
-          📊 Google Analytics & Search Console
-        </h2>
-        {!isClient && (
-          <button
-            onClick={handleSync}
-            disabled={syncing}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 disabled:opacity-50 transition"
+      {/* Section header with sync controls */}
+      <div className="flex flex-col gap-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>
+              📊 Google Analytics & Search Console
+            </h2>
+            {lastSyncTime && (
+              <p className={`text-xs mt-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                Last synced at {lastSyncTime}
+              </p>
+            )}
+          </div>
+          {!isClient && (
+            <button
+              onClick={handleSync}
+              disabled={syncing}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+                syncing
+                  ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 cursor-wait'
+                  : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm hover:shadow-md'
+              } disabled:opacity-70`}
+            >
+              {syncing ? (
+                <><Loader2 className="h-4 w-4 animate-spin" /> Syncing Data...</>
+              ) : (
+                <><RefreshCw className="h-4 w-4" /> Sync Now</>
+              )}
+            </button>
+          )}
+        </div>
+
+        {/* Sync status banner */}
+        {syncStatus && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            className={`flex items-center gap-2.5 px-4 py-3 rounded-xl text-sm font-medium ${
+              syncStatus.type === 'success'
+                ? `bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800/40 ${isDark ? 'text-emerald-400' : 'text-emerald-700'}`
+                : `bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/40 ${isDark ? 'text-red-400' : 'text-red-700'}`
+            }`}
           >
-            {syncing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-            {syncing ? 'Syncing...' : 'Sync Now'}
-          </button>
+            {syncStatus.type === 'success' ? (
+              <span className="h-5 w-5 rounded-full bg-emerald-500 text-white flex items-center justify-center text-xs shrink-0">✓</span>
+            ) : (
+              <span className="h-5 w-5 rounded-full bg-red-500 text-white flex items-center justify-center text-xs shrink-0">!</span>
+            )}
+            {syncStatus.message}
+          </motion.div>
+        )}
+
+        {/* Syncing progress bar */}
+        {syncing && (
+          <div className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+            <motion.div
+              className="h-full bg-gradient-to-r from-blue-500 to-emerald-500 rounded-full"
+              initial={{ width: '0%' }}
+              animate={{ width: '90%' }}
+              transition={{ duration: 8, ease: 'easeOut' }}
+            />
+          </div>
         )}
       </div>
 
@@ -410,9 +518,26 @@ export default function GoogleAnalyticsView({ clinicId, isDark = false, isClient
       )}
 
       {ga4Data.length === 0 && scData.length === 0 && (
-        <div className={`rounded-2xl p-8 border text-center ${isDark ? 'bg-slate-800 border-slate-700 text-slate-400' : 'bg-white border-slate-200 text-slate-500'}`}>
-          <p className="text-lg font-semibold mb-2">No analytics data yet</p>
-          <p className="text-sm">Click &quot;Sync Now&quot; to fetch the latest data from Google Analytics & Search Console.</p>
+        <div className={`rounded-2xl p-10 border text-center ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
+          <div className="h-14 w-14 rounded-2xl bg-slate-100 dark:bg-slate-700/50 flex items-center justify-center mx-auto mb-4">
+            <BarChart3 className="h-7 w-7 text-slate-400" />
+          </div>
+          <p className={`text-lg font-bold mb-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>No analytics data yet</p>
+          <p className={`text-sm mb-4 max-w-md mx-auto ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+            {isClient
+              ? 'Analytics data has not been synced yet. Your administrator will sync the data shortly.'
+              : 'Click "Sync Now" above to fetch the latest data from Google Analytics & Search Console.'
+            }
+          </p>
+          {!isClient && (
+            <button
+              onClick={handleSync}
+              disabled={syncing}
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-bold disabled:opacity-50 transition-colors"
+            >
+              {syncing ? <><Loader2 className="h-4 w-4 animate-spin" /> Syncing...</> : <><RefreshCw className="h-4 w-4" /> Sync Now</>}
+            </button>
+          )}
         </div>
       )}
     </div>
