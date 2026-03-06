@@ -6,6 +6,7 @@ import {
   exchangeCodeForTokens,
   fetchGoogleEmail,
   upsertOAuthConnection,
+  clearGmbCache,
 } from '@/lib/gmb';
 
 function popupHtml(success: boolean, message: string, clinicId?: string) {
@@ -90,6 +91,9 @@ export async function GET(req: NextRequest) {
       expiresIn: tokens.expiresIn,
       googleEmail,
     });
+
+    // Clear cached API responses so fresh data is fetched
+    clearGmbCache(parsedState.clinicId);
 
     return new NextResponse(popupHtml(true, 'Google Business Profile connected. Select account and location to finish setup.', parsedState.clinicId), {
       status: 200,

@@ -1261,71 +1261,108 @@ function AdminDashboardContent() {
     });
   };
 
-  const fetchGmbConnection = async (clinicId: string) => {
+  // Track which clinic we last loaded GMB data for, to avoid redundant API calls
+  const lastLoadedClinicRef = useRef<string | null>(null);
+
+  const fetchGmbConnection = async (clinicId: string, forceRefresh = false) => {
+    // Skip if we already loaded data for this exact clinic (prevents quota burn)
+    if (!forceRefresh && lastLoadedClinicRef.current === clinicId && gmbState.connection) {
+      return;
+    }
+
     setGmbState(prev => ({
       ...prev,
       loading: true,
       error: '',
       message: '',
-      accounts: [],
-      locations: [],
-      selectedAccount: '',
-      selectedLocation: '',
     }));
 
     try {
+      // Step 1: Always fetch connection status (DB-only, no Google API call)
       const connRes = await fetch(`/api/admin/gmb/connection?clinicId=${encodeURIComponent(clinicId)}`);
       const connData = await connRes.json();
       if (!connRes.ok) throw new Error(connData.error || 'Failed to load GMB connection');
 
       const connection = connData.connection;
       if (!connection) {
+        lastLoadedClinicRef.current = clinicId;
         setGmbState(prev => ({
           ...prev,
           loading: false,
           connection: null,
+          accounts: [],
+          locations: [],
+          ga4Properties: [],
+          scSites: [],
+          selectedAccount: '',
+          selectedLocation: '',
+          selectedGA4Property: '',
+          selectedSCSite: '',
           message: 'Connect Google to choose the correct business account and location.',
         }));
         return;
       }
 
-      const accountsRes = await fetch(`/api/admin/gmb/accounts?clinicId=${encodeURIComponent(clinicId)}`);
-      const accountsData = await accountsRes.json();
-      if (!accountsRes.ok) throw new Error(accountsData.error || 'Failed to load Google accounts');
-
-      const selectedAccount = connection.businessAccountId || accountsData.accounts?.[0]?.name || '';
+      // Step 2: Fetch accounts, locations, GA4, SC in parallel (all use server-side cache)
+      let accounts: any[] = [];
       let locations: any[] = [];
-
-      if (selectedAccount) {
-        const locationsRes = await fetch(`/api/admin/gmb/locations?clinicId=${encodeURIComponent(clinicId)}&accountName=${encodeURIComponent(selectedAccount)}`);
-        const locationsData = await locationsRes.json();
-        if (!locationsRes.ok) throw new Error(locationsData.error || 'Failed to load account locations');
-        locations = locationsData.locations || [];
-      }
-
-      // Fetch GA4 properties and Search Console sites in parallel
       let ga4Properties: any[] = [];
       let scSites: any[] = [];
-      try {
-        const [ga4Res, scRes] = await Promise.all([
-          fetch(`/api/admin/gmb/ga4-properties?clinicId=${encodeURIComponent(clinicId)}`),
-          fetch(`/api/admin/gmb/sc-sites?clinicId=${encodeURIComponent(clinicId)}`),
-        ]);
-        if (ga4Res.ok) {
-          const ga4Data = await ga4Res.json();
-          ga4Properties = ga4Data.properties || [];
-        }
-        if (scRes.ok) {
-          const scData = await scRes.json();
-          scSites = scData.sites || [];
-        }
-      } catch { /* non-critical */ }
 
+      const selectedAccountId = connection.businessAccountId || '';
+
+      // Build parallel requests — only call what we need
+      const fetches: Promise<void>[] = [];
+
+      fetches.push(
+        fetch(`/api/admin/gmb/accounts?clinicId=${encodeURIComponent(clinicId)}`)
+          .then(r => r.json())
+          .then(d => { if (d.accounts) accounts = d.accounts; })
+          .catch(() => { /* quota or network error — skip */ })
+      );
+
+      if (selectedAccountId) {
+        fetches.push(
+          fetch(`/api/admin/gmb/locations?clinicId=${encodeURIComponent(clinicId)}&accountName=${encodeURIComponent(selectedAccountId)}`)
+            .then(r => r.json())
+            .then(d => { if (d.locations) locations = d.locations; })
+            .catch(() => { /* skip */ })
+        );
+      }
+
+      fetches.push(
+        fetch(`/api/admin/gmb/ga4-properties?clinicId=${encodeURIComponent(clinicId)}`)
+          .then(r => r.json())
+          .then(d => { if (d.properties) ga4Properties = d.properties; })
+          .catch(() => { /* skip */ })
+      );
+
+      fetches.push(
+        fetch(`/api/admin/gmb/sc-sites?clinicId=${encodeURIComponent(clinicId)}`)
+          .then(r => r.json())
+          .then(d => { if (d.sites) scSites = d.sites; })
+          .catch(() => { /* skip */ })
+      );
+
+      await Promise.allSettled(fetches);
+
+      const selectedAccount = selectedAccountId || accounts?.[0]?.name || '';
+
+      // If we got accounts but no locations yet (no saved account), fetch locations for first account
+      if (!selectedAccountId && selectedAccount && locations.length === 0) {
+        try {
+          const locRes = await fetch(`/api/admin/gmb/locations?clinicId=${encodeURIComponent(clinicId)}&accountName=${encodeURIComponent(selectedAccount)}`);
+          const locData = await locRes.json();
+          if (locData.locations) locations = locData.locations;
+        } catch { /* skip */ }
+      }
+
+      lastLoadedClinicRef.current = clinicId;
       setGmbState(prev => ({
         ...prev,
         loading: false,
         connection,
-        accounts: accountsData.accounts || [],
+        accounts,
         locations,
         selectedAccount,
         selectedLocation: connection.businessLocationId || '',
@@ -1338,10 +1375,14 @@ function AdminDashboardContent() {
           : 'Google connected. Select account and location to complete setup.',
       }));
     } catch (error: any) {
+      const msg = error?.message || 'Failed to load GMB status';
+      const isQuota = msg.toLowerCase().includes('quota');
       setGmbState(prev => ({
         ...prev,
         loading: false,
-        error: error?.message || 'Failed to load GMB status',
+        error: isQuota
+          ? 'Google API rate limit reached. Your data is cached — please wait a few minutes before retrying.'
+          : msg,
       }));
     }
   };
@@ -1460,7 +1501,7 @@ function AdminDashboardContent() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to save account/location');
 
-      await fetchGmbConnection(editingClinic.id);
+      await fetchGmbConnection(editingClinic.id, true);
       setGmbState(prev => ({
         ...prev,
         message: data.warning
@@ -1491,7 +1532,7 @@ function AdminDashboardContent() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Manual sync failed');
 
-      await fetchGmbConnection(editingClinic.id);
+      await fetchGmbConnection(editingClinic.id, true);
       setGmbState(prev => ({
         ...prev,
         syncing: false,
@@ -1517,7 +1558,8 @@ function AdminDashboardContent() {
 
       const data = event.data;
       if (data?.type === 'GMB_OAUTH_SUCCESS' && editingClinic?.id && data.clinicId === editingClinic.id) {
-        await fetchGmbConnection(editingClinic.id);
+        lastLoadedClinicRef.current = null; // force refresh after new OAuth
+        await fetchGmbConnection(editingClinic.id, true);
         setGmbState(prev => ({
           ...prev,
           connecting: false,

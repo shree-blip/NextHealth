@@ -3,6 +3,33 @@ import prisma from '@/lib/prisma';
 const GOOGLE_OAUTH_BASE = 'https://accounts.google.com/o/oauth2/v2/auth';
 const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token';
 
+// ─── Simple in-memory cache to avoid quota exhaustion ─────────
+const apiCache = new Map<string, { data: any; expiresAt: number }>();
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
+function getCached<T>(key: string): T | null {
+  const entry = apiCache.get(key);
+  if (!entry || Date.now() > entry.expiresAt) {
+    apiCache.delete(key);
+    return null;
+  }
+  return entry.data as T;
+}
+
+function setCache(key: string, data: any) {
+  apiCache.set(key, { data, expiresAt: Date.now() + CACHE_TTL_MS });
+}
+
+export function clearGmbCache(clinicId?: string) {
+  if (clinicId) {
+    for (const key of apiCache.keys()) {
+      if (key.includes(clinicId)) apiCache.delete(key);
+    }
+  } else {
+    apiCache.clear();
+  }
+}
+
 export const GMB_SCOPES = [
   'openid',
   'email',
@@ -300,6 +327,11 @@ export async function listGmbAccounts(clinicId: string) {
   const connection = await prisma.gMBConnection.findUnique({ where: { clinicId } });
   if (!connection) throw new Error('No Google connection found for this clinic');
 
+  // Check cache first
+  const cacheKey = `accounts:${clinicId}`;
+  const cached = getCached<any[]>(cacheKey);
+  if (cached) return { connection, accounts: cached };
+
   const data = await gmbApiRequest(connection.id, 'https://mybusinessaccountmanagement.googleapis.com/v1/accounts');
   const accounts = (data.accounts || []).map((account: any) => ({
     name: account.name,
@@ -307,16 +339,19 @@ export async function listGmbAccounts(clinicId: string) {
     type: account.type,
   }));
 
-  return {
-    connection,
-    accounts,
-  };
+  setCache(cacheKey, accounts);
+  return { connection, accounts };
 }
 
 export async function listGmbLocations(clinicId: string, accountName: string) {
   const normalizedAccount = normalizeAccountName(accountName);
   const connection = await prisma.gMBConnection.findUnique({ where: { clinicId } });
   if (!connection) throw new Error('No Google connection found for this clinic');
+
+  // Check cache first
+  const cacheKey = `locations:${clinicId}:${normalizedAccount}`;
+  const cached = getCached<any[]>(cacheKey);
+  if (cached) return cached;
 
   const readMask = [
     'name',
@@ -327,11 +362,14 @@ export async function listGmbLocations(clinicId: string, accountName: string) {
   const url = `https://mybusinessbusinessinformation.googleapis.com/v1/${normalizedAccount}/locations?readMask=${encodeURIComponent(readMask)}&pageSize=100`;
   const data = await gmbApiRequest(connection.id, url);
 
-  return (data.locations || []).map((location: any) => ({
+  const locations = (data.locations || []).map((location: any) => ({
     name: location.name,
     title: location.title,
     address: formatStorefrontAddress(location.storefrontAddress),
   }));
+
+  setCache(cacheKey, locations);
+  return locations;
 }
 
 export async function selectGmbLocation(params: {

@@ -18,6 +18,11 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ locations });
   } catch (error: any) {
     console.error('GMB locations error:', error);
-    return NextResponse.json({ error: error?.message || 'Failed to load locations' }, { status: 500 });
+    const msg = error?.message || 'Failed to load locations';
+    const isQuota = msg.toLowerCase().includes('quota');
+    return NextResponse.json(
+      { error: isQuota ? 'Google API rate limit reached. Please wait a few minutes and try again.' : msg },
+      { status: isQuota ? 429 : 500 }
+    );
   }
 }
