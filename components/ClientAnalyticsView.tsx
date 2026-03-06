@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import {
   LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, AreaChart, Area,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
 import { TrendingUp, FileText, Globe, Phone, DollarSign, Users, Loader2, Building2, ChevronDown, ArrowUpRight, RefreshCw, Filter, RotateCcw, Clock, ChevronUp } from 'lucide-react';
+import SearchConsolePerformanceChart from './SearchConsolePerformanceChart';
 import { useSitePreferences } from '@/components/SitePreferencesProvider';
 import io, { Socket } from 'socket.io-client';
 
@@ -396,6 +397,35 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false, o
       .filter((entry) => (selectedMonth === 'all' || entry.month === Number(selectedMonth)))
       .map((entry) => entry.weekNumber)
   )).sort((a, b) => a - b);
+
+  // Compute Search Console date range from current filter state
+  const scClientDateRange = useMemo(() => {
+    if (hasDateRangeFilter && startDate && endDate) {
+      return { startDate, endDate };
+    }
+    const yr = Number(selectedYear);
+    if (selectedMonth !== 'all') {
+      const mo = Number(selectedMonth);
+      if (selectedWeek !== 'all') {
+        // Specific week: compute monday of that ISO week
+        const jan4 = new Date(yr, 0, 4);
+        const dayOfWeek = jan4.getDay() || 7;
+        const isoWeek1Monday = new Date(jan4);
+        isoWeek1Monday.setDate(jan4.getDate() - dayOfWeek + 1);
+        const weekMonday = new Date(isoWeek1Monday);
+        weekMonday.setDate(isoWeek1Monday.getDate() + (Number(selectedWeek) - 1) * 7);
+        const weekSunday = new Date(weekMonday);
+        weekSunday.setDate(weekMonday.getDate() + 6);
+        return { startDate: weekMonday.toISOString().slice(0, 10), endDate: weekSunday.toISOString().slice(0, 10) };
+      }
+      // Specific month
+      const s = new Date(yr, mo - 1, 1);
+      const e = new Date(yr, mo, 0);
+      return { startDate: s.toISOString().slice(0, 10), endDate: e.toISOString().slice(0, 10) };
+    }
+    // Full year
+    return { startDate: `${yr}-01-01`, endDate: `${yr}-12-31` };
+  }, [selectedYear, selectedMonth, selectedWeek, hasDateRangeFilter, startDate, endDate]);
 
   const filteredAnalytics = analytics.filter((entry) => {
     // Date range filter takes precedence
@@ -935,34 +965,14 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false, o
         </motion.div>
       </div>
 
-      {/* Traffic & SEO Chart */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.4 }}
-        className={`rounded-2xl p-6 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}
-      >
-        <h3 className={`text-xl font-bold mb-6 ${isDark ? 'text-white' : 'text-slate-900'}`}>
-          📈 {t('SEO Performance Over Time')}
-        </h3>
-        <ResponsiveContainer width="100%" height={300}>
-          <LineChart data={trafficData}>
-            <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#334155' : '#e2e8f0'} />
-            <XAxis dataKey="week" stroke={isDark ? '#94a3b8' : '#64748b'} />
-            <YAxis stroke={isDark ? '#94a3b8' : '#64748b'} />
-            <Tooltip
-              contentStyle={{
-                backgroundColor: isDark ? '#1e293b' : '#ffffff',
-                border: `1px solid ${isDark ? '#475569' : '#e2e8f0'}`,
-                borderRadius: '12px',
-              }}
-            />
-            <Legend />
-            <Line type="monotone" dataKey="traffic" name={t('Traffic')} stroke="#10b981" strokeWidth={3} dot={{ fill: '#10b981', r: 5 }} />
-            <Line type="monotone" dataKey="ranking" name={t('Avg Ranking')} stroke="#3b82f6" strokeWidth={3} dot={{ fill: '#3b82f6', r: 5 }} />
-          </LineChart>
-        </ResponsiveContainer>
-      </motion.div>
+      {/* Search Console Performance */}
+      <SearchConsolePerformanceChart
+        clinicId={selectedClinic}
+        mode="client"
+        isDark={isDark}
+        startDate={scClientDateRange.startDate}
+        endDate={scClientDateRange.endDate}
+      />
 
       {/* GMB Metrics */}
       <motion.div

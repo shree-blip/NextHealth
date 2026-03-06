@@ -7,6 +7,7 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
 import { TrendingUp, FileText, Globe, Phone, DollarSign, Users, Loader2, Building2, ChevronDown, ArrowUpRight, Database } from 'lucide-react';
+import SearchConsolePerformanceChart from './SearchConsolePerformanceChart';
 
 interface WeeklyAnalytics {
   id: string;
@@ -225,6 +226,45 @@ export default function AdminAnalyticsView({ isDark, refreshTrigger }: AdminAnal
     acc[key].count += 1;
     return acc;
   }, {} as Record<string, any>);
+
+  // Compute date range from filter preset for Search Console chart
+  const scDateRange = useMemo(() => {
+    const now = new Date();
+    const thisMonday = getMonday(now);
+    const fmt = (d: Date) => d.toISOString().slice(0, 10);
+
+    switch (filterPreset) {
+      case 'last_week': {
+        const start = addDays(thisMonday, -7);
+        const end = addDays(start, 6);
+        return { startDate: fmt(start), endDate: fmt(end) };
+      }
+      case 'current_month': {
+        const start = new Date(now.getFullYear(), now.getMonth(), 1);
+        return { startDate: fmt(start), endDate: fmt(now) };
+      }
+      case 'last_month': {
+        const start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const end = new Date(now.getFullYear(), now.getMonth(), 0);
+        return { startDate: fmt(start), endDate: fmt(end) };
+      }
+      case 'compare_last_week': {
+        const start = addDays(thisMonday, -14);
+        const end = addDays(thisMonday, -1);
+        return { startDate: fmt(start), endDate: fmt(end) };
+      }
+      case 'compare_last_month': {
+        const start = new Date(now.getFullYear(), now.getMonth() - 2, 1);
+        const end = new Date(now.getFullYear(), now.getMonth(), 0);
+        return { startDate: fmt(start), endDate: fmt(end) };
+      }
+      default: {
+        const start = addDays(thisMonday, -7);
+        const end = addDays(start, 6);
+        return { startDate: fmt(start), endDate: fmt(end) };
+      }
+    }
+  }, [filterPreset]);
 
   // Conditional render states
   if (loading && clinics.length === 0) {
@@ -525,34 +565,14 @@ export default function AdminAnalyticsView({ isDark, refreshTrigger }: AdminAnal
         </motion.div>
       </div>
 
-      {/* Traffic & SEO Chart */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.4 }}
-        className={`rounded-2xl p-6 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}
-      >
-        <h3 className={`text-xl font-bold mb-6 ${isDark ? 'text-white' : 'text-slate-900'}`}>
-          📈 SEO Performance - Weekly Traffic & Average Ranking
-        </h3>
-        <ResponsiveContainer width="100%" height={300}>
-          <LineChart data={trafficData}>
-            <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#334155' : '#e2e8f0'} />
-            <XAxis dataKey="week" stroke={isDark ? '#94a3b8' : '#64748b'} />
-            <YAxis stroke={isDark ? '#94a3b8' : '#64748b'} />
-            <Tooltip
-              contentStyle={{
-                backgroundColor: isDark ? '#1e293b' : '#ffffff',
-                border: `1px solid ${isDark ? '#475569' : '#e2e8f0'}`,
-                borderRadius: '12px',
-              }}
-            />
-            <Legend />
-            <Line type="monotone" dataKey="traffic" name="Traffic" stroke="#10b981" strokeWidth={3} dot={{ fill: '#10b981', r: 5 }} />
-            <Line type="monotone" dataKey="ranking" name="Avg Ranking" stroke="#3b82f6" strokeWidth={3} dot={{ fill: '#3b82f6', r: 5 }} />
-          </LineChart>
-        </ResponsiveContainer>
-      </motion.div>
+      {/* Search Console Performance */}
+      <SearchConsolePerformanceChart
+        clinicId={selectedClinic}
+        mode="admin"
+        isDark={isDark}
+        startDate={scDateRange.startDate}
+        endDate={scDateRange.endDate}
+      />
 
       {/* GMB Metrics */}
       <motion.div
