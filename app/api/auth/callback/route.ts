@@ -24,32 +24,95 @@ function htmlResponse(messageType: 'OAUTH_AUTH_SUCCESS' | 'OAUTH_AUTH_ERROR', pa
   const message = JSON.stringify({ type: messageType, ...payload });
 
   return `
+    <!DOCTYPE html>
     <html>
+      <head>
+        <title>Authentication</title>
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; background: #f3f4f6; }
+          .container { text-align: center; }
+          .spinner { border: 4px solid #e5e7eb; border-top: 4px solid #3b82f6; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto 20px; }
+          @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+          p { color: #666; margin: 10px 0; }
+          button { background: #3b82f6; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; margin-top: 20px; }
+          button:hover { background: #2563eb; }
+        </style>
+      </head>
       <body>
+        <div class="container">
+          <div class="spinner"></div>
+          <p>Connecting your account...</p>
+          <p id="status" style="font-size: 14px; color: #999;"></p>
+          <button onclick="closeSelf()">Close this window</button>
+        </div>
         <script>
           (function () {
             var msg = ${JSON.stringify(message)};
             var parsed = JSON.parse(msg);
+            var messageType = ${JSON.stringify(messageType)};
+            
+            console.log('[OAuth Callback] Message type:', messageType);
             console.log('[OAuth Callback] Attempting postMessage to parent window');
             console.log('[OAuth Callback] targetOrigin:', ${JSON.stringify(targetOrigin)});
             console.log('[OAuth Callback] window.opener:', !!window.opener);
             
+            function updateStatus(msg) {
+              var statusEl = document.getElementById('status');
+              if (statusEl) statusEl.textContent = msg;
+            }
+            
+            function attemptClose() {
+              try {
+                window.close();
+              } catch (e) {
+                console.error('[OAuth Callback] window.close() error:', e);
+              }
+            }
+            
             if (window.opener) {
               try {
+                // Try postMessage with strict origin matching
                 window.opener.postMessage(parsed, ${JSON.stringify(targetOrigin)});
-                console.log('[OAuth Callback] postMessage sent successfully');
-                window.close();
+                console.log('[OAuth Callback] postMessage sent to specific origin');
+                updateStatus('Connected! You can close this window...');
+                
+                // Wait a moment to ensure message is received, then close
+                setTimeout(function() {
+                  attemptClose();
+                }, 500);
+                
+                // Fallback: If message is an error, try again with wildcard origin as a recovery
               } catch (err) {
-                console.error('[OAuth Callback] postMessage error:', err);
-                window.location.href = ${JSON.stringify('/login')};
+                console.warn('[OAuth Callback] Strict origin postMessage failed, trying wildcard origin:', err);
+                try {
+                  window.opener.postMessage(parsed, '*');
+                  console.log('[OAuth Callback] postMessage sent with wildcard origin');
+                  updateStatus('Connected! You can close this window...');
+                  setTimeout(function() {
+                    attemptClose();
+                  }, 500);
+                } catch (err2) {
+                  console.error('[OAuth Callback] Both postMessage attempts failed:', err2);
+                  updateStatus('Authentication complete. Please close this window.');
+                  setTimeout(function() {
+                    attemptClose();
+                  }, 1000);
+                }
               }
             } else {
-              console.warn('[OAuth Callback] No window.opener - redirecting to login');
-              window.location.href = ${JSON.stringify('/login')};
+              console.warn('[OAuth Callback] No window.opener available');
+              updateStatus('Authentication complete. Please close this window.');
+              // Even without opener, try to close the window
+              setTimeout(function() {
+                attemptClose();
+              }, 1000);
             }
           })();
+          
+          function closeSelf() {
+            window.close();
+          }
         </script>
-        <p>Authentication processed. You can close this window.</p>
       </body>
     </html>
   `;

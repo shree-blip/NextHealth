@@ -26,20 +26,23 @@ export default function LoginPage() {
       const appUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
       const allowedOrigin = new URL(appUrl).origin;
 
-      // Origin validation: Allow localhost, .run.app (Vercel), or exact origin match
-      const isValidOrigin = 
-        origin.includes('localhost') || 
-        origin.endsWith('.run.app') || 
-        origin === allowedOrigin ||
-        // Allow dynamic iframe origin as fallback
-        origin === window.location.origin;
+      // For OAuth messages, use flexible origin validation
+      // The callback popup is on the same domain, so we only need to validate it's from our domain or localhost
+      const isOAuthMessage = event.data?.type === 'OAUTH_AUTH_SUCCESS' || event.data?.type === 'OAUTH_AUTH_ERROR';
+      
+      const isValidOrigin = isOAuthMessage 
+        ? (origin === allowedOrigin || origin === window.location.origin || origin.includes('localhost') || origin.endsWith('.run.app'))
+        : (origin.includes('localhost') || origin.endsWith('.run.app') || origin === allowedOrigin || origin === window.location.origin);
 
       if (!isValidOrigin) {
         console.warn(`[OAuth] Origin validation failed: ${origin} not in [localhost, .run.app, ${allowedOrigin}, ${window.location.origin}]`);
         return;
       }
 
+      console.log('[Login] Received message:', { type: event.data?.type, origin, isValidOrigin });
+
       if (event.data?.type === 'OAUTH_AUTH_ERROR') {
+        console.error('[Login] OAuth error received:', event.data?.error);
         setError(event.data?.error || 'Google login failed');
         setIsLoading(false);
         setIsRedirecting(false);
@@ -70,7 +73,8 @@ export default function LoginPage() {
             });
             
             if (!tokenRes.ok) {
-              throw new Error(`Token login failed with status ${tokenRes.status}`);
+              const errorText = await tokenRes.text().catch(() => 'Unknown error');
+              throw new Error(`Token login failed with status ${tokenRes.status}: ${errorText}`);
             }
             console.log('[Login] Auth token cookie set successfully');
           }
@@ -82,8 +86,9 @@ export default function LoginPage() {
           console.log('[Login] Navigating to dashboard:', dashboardPath);
           window.location.replace(dashboardPath);
         } catch (err) {
-          console.error('OAuth login failed:', err);
-          setError('Authentication failed. Please try again.');
+          const errorMsg = err instanceof Error ? err.message : 'Unknown error';
+          console.error('[Login] OAuth login failed:', errorMsg);
+          setError(`Authentication failed: ${errorMsg}`);
           setIsRedirecting(false);
           setIsLoading(false);
         }
