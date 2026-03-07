@@ -3,6 +3,8 @@ import prisma from '@/lib/prisma';
 import { requireAdmin } from '@/lib/auth';
 import { syncGmbConnection } from '@/lib/gmb';
 
+const GBP_COOLDOWN_MS = 5 * 60 * 1000; // 5 minutes between GBP syncs
+
 export async function POST(req: NextRequest) {
   try {
     const auth = await requireAdmin(req);
@@ -20,24 +22,29 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No GMB connection found for this clinic' }, { status: 404 });
     }
 
-    // ── Cooldown check: prevent sync spam (30-minute cooldown) ──────
-    const now = new Date();
-    if (connection.nextSyncAt && connection.nextSyncAt > now) {
-      const secondsUntilNext = Math.ceil((connection.nextSyncAt.getTime() - now.getTime()) / 1000);
-      return NextResponse.json(
-        {
-          error: `Sync is on cooldown. Please try again in ${Math.ceil(secondsUntilNext / 60)} minute${Math.ceil(secondsUntilNext / 60) !== 1 ? 's' : ''}.`,
-          nextSyncAt: connection.nextSyncAt.toISOString(),
-          secondsUntilNext,
-        },
-        { status: 429 }
-      );
+    // ── DB-based cooldown using lastSyncedAt (survives deploys) ──────
+    if (connection.lastSyncedAt) {
+      const elapsed = Date.now() - connection.lastSyncedAt.getTime();
+      if (elapsed < GBP_COOLDOWN_MS) {
+        const secondsLeft = Math.ceil((GBP_COOLDOWN_MS - elapsed) / 1000);
+        return NextResponse.json(
+          {
+            error: `Sync is on cooldown. Please try again in ${Math.ceil(secondsLeft / 60)} minute${Math.ceil(secondsLeft / 60) !== 1 ? 's' : ''}.`,
+            secondsUntilNext: secondsLeft,
+            cooldown: true,
+          },
+          { status: 429 }
+        );
+      }
     }
 
-    // ── Schedule next sync 30 minutes from now ────────────────────────
-    const nextSyncAt = new Date(now.getTime() + 30 * 60_000);
+    await syncGmbConnection(connection.id);
 
-    await syncGmbConnection(connection.id, nextSyncAt);
+    // Update lastSyncedAt for cooldown tracking
+    await prisma.gMBConnection.update({
+      where: { id: connection.id },
+      data: { lastSyncedAt: new Date() },
+    });
 
     const refreshed = await prisma.gMBConnection.findUnique({ where: { id: connection.id } });
 

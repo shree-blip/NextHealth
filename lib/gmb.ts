@@ -403,8 +403,8 @@ export async function syncGmbConnection(connectionId: string, nextSyncAt?: Date)
     throw new Error('No business location selected');
   }
 
-  // If nextSyncAt not provided, set cooldown for next sync
-  const scheduledNextSync = nextSyncAt || new Date(Date.now() + 30 * 60_000);
+  // If nextSyncAt not provided, set a short cooldown (5 min) — actual cooldown enforcement is in the API route
+  const scheduledNextSync = nextSyncAt || new Date(Date.now() + 5 * 60_000);
 
   await prisma.gMBConnection.update({
     where: { id: connectionId },

@@ -45,7 +45,6 @@ import {
   Search,
   ChevronDown,
   Unlink,
-  Clock,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -57,6 +56,7 @@ import Footer from '@/components/Footer';
 import DeleteConfirmationModal from '@/components/DeleteConfirmationModal';
 import ActionFeedback from '@/components/ActionFeedback';
 import BackgroundTaskNotification, { BackgroundTask } from '@/components/BackgroundTaskNotification';
+import SyncProgressPopup, { SyncProgressState, INITIAL_SYNC_STATE } from '@/components/SyncProgressPopup';
 import { useSitePreferences } from '@/components/SitePreferencesProvider';
 import AdminSettings from '@/components/AdminSettings';
 import { useAdminTranslation } from '@/hooks/useAdminTranslation';
@@ -832,6 +832,43 @@ function AdminDashboardContent() {
 
   const dismissBackgroundTask = (id: string) => {
     setBackgroundTasks(prev => prev.filter(task => task.id !== id));
+  };
+
+  // ── Sync progress popup state ──
+  const [syncPopup, setSyncPopup] = useState<SyncProgressState>(INITIAL_SYNC_STATE);
+
+  const updateSyncPopup = (patch: Partial<SyncProgressState>) => {
+    setSyncPopup(prev => ({ ...prev, ...patch }));
+  };
+
+  const startSyncPopup = () => {
+    setSyncPopup({
+      visible: true,
+      minimized: false,
+      status: 'syncing',
+      progress: 0,
+      label: 'Starting data sync...',
+      message: '',
+      startedAt: Date.now(),
+    });
+  };
+
+  const finishSyncPopup = (success: boolean, message: string) => {
+    setSyncPopup(prev => ({
+      ...prev,
+      visible: true,       // Re-show popup as notification even if user closed it
+      minimized: false,     // Expand so user sees the result
+      status: success ? 'success' : 'error',
+      progress: success ? 100 : prev.progress,
+      label: success ? 'Complete' : 'Failed',
+      message,
+    }));
+    // Auto-dismiss success notification after 15 seconds
+    if (success) {
+      setTimeout(() => {
+        setSyncPopup(prev => (prev.status === 'success' ? INITIAL_SYNC_STATE : prev));
+      }, 15000);
+    }
   };
 
   const startActionFeedback = (loadingText: string) => {
@@ -2146,8 +2183,8 @@ function AdminDashboardContent() {
       </div>
     </Modal>
 
-    {/* Full-screen progress overlay */}
-    {gmbState.showProgress && (
+    {/* Full-screen progress overlay (Save Configuration only) */}
+    {gmbState.showProgress && gmbState.analyticsSaving && (
       <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 backdrop-blur-md">
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
@@ -2748,92 +2785,82 @@ function AdminDashboardContent() {
 
                     {/* Sync Data */}
                     <button
-                      onClick={async () => {
+                      onClick={() => {
                         if (!editingClinic?.id) return;
-                        setGmbState(prev => ({ ...prev, confirmSyncing: true, error: '', message: '', showProgress: true, syncProgress: 0, syncProgressLabel: 'Starting data sync...' }));
-                        try {
-                          let step = 0;
-                          const hasGbp = !!gmbState.connection.businessLocationId;
-                          const hasAnalytics = !!(gmbState.selectedGA4Property || gmbState.selectedSCSite || gmbState.selectedAdsCustomerId);
-                          const totalSteps = (hasGbp ? 1 : 0) + (hasAnalytics ? 1 : 0);
-                          if (totalSteps === 0) throw new Error('No integrations configured to sync');
+                        // Mark button as syncing & open popup
+                        setGmbState(prev => ({ ...prev, confirmSyncing: true, error: '', message: '' }));
+                        startSyncPopup();
 
-                          if (gmbState.connection.businessLocationId) {
-                            step++;
-                            setGmbState(prev => ({ ...prev, syncProgress: Math.round((step / (totalSteps + 1)) * 70), syncProgressLabel: 'Syncing Business Profile data...' }));
-                            const r = await fetch('/api/admin/gmb/sync', {
-                              method: 'POST',
-                              headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({ clinicId: editingClinic.id }),
-                            });
-                            if (r.status === 429) {
-                              const data = await r.json();
-                              throw new Error(data.error || 'Sync cooldown active. Please wait before retrying.');
+                        // Run sync async — popup tracks progress; closing popup does NOT abort sync
+                        (async () => {
+                          try {
+                            let step = 0;
+                            const hasGbp = !!gmbState.connection.businessLocationId;
+                            const hasAnalytics = !!(gmbState.selectedGA4Property || gmbState.selectedSCSite || gmbState.selectedAdsCustomerId);
+                            const totalSteps = (hasGbp ? 1 : 0) + (hasAnalytics ? 1 : 0);
+                            if (totalSteps === 0) throw new Error('No integrations configured to sync');
+
+                            if (gmbState.connection.businessLocationId) {
+                              step++;
+                              updateSyncPopup({ progress: Math.round((step / (totalSteps + 1)) * 70), label: 'Syncing Business Profile data...' });
+                              const r = await fetch('/api/admin/gmb/sync', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ clinicId: editingClinic.id }),
+                              });
+                              if (r.status === 429) {
+                                const data = await r.json();
+                                throw new Error(data.error || 'Sync cooldown active. Please wait before retrying.');
+                              }
+                              if (!r.ok) throw new Error('GBP sync failed');
                             }
-                            if (!r.ok) throw new Error('GBP sync failed');
+
+                            if (gmbState.selectedGA4Property || gmbState.selectedSCSite || gmbState.selectedAdsCustomerId) {
+                              step++;
+                              const syncingParts: string[] = [];
+                              if (gmbState.selectedGA4Property) syncingParts.push('Analytics');
+                              if (gmbState.selectedSCSite) syncingParts.push('Organic Traffic');
+                              if (gmbState.selectedAdsCustomerId) syncingParts.push('Google Ads');
+                              updateSyncPopup({ progress: Math.round((step / (totalSteps + 1)) * 70), label: `Syncing ${syncingParts.join(' & ')}...` });
+                              const r = await fetch('/api/admin/gmb/sync-analytics', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ clinicId: editingClinic.id }),
+                              });
+                              const syncResult = await r.json().catch(() => ({}));
+                              if (r.status === 429) {
+                                throw new Error(syncResult.error || 'Analytics sync is on cooldown. Please wait before retrying.');
+                              }
+                              if (!r.ok) {
+                                throw new Error(syncResult.error || 'Analytics sync failed');
+                              }
+                              if (syncResult.partial && syncResult.errors) {
+                                console.warn('Partial sync success:', syncResult.errors);
+                              }
+                            }
+
+                            updateSyncPopup({ progress: 85, label: 'Refreshing connection status...' });
+                            await fetchGmbConnection(editingClinic.id, true);
+                            
+                            // Done — show success in popup
+                            setGmbState(prev => ({ ...prev, confirmSyncing: false }));
+                            finishSyncPopup(true, 'Your report is ready. Please view it in the View tab.');
+                          } catch (err: any) {
+                            setGmbState(prev => ({ ...prev, confirmSyncing: false }));
+                            finishSyncPopup(false, err?.message || 'Sync failed. Please try again.');
                           }
-                          if (gmbState.selectedGA4Property || gmbState.selectedSCSite || gmbState.selectedAdsCustomerId) {
-                            step++;
-                            const syncingParts: string[] = [];
-                            if (gmbState.selectedGA4Property) syncingParts.push('Analytics');
-                            if (gmbState.selectedSCSite) syncingParts.push('Search Console');
-                            if (gmbState.selectedAdsCustomerId) syncingParts.push('Google Ads');
-                            setGmbState(prev => ({ ...prev, syncProgress: Math.round((step / (totalSteps + 1)) * 70), syncProgressLabel: `Syncing ${syncingParts.join(' & ')}...` }));
-                            const r = await fetch('/api/admin/gmb/sync-analytics', {
-                              method: 'POST',
-                              headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({ clinicId: editingClinic.id }),
-                            });
-                            const syncResult = await r.json().catch(() => ({}));
-                            if (r.status === 429) {
-                              throw new Error(syncResult.error || 'Analytics sync is on cooldown. Please wait before retrying.');
-                            }
-                            if (!r.ok) {
-                              throw new Error(syncResult.error || 'Analytics sync failed');
-                            }
-                            // Show partial success warning
-                            if (syncResult.partial && syncResult.errors) {
-                              console.warn('Partial sync success:', syncResult.errors);
-                            }
-                          }
-                          setGmbState(prev => ({ ...prev, syncProgress: 85, syncProgressLabel: 'Refreshing connection status...' }));
-                          await fetchGmbConnection(editingClinic.id, true);
-                          setGmbState(prev => ({ ...prev, syncProgress: 100, syncProgressLabel: 'Sync complete!' }));
-                          await new Promise(r => setTimeout(r, 600));
-                          setGmbState(prev => ({
-                            ...prev,
-                            confirmSyncing: false,
-                            showProgress: false,
-                            syncProgress: 0,
-                            message: `Data synced successfully at ${new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}. Dashboard charts will update shortly.`,
-                          }));
-                        } catch (err: any) {
-                          setGmbState(prev => ({
-                            ...prev,
-                            confirmSyncing: false,
-                            showProgress: false,
-                            syncProgress: 0,
-                            error: err?.message || 'Sync failed. Please try again.',
-                          }));
-                        }
+                        })();
                       }}
-                      disabled={gmbState.confirmSyncing || (!gmbState.connection.businessLocationId && !gmbState.selectedGA4Property && !gmbState.selectedSCSite && !gmbState.selectedAdsCustomerId) || (gmbState.connection?.nextSyncAt && new Date(gmbState.connection.nextSyncAt) > new Date())}
+                      disabled={gmbState.confirmSyncing || syncPopup.status === 'syncing' || (!gmbState.connection.businessLocationId && !gmbState.selectedGA4Property && !gmbState.selectedSCSite && !gmbState.selectedAdsCustomerId)}
                       className={`w-full px-4 py-3 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 border ${
-                        gmbState.confirmSyncing
+                        gmbState.confirmSyncing || syncPopup.status === 'syncing'
                           ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800/40 text-emerald-700 dark:text-emerald-400 cursor-wait'
-                          : gmbState.connection?.nextSyncAt && new Date(gmbState.connection.nextSyncAt) > new Date()
-                            ? 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 cursor-not-allowed'
-                            : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 disabled:opacity-40 disabled:cursor-not-allowed'
+                          : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 disabled:opacity-40 disabled:cursor-not-allowed'
                       }`}
-                      title={gmbState.connection?.nextSyncAt && new Date(gmbState.connection.nextSyncAt) > new Date() ? `Next sync available in ${Math.ceil((new Date(gmbState.connection.nextSyncAt).getTime() - new Date().getTime()) / 60000)} minutes` : 'Sync your Google data now'}
+                      title="Sync your Google data now"
                     >
-                      {gmbState.confirmSyncing ? (
+                      {gmbState.confirmSyncing || syncPopup.status === 'syncing' ? (
                         <><RefreshCw className="h-4 w-4 animate-spin" /> Syncing...</>
-                      ) : gmbState.connection?.nextSyncAt && new Date(gmbState.connection.nextSyncAt) > new Date() ? (
-                        <>
-                          <Clock className="h-4 w-4" /> 
-                          Sync available in {Math.ceil((new Date(gmbState.connection.nextSyncAt).getTime() - new Date().getTime()) / 60000)}m
-                        </>
                       ) : (
                         <><Zap className="h-4 w-4" /> Sync Data</>
                       )}
@@ -2937,6 +2964,14 @@ function AdminDashboardContent() {
     <BackgroundTaskNotification 
       tasks={backgroundTasks}
       onDismiss={dismissBackgroundTask}
+    />
+
+    <SyncProgressPopup
+      state={syncPopup}
+      onMinimize={() => updateSyncPopup({ minimized: true })}
+      onMaximize={() => updateSyncPopup({ minimized: false })}
+      onClose={() => updateSyncPopup({ visible: false, minimized: false })}
+      onDismiss={() => setSyncPopup(INITIAL_SYNC_STATE)}
     />
 
     <Footer />
