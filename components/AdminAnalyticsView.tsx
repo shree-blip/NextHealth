@@ -108,6 +108,10 @@ export default function AdminAnalyticsView({ isDark, refreshTrigger }: AdminAnal
   const [topQueries, setTopQueries] = useState<{ query: string; clicks: number; impressions: number; position: number }[]>([]);
   const [scDailyData, setScDailyData] = useState<any[]>([]);
 
+  // Google Ads data from API
+  const [googleAdsApiData, setGoogleAdsApiData] = useState<{ date: string; impressions: number; clicks: number; cost: number; conversions: number; ctr: number; avgCpc: number; costPerConversion: number }[]>([]);
+  const [googleAdsSummary, setGoogleAdsSummary] = useState<{ totalSpend: number; totalClicks: number; totalImpressions: number; totalConversions: number; avgCpc: number } | null>(null);
+
   useEffect(() => {
     fetchClinics();
   }, []);
@@ -340,6 +344,25 @@ export default function AdminAnalyticsView({ isDark, refreshTrigger }: AdminAnal
           }
         }
         setTopQueries([...queriesMap.values()].sort((a, b) => b.clicks - a.clicks).slice(0, 10));
+
+        // Google Ads API data
+        const adsRows: any[] = json.googleAdsData || [];
+        setGoogleAdsApiData(adsRows);
+        if (adsRows.length > 0) {
+          const totalSpend = adsRows.reduce((s: number, d: any) => s + (d.cost || 0), 0);
+          const totalClicks = adsRows.reduce((s: number, d: any) => s + (d.clicks || 0), 0);
+          const totalImpressions = adsRows.reduce((s: number, d: any) => s + (d.impressions || 0), 0);
+          const totalConversions = adsRows.reduce((s: number, d: any) => s + (d.conversions || 0), 0);
+          setGoogleAdsSummary({
+            totalSpend,
+            totalClicks,
+            totalImpressions,
+            totalConversions,
+            avgCpc: totalClicks > 0 ? totalSpend / totalClicks : 0,
+          });
+        } else {
+          setGoogleAdsSummary(null);
+        }
       } catch {
         setGmbDbData([]);
         setGmbSummary(null);
@@ -350,6 +373,8 @@ export default function AdminAnalyticsView({ isDark, refreshTrigger }: AdminAnal
         setTopQueries([]);
         setScDailyData([]);
         setScSummary(null);
+        setGoogleAdsApiData([]);
+        setGoogleAdsSummary(null);
       }
     };
     fetchGoogleData();
@@ -411,6 +436,10 @@ export default function AdminAnalyticsView({ isDark, refreshTrigger }: AdminAnal
     metaSpend: 0,
     googleSpend: 0,
   });
+
+  // Total Ad Spend: Meta (from WeeklyAnalytics) + Google Ads API data
+  const googleAdsApiSpend = googleAdsSummary?.totalSpend || 0;
+  const totalAdSpend = totals.metaSpend + totals.googleSpend + googleAdsApiSpend;
 
   // Use GBP data from database if available, otherwise fall back to manual analytics
   const gmbMetrics = gmbSummary || {
@@ -602,8 +631,15 @@ export default function AdminAnalyticsView({ isDark, refreshTrigger }: AdminAnal
               Total
             </span>
           </div>
-          <h3 className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>${(totals.metaSpend + totals.googleSpend).toFixed(0)}</h3>
-          <p className={`text-sm font-semibold ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>Total Investment</p>
+          <h3 className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>${totalAdSpend.toFixed(0)}</h3>
+          <p className={`text-sm font-semibold ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>Total Ad Spend</p>
+          {totalAdSpend > 0 && (
+            <div className={`mt-1 text-[11px] font-medium ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+              {totals.metaSpend > 0 && <span>Meta: ${totals.metaSpend.toFixed(0)}</span>}
+              {totals.metaSpend > 0 && (totals.googleSpend + googleAdsApiSpend) > 0 && <span> · </span>}
+              {(totals.googleSpend + googleAdsApiSpend) > 0 && <span>Google: ${(totals.googleSpend + googleAdsApiSpend).toFixed(0)}</span>}
+            </div>
+          )}
         </motion.div>
       </div>
 
@@ -828,6 +864,59 @@ export default function AdminAnalyticsView({ isDark, refreshTrigger }: AdminAnal
           </BarChart>
         </ResponsiveContainer>
       </motion.div>
+
+      {/* ═══════════════════ GOOGLE ADS (API) ═══════════════════ */}
+      {googleAdsSummary && (
+        <>
+          <div className="flex items-center gap-2 pt-2">
+            <DollarSign className="h-5 w-5 text-green-400" />
+            <h2 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Google Ads</h2>
+            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${isDark ? 'bg-green-900/20 text-green-400' : 'bg-green-100 text-green-700'}`}>API</span>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+            {[
+              { label: 'Ad Spend', value: `$${googleAdsSummary.totalSpend.toFixed(2)}`, color: 'text-green-400' },
+              { label: 'Clicks', value: googleAdsSummary.totalClicks.toLocaleString(), color: 'text-blue-400' },
+              { label: 'Impressions', value: googleAdsSummary.totalImpressions.toLocaleString(), color: 'text-purple-400' },
+              { label: 'Conversions', value: googleAdsSummary.totalConversions.toLocaleString(), color: 'text-amber-400' },
+              { label: 'Avg CPC', value: `$${googleAdsSummary.avgCpc.toFixed(2)}`, color: 'text-indigo-400' },
+            ].map((card) => (
+              <div key={card.label} className={`rounded-xl p-4 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
+                <p className={`text-xl font-black ${card.color}`}>{card.value}</p>
+                <p className={`text-xs font-semibold mt-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{card.label}</p>
+              </div>
+            ))}
+          </div>
+          {googleAdsApiData.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className={`rounded-2xl p-6 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}
+            >
+              <h3 className={`text-xl font-bold mb-6 ${isDark ? 'text-white' : 'text-slate-900'}`}>Google Ads — Daily Spend & Clicks</h3>
+              <ResponsiveContainer width="100%" height={280}>
+                <AreaChart data={googleAdsApiData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#334155' : '#e2e8f0'} />
+                  <XAxis dataKey="date" stroke={isDark ? '#94a3b8' : '#64748b'} tick={{ fontSize: 11 }} />
+                  <YAxis yAxisId="left" stroke={isDark ? '#94a3b8' : '#64748b'} />
+                  <YAxis yAxisId="right" orientation="right" stroke={isDark ? '#94a3b8' : '#64748b'} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: isDark ? '#1e293b' : '#ffffff',
+                      border: `1px solid ${isDark ? '#475569' : '#e2e8f0'}`,
+                      borderRadius: '12px',
+                    }}
+                    formatter={(value: any, name: any) => [name === 'Spend' ? `$${Number(value || 0).toFixed(2)}` : Number(value || 0).toLocaleString(), name]}
+                  />
+                  <Legend />
+                  <Area yAxisId="left" type="monotone" dataKey="cost" name="Spend" stroke="#10b981" fill="#10b981" fillOpacity={0.3} />
+                  <Area yAxisId="right" type="monotone" dataKey="clicks" name="Clicks" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.15} />
+                </AreaChart>
+              </ResponsiveContainer>
+            </motion.div>
+          )}
+        </>
+      )}
 
       {/* Ad Performance & Traffic Sources Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

@@ -5,7 +5,7 @@ import {
   LineChart, Line, BarChart, Bar, AreaChart, Area, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
-import { Loader2, Building2, TrendingUp, Users, Globe, MousePointerClick, Eye, BarChart3, Search } from 'lucide-react';
+import { Loader2, Building2, TrendingUp, Users, Globe, MousePointerClick, Eye, BarChart3, Search, DollarSign } from 'lucide-react';
 import AnalyticsDateFilter, { type DateRange, type FilterPreset } from './AnalyticsDateFilter';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -59,6 +59,17 @@ interface GBPRow {
   directionRequests: number;
 }
 
+interface GoogleAdsRow {
+  date: string;
+  impressions: number;
+  clicks: number;
+  cost: number;
+  conversions: number;
+  ctr: number;
+  avgCpc: number;
+  costPerConversion: number;
+}
+
 interface ClientAnalyticsViewProps {
   refreshTrigger?: number;
   isAdmin?: boolean;
@@ -77,6 +88,7 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false, o
   const [ga4Data, setGa4Data] = useState<GA4Row[]>([]);
   const [scData, setScData] = useState<SCRow[]>([]);
   const [gbpData, setGbpData] = useState<GBPRow[]>([]);
+  const [adsData, setAdsData] = useState<GoogleAdsRow[]>([]);
   const [googleLoading, setGoogleLoading] = useState(false);
 
   // Date filter state
@@ -156,12 +168,13 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false, o
           endDate: dateRange.endDate,
         });
         const res = await fetch(`${apiBase}?${params.toString()}`);
-        if (!res.ok) { setGa4Data([]); setScData([]); setGbpData([]); return; }
+        if (!res.ok) { setGa4Data([]); setScData([]); setGbpData([]); setAdsData([]); return; }
         const json = await res.json();
         setGa4Data(json.ga4Data || []);
         setScData(json.searchConsoleData || []);
         setGbpData(json.gmbData || []);
-      } catch { setGa4Data([]); setScData([]); setGbpData([]); }
+        setAdsData(json.googleAdsData || []);
+      } catch { setGa4Data([]); setScData([]); setGbpData([]); setAdsData([]); }
       finally { setGoogleLoading(false); }
     };
     fetchGoogleData();
@@ -281,7 +294,7 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false, o
     conversionRate: week.conversionRate || 0,
   }));
 
-  const hasGoogleData = ga4Data.length > 0 || scData.length > 0 || gbpData.length > 0;
+  const hasGoogleData = ga4Data.length > 0 || scData.length > 0 || gbpData.length > 0 || adsData.length > 0;
   const hasWeeklyData = analytics.length > 0;
 
   if (!hasGoogleData && !hasWeeklyData) {
@@ -555,6 +568,68 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false, o
               <p className="text-slate-400 text-xs mt-1">Direction Requests</p>
             </div>
           </div>
+        </>
+      )}
+
+      {/* ═══════════════════ GOOGLE ADS & TOTAL AD SPEND ═══════════════════ */}
+      {adsData.length > 0 && (
+        <>
+          <div className="flex items-center gap-2 pt-4">
+            <DollarSign className="h-5 w-5 text-green-400" />
+            <h2 className="text-lg font-bold text-white">Google Ads & Ad Spend</h2>
+            <span className="text-xs text-slate-500 ml-2">Filtered range</span>
+          </div>
+          {(() => {
+            const totalGoogleAdsSpend = adsData.reduce((s, d) => s + (d.cost || 0), 0);
+            const totalGoogleAdsClicks = adsData.reduce((s, d) => s + (d.clicks || 0), 0);
+            const totalGoogleAdsImpressions = adsData.reduce((s, d) => s + (d.impressions || 0), 0);
+            const totalGoogleAdsConversions = adsData.reduce((s, d) => s + (d.conversions || 0), 0);
+            const avgCpc = totalGoogleAdsClicks > 0 ? totalGoogleAdsSpend / totalGoogleAdsClicks : 0;
+            return (
+              <>
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                  <div className="rounded-xl p-4 bg-slate-800 border border-slate-700">
+                    <p className="text-2xl font-bold text-green-400">${totalGoogleAdsSpend.toFixed(2)}</p>
+                    <p className="text-slate-400 text-xs mt-1">Total Ad Spend</p>
+                  </div>
+                  <div className="rounded-xl p-4 bg-slate-800 border border-slate-700">
+                    <p className="text-2xl font-bold text-blue-400">{totalGoogleAdsClicks.toLocaleString()}</p>
+                    <p className="text-slate-400 text-xs mt-1">Clicks</p>
+                  </div>
+                  <div className="rounded-xl p-4 bg-slate-800 border border-slate-700">
+                    <p className="text-2xl font-bold text-purple-400">{totalGoogleAdsImpressions.toLocaleString()}</p>
+                    <p className="text-slate-400 text-xs mt-1">Impressions</p>
+                  </div>
+                  <div className="rounded-xl p-4 bg-slate-800 border border-slate-700">
+                    <p className="text-2xl font-bold text-amber-400">{totalGoogleAdsConversions.toLocaleString()}</p>
+                    <p className="text-slate-400 text-xs mt-1">Conversions</p>
+                  </div>
+                  <div className="rounded-xl p-4 bg-slate-800 border border-slate-700">
+                    <p className="text-2xl font-bold text-indigo-400">${avgCpc.toFixed(2)}</p>
+                    <p className="text-slate-400 text-xs mt-1">Avg CPC</p>
+                  </div>
+                </div>
+                <div className="rounded-2xl p-6 bg-slate-800 border border-slate-700">
+                  <h3 className="text-lg font-bold text-white mb-4">Daily Ad Spend & Clicks</h3>
+                  <ResponsiveContainer width="100%" height={280}>
+                    <AreaChart data={adsData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                      <XAxis dataKey="date" stroke="#94a3b8" tick={{ fontSize: 11 }} />
+                      <YAxis yAxisId="left" stroke="#94a3b8" />
+                      <YAxis yAxisId="right" orientation="right" stroke="#94a3b8" />
+                      <Tooltip
+                        contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #475569', borderRadius: '12px' }}
+                        formatter={(value: any, name: any) => [name === 'Spend ($)' ? `$${Number(value || 0).toFixed(2)}` : Number(value || 0).toLocaleString(), name]}
+                      />
+                      <Legend />
+                      <Area yAxisId="left" type="monotone" dataKey="cost" name="Spend ($)" stroke="#10b981" fill="#10b981" fillOpacity={0.3} />
+                      <Area yAxisId="right" type="monotone" dataKey="clicks" name="Clicks" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.15} />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              </>
+            );
+          })()}
         </>
       )}
 

@@ -231,15 +231,38 @@ export async function GET(req: NextRequest) {
       }))
       .sort((a, b) => a.date.localeCompare(b.date));
 
+    // Aggregate Google Ads by date
+    const adsByDate: Record<string, { impressions: number; clicks: number; cost: number; conversions: number; count: number }> = {};
+    for (const row of allAdsRows) {
+      if (!adsByDate[row.date]) adsByDate[row.date] = { impressions: 0, clicks: 0, cost: 0, conversions: 0, count: 0 };
+      adsByDate[row.date].impressions += row.impressions;
+      adsByDate[row.date].clicks += row.clicks;
+      adsByDate[row.date].cost += row.cost;
+      adsByDate[row.date].conversions += row.conversions;
+      adsByDate[row.date].count += 1;
+    }
+    const aggregatedAds = Object.entries(adsByDate)
+      .map(([date, v]) => ({
+        date,
+        impressions: v.impressions,
+        clicks: v.clicks,
+        cost: v.cost,
+        conversions: v.conversions,
+        ctr: v.impressions > 0 ? v.clicks / v.impressions : 0,
+        avgCpc: v.clicks > 0 ? v.cost / v.clicks : 0,
+        costPerConversion: v.conversions > 0 ? v.cost / v.conversions : 0,
+      }))
+      .sort((a, b) => a.date.localeCompare(b.date));
+
     return NextResponse.json({
       ga4PropertyId: aggregatedGA4.length > 0 ? 'all' : null,
       searchConsoleSite: aggregatedSC.length > 0 ? 'all' : null,
       businessLocationId: aggregatedGMB.length > 0 ? 'all' : null,
-      googleAdsCustomerId: allAdsRows.length > 0 ? 'all' : null,
+      googleAdsCustomerId: aggregatedAds.length > 0 ? 'all' : null,
       ga4Data: aggregatedGA4,
       searchConsoleData: aggregatedSC,
       gmbData: aggregatedGMB,
-      googleAdsData: allAdsRows,
+      googleAdsData: aggregatedAds,
     });
   } catch (error: any) {
     console.error('Analytics data fetch error:', error);

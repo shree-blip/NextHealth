@@ -790,6 +790,7 @@ function AdminDashboardContent() {
     adsAccounts: [] as { customerId: string; descriptiveName: string; currencyCode: string }[],
     selectedAdsCustomerId: '',
     adsError: '',
+    adsWarning: '',
   });
 
   // Delete confirmation modal state
@@ -1485,14 +1486,19 @@ function AdminDashboardContent() {
           .then(r => r.json())
           .then(d => {
             if (d.accounts) adsAccounts = d.accounts;
-            else if (d.error) {
+            if (d.warning) {
+              adsError = d.warning;
+              apiWarnings.push(`Google Ads: ${d.warning}`);
+            } else if (d.error) {
               console.warn('[Ads] accounts error:', d.error);
               adsError = d.error;
+              apiWarnings.push(`Google Ads: ${d.error}`);
             }
           })
           .catch(e => {
             console.warn('[Ads] accounts fetch failed:', e);
             adsError = 'Failed to load Google Ads accounts';
+            apiWarnings.push('Google Ads: Failed to load Google Ads accounts');
           })
       );
 
@@ -2747,7 +2753,9 @@ function AdminDashboardContent() {
                         setGmbState(prev => ({ ...prev, confirmSyncing: true, error: '', message: '', showProgress: true, syncProgress: 0, syncProgressLabel: 'Starting data sync...' }));
                         try {
                           let step = 0;
-                          const totalSteps = (gmbState.connection.businessLocationId ? 1 : 0) + (gmbState.selectedGA4Property || gmbState.selectedSCSite ? 1 : 0) + (gmbState.selectedAdsCustomerId ? 1 : 0);
+                          const hasGbp = !!gmbState.connection.businessLocationId;
+                          const hasAnalytics = !!(gmbState.selectedGA4Property || gmbState.selectedSCSite || gmbState.selectedAdsCustomerId);
+                          const totalSteps = (hasGbp ? 1 : 0) + (hasAnalytics ? 1 : 0);
                           if (totalSteps === 0) throw new Error('No integrations configured to sync');
 
                           if (gmbState.connection.businessLocationId) {
@@ -2764,25 +2772,29 @@ function AdminDashboardContent() {
                             }
                             if (!r.ok) throw new Error('GBP sync failed');
                           }
-                          if (gmbState.selectedGA4Property || gmbState.selectedSCSite) {
+                          if (gmbState.selectedGA4Property || gmbState.selectedSCSite || gmbState.selectedAdsCustomerId) {
                             step++;
-                            setGmbState(prev => ({ ...prev, syncProgress: Math.round((step / (totalSteps + 1)) * 70), syncProgressLabel: 'Syncing Analytics & Search Console...' }));
+                            const syncingParts: string[] = [];
+                            if (gmbState.selectedGA4Property) syncingParts.push('Analytics');
+                            if (gmbState.selectedSCSite) syncingParts.push('Search Console');
+                            if (gmbState.selectedAdsCustomerId) syncingParts.push('Google Ads');
+                            setGmbState(prev => ({ ...prev, syncProgress: Math.round((step / (totalSteps + 1)) * 70), syncProgressLabel: `Syncing ${syncingParts.join(' & ')}...` }));
                             const r = await fetch('/api/admin/gmb/sync-analytics', {
                               method: 'POST',
                               headers: { 'Content-Type': 'application/json' },
                               body: JSON.stringify({ clinicId: editingClinic.id }),
                             });
-                            if (!r.ok) throw new Error('Analytics sync failed');
-                          }
-                          if (gmbState.selectedAdsCustomerId) {
-                            step++;
-                            setGmbState(prev => ({ ...prev, syncProgress: Math.round((step / (totalSteps + 1)) * 70), syncProgressLabel: 'Syncing Google Ads data...' }));
-                            const r = await fetch('/api/admin/gmb/select-ads', {
-                              method: 'POST',
-                              headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({ clinicId: editingClinic.id, googleAdsCustomerId: gmbState.selectedAdsCustomerId }),
-                            });
-                            if (!r.ok) throw new Error('Google Ads sync failed');
+                            const syncResult = await r.json().catch(() => ({}));
+                            if (r.status === 429) {
+                              throw new Error(syncResult.error || 'Analytics sync is on cooldown. Please wait before retrying.');
+                            }
+                            if (!r.ok) {
+                              throw new Error(syncResult.error || 'Analytics sync failed');
+                            }
+                            // Show partial success warning
+                            if (syncResult.partial && syncResult.errors) {
+                              console.warn('Partial sync success:', syncResult.errors);
+                            }
                           }
                           setGmbState(prev => ({ ...prev, syncProgress: 85, syncProgressLabel: 'Refreshing connection status...' }));
                           await fetchGmbConnection(editingClinic.id, true);
