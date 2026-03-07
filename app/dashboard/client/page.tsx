@@ -50,6 +50,7 @@ import PremiumAnalyticsChat from '@/components/PremiumAnalyticsChat';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import LoadingScreen from '@/components/LoadingScreen';
+import DashboardLoader from '@/components/DashboardLoader';
 import { useSitePreferences } from '@/components/SitePreferencesProvider';
 import PricingCard from '@/components/PricingCard';
 import BillingView from '@/components/BillingView';
@@ -120,7 +121,7 @@ function Toast({ type, message, onClose }: { type: 'success' | 'error'; message:
 /* ─── Dashboard Component ─── */
 export default function ClientDashboardPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-emerald-500" /></div>}>
+    <Suspense fallback={<div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white flex items-center justify-center"><DashboardLoader variant="page" label="Loading dashboard..." className="text-emerald-500" /></div>}>
       <ClientDashboard />
     </Suspense>
   );
@@ -362,7 +363,7 @@ function ClientDashboard() {
     }
   };
 
-  if (!user) return <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-emerald-500" /></div>;
+  if (!user) return <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white flex items-center justify-center"><DashboardLoader variant="page" label="Loading..." className="text-emerald-500" /></div>;
 
   const currentPlanIdRaw = subStatus?.planId || null;
   const currentPlanId = currentPlanIdRaw === 'platinum' ? 'premium' : currentPlanIdRaw;
@@ -833,7 +834,7 @@ function MembershipView({
             <div className="text-sm text-slate-500 dark:text-slate-400 uppercase tracking-widest font-bold mb-2">Current Plan</div>
             <h2 className="text-3xl font-black mb-1">
               {loadingSub ? (
-                <span className="flex items-center gap-2 text-slate-400"><Loader2 className="h-6 w-6 animate-spin" /> Loading...</span>
+                <span className="flex items-center gap-2 text-slate-400"><DashboardLoader variant="inline" className="text-slate-400" /> Loading...</span>
               ) : currentPlanId ? (
                 <span className="text-emerald-600">{subStatus?.plan}</span>
               ) : (
@@ -864,7 +865,7 @@ function MembershipView({
               disabled={portalLoading}
               className="flex items-center gap-2 px-5 py-3 bg-slate-900 text-white rounded-2xl font-bold text-sm hover:bg-slate-800 transition-colors disabled:opacity-50 shrink-0"
             >
-              {portalLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ExternalLink className="h-4 w-4" />}
+              {portalLoading ? <DashboardLoader variant="inline" className="text-white" /> : <ExternalLink className="h-4 w-4" />}
               Manage Billing
             </button>
           )}
@@ -1112,7 +1113,7 @@ function OverviewView({
         </div>
       ) : loadingAnalytics ? (
         <div className="flex items-center justify-center py-24">
-          <Loader2 className="h-8 w-8 animate-spin text-emerald-500" />
+          <DashboardLoader variant="page" label="Loading analytics..." className="text-emerald-500" />
         </div>
       ) : (
         <>
@@ -1586,7 +1587,7 @@ function ProfileView({ user, setToast }: { user: any; setToast: (toast: { type: 
             >
               {isSubmitting ? (
                 <>
-                  <Loader2 className="h-5 w-5 animate-spin" />
+                  <DashboardLoader variant="inline" className="text-white" />
                   Saving...
                 </>
               ) : !isDirty ? (
@@ -1752,7 +1753,7 @@ function SettingsView({ role, setToast }: { role: 'client' | 'admin'; setToast: 
             disabled={isSubmitting}
             className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-semibold py-3.5 rounded-xl hover:shadow-lg hover:shadow-emerald-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
-            {isSubmitting ? <Loader2 className="h-5 w-5 animate-spin" /> : <Lock className="h-5 w-5" />}
+            {isSubmitting ? <DashboardLoader variant="inline" className="text-white" /> : <Lock className="h-5 w-5" />}
             {isSubmitting ? 'Updating Password...' : 'Update Password'}
           </button>
         </form>

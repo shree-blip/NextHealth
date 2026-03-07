@@ -6,6 +6,7 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
 import { Loader2, Building2, TrendingUp, Users, Globe, MousePointerClick, Eye, BarChart3, Search, DollarSign } from 'lucide-react';
+import DashboardLoader from './DashboardLoader';
 import AnalyticsDateFilter, { type DateRange, type FilterPreset } from './AnalyticsDateFilter';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -183,7 +184,7 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false, o
   if (loading) {
     return (
       <div className="flex items-center justify-center py-24">
-        <Loader2 className="h-8 w-8 animate-spin text-emerald-500" />
+        <DashboardLoader variant="page" label="Loading analytics..." className="text-emerald-500" />
       </div>
     );
   }
@@ -636,7 +637,7 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false, o
       {/* Loading indicator for Google data */}
       {googleLoading && (
         <div className="flex items-center gap-2 text-slate-400 text-sm py-2">
-          <Loader2 className="h-4 w-4 animate-spin" /> Syncing Google data...
+          <DashboardLoader variant="inline" className="text-slate-400" /> Syncing Google data...
         </div>
       )}
 

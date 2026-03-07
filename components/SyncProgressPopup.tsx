@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { CheckCircle2, XCircle, Minimize2, Maximize2, X } from 'lucide-react';
-import RunningPersonAnimation from './RunningPersonAnimation';
+import DashboardLoader from './DashboardLoader';
 
 export type SyncStatus = 'idle' | 'syncing' | 'success' | 'error';
 
@@ -78,7 +78,7 @@ export default function SyncProgressPopup({
         >
           {state.status === 'syncing' && (
             <>
-              <RunningPersonAnimation size={22} className="text-blue-500 dark:text-blue-400" />
+              <DashboardLoader variant="inline" className="text-blue-500 dark:text-blue-400" />
               <span className="text-sm font-bold text-blue-600 dark:text-blue-400">Syncing… {state.progress}%</span>
             </>
           )}
@@ -125,7 +125,7 @@ export default function SyncProgressPopup({
           <div className="flex items-center gap-2.5">
             {state.status === 'syncing' && (
               <div className="h-10 w-10 rounded-xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center">
-                <RunningPersonAnimation size={28} className="text-blue-600 dark:text-blue-400" />
+                <DashboardLoader variant="inline" className="text-blue-600 dark:text-blue-400" />
               </div>
             )}
             {state.status === 'success' && (

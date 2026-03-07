@@ -57,6 +57,7 @@ import DeleteConfirmationModal from '@/components/DeleteConfirmationModal';
 import ActionFeedback from '@/components/ActionFeedback';
 import BackgroundTaskNotification, { BackgroundTask } from '@/components/BackgroundTaskNotification';
 import SyncProgressPopup, { SyncProgressState, INITIAL_SYNC_STATE } from '@/components/SyncProgressPopup';
+import DashboardLoader from '@/components/DashboardLoader';
 import { useSitePreferences } from '@/components/SitePreferencesProvider';
 import AdminSettings from '@/components/AdminSettings';
 import { useAdminTranslation } from '@/hooks/useAdminTranslation';
@@ -1939,7 +1940,7 @@ function AdminDashboardContent() {
     return () => window.removeEventListener('storage', handleStorageChange);
   }, [editingClinic?.id]);
 
-  if (!user) return <div className={`min-h-screen flex items-center justify-center ${dark ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-900'}`}>Loading...</div>;
+  if (!user) return <div className={`min-h-screen flex items-center justify-center ${dark ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-900'}`}><DashboardLoader variant="page" label="Loading..." className={dark ? 'text-slate-400' : 'text-slate-500'} /></div>;
 
   return (
     <>
@@ -2215,7 +2216,7 @@ function AdminDashboardContent() {
         >
           <div className="flex flex-col items-center gap-5">
             <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/25">
-              <RefreshCw className="h-7 w-7 text-white animate-spin" />
+              <DashboardLoader variant="inline" className="text-white" />
             </div>
             <div className="text-center">
               <p className="text-lg font-bold text-slate-900 dark:text-white mb-1">
@@ -2308,7 +2309,7 @@ function AdminDashboardContent() {
                 }`}
               >
                 {gmbState.clinicSaving ? (
-                  <><RefreshCw className="h-4 w-4 animate-spin" /> Saving...</>
+                  <><DashboardLoader variant="inline" className="text-emerald-500" /> Saving...</>
                 ) : (
                   <><Save className="h-4 w-4" /> Save Clinic Details</>
                 )}
@@ -2343,7 +2344,7 @@ function AdminDashboardContent() {
                 const anyConfigured = hasGBP || hasGA4 || hasSC;
                 if (gmbState.syncing || gmbState.confirmSyncing) return (
                   <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400">
-                    <RefreshCw className="h-3 w-3 animate-spin" /> Syncing
+                    <DashboardLoader variant="inline" className="text-blue-500" /> Syncing
                   </span>
                 );
                 if (allConfigured) return (
@@ -2368,13 +2369,7 @@ function AdminDashboardContent() {
               {/* ── Loading state ── */}
               {gmbState.loading && !gmbState.connection && (
                 <div className="flex flex-col items-center justify-center py-10 gap-3">
-                  <div className="h-12 w-12 rounded-2xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center">
-                    <RefreshCw className="h-6 w-6 animate-spin text-blue-500" />
-                  </div>
-                  <div className="text-center">
-                    <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">Loading integrations...</p>
-                    <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">Fetching account details from Google</p>
-                  </div>
+                  <DashboardLoader variant="card" label="Loading integrations..." className="text-blue-500" />
                 </div>
               )}
 
@@ -2394,7 +2389,7 @@ function AdminDashboardContent() {
                     className="inline-flex items-center gap-2.5 px-7 py-3 rounded-xl bg-blue-500 hover:bg-blue-600 text-white text-sm font-bold disabled:opacity-50 transition-all shadow-sm hover:shadow-md"
                   >
                     {gmbState.connecting ? (
-                      <><RefreshCw className="h-4 w-4 animate-spin" /> Connecting...</>
+                      <><DashboardLoader variant="inline" className="text-white" /> Connecting...</>
                     ) : (
                       <><Link2 className="h-4 w-4" /> Connect Google Account</>
                     )}
@@ -2469,7 +2464,7 @@ function AdminDashboardContent() {
                       <div className="p-5 space-y-4 bg-white/50 dark:bg-transparent">
                         {gmbState.loading && gmbState.accounts.length === 0 ? (
                           <div className="flex items-center gap-2 py-3 justify-center">
-                            <RefreshCw className="h-4 w-4 animate-spin text-slate-400" />
+                            <DashboardLoader variant="inline" className="text-slate-400" />
                             <span className="text-xs text-slate-400">Loading business accounts...</span>
                           </div>
                         ) : gmbState.accountsError ? (
@@ -2550,7 +2545,7 @@ function AdminDashboardContent() {
                       <div className="p-5 bg-white/50 dark:bg-transparent">
                         {gmbState.loading && gmbState.ga4Properties.length === 0 ? (
                           <div className="flex items-center gap-2 py-3 justify-center">
-                            <RefreshCw className="h-4 w-4 animate-spin text-slate-400" />
+                            <DashboardLoader variant="inline" className="text-slate-400" />
                             <span className="text-xs text-slate-400">Loading GA4 properties...</span>
                           </div>
                         ) : gmbState.ga4Error ? (
@@ -2603,7 +2598,7 @@ function AdminDashboardContent() {
                       <div className="p-5 bg-white/50 dark:bg-transparent">
                         {gmbState.loading && gmbState.scSites.length === 0 ? (
                           <div className="flex items-center gap-2 py-3 justify-center">
-                            <RefreshCw className="h-4 w-4 animate-spin text-slate-400" />
+                            <DashboardLoader variant="inline" className="text-slate-400" />
                             <span className="text-xs text-slate-400">Loading Search Console sites...</span>
                           </div>
                         ) : gmbState.scError ? (
@@ -2656,7 +2651,7 @@ function AdminDashboardContent() {
                       <div className="p-5 bg-white/50 dark:bg-transparent">
                         {gmbState.loading && gmbState.adsAccounts.length === 0 ? (
                           <div className="flex items-center gap-2 py-3 justify-center">
-                            <RefreshCw className="h-4 w-4 animate-spin text-slate-400" />
+                            <DashboardLoader variant="inline" className="text-slate-400" />
                             <span className="text-xs text-slate-400">Loading Google Ads accounts...</span>
                           </div>
                         ) : gmbState.adsError ? (
@@ -2799,7 +2794,7 @@ function AdminDashboardContent() {
                       }`}
                     >
                       {gmbState.analyticsSaving ? (
-                        <><RefreshCw className="h-4 w-4 animate-spin" /> Saving Configuration...</>
+                        <><DashboardLoader variant="inline" className="text-blue-500" /> Saving Configuration...</>
                       ) : (
                         <><Save className="h-4 w-4" /> Save Configuration</>
                       )}
@@ -2879,20 +2874,23 @@ function AdminDashboardContent() {
                       disabled={gmbState.confirmSyncing || syncPopup.status === 'syncing' || gmbState.syncCooldownSeconds > 0 || (!gmbState.connection.businessLocationId && !gmbState.selectedGA4Property && !gmbState.selectedSCSite && !gmbState.selectedAdsCustomerId)}
                       className={`w-full px-4 py-3 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 border ${
                         gmbState.confirmSyncing || syncPopup.status === 'syncing'
-                          ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800/40 text-emerald-700 dark:text-emerald-400 cursor-wait'
+                          ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800/40 text-blue-600 dark:text-blue-400 cursor-wait'
                           : gmbState.syncCooldownSeconds > 0
-                            ? 'bg-amber-50 dark:bg-amber-900/15 border-amber-200 dark:border-amber-800/40 text-amber-700 dark:text-amber-400 cursor-not-allowed'
+                            ? 'bg-slate-50 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 cursor-not-allowed'
                             : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 disabled:opacity-40 disabled:cursor-not-allowed'
                       }`}
                       title={gmbState.syncCooldownSeconds > 0 ? `Sync available in ${formatCooldown(gmbState.syncCooldownSeconds)}` : 'Sync your Google data now'}
                     >
                       {gmbState.confirmSyncing || syncPopup.status === 'syncing' ? (
-                        <><RefreshCw className="h-4 w-4 animate-spin" /> Syncing...</>
+                        <><DashboardLoader variant="inline" className="text-blue-500" /> Syncing...</>
                       ) : gmbState.syncCooldownSeconds > 0 ? (
-                        <>
-                          <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
-                          <span className="tabular-nums">Cooldown {formatCooldown(gmbState.syncCooldownSeconds)}</span>
-                        </>
+                        <span className="flex items-center gap-2">
+                          <Zap className="h-4 w-4 opacity-40" />
+                          <span>Sync Data</span>
+                          <span className="ml-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-200/80 dark:bg-slate-700/60 text-[11px] font-bold tabular-nums text-slate-500 dark:text-slate-400">
+                            {formatCooldown(gmbState.syncCooldownSeconds)}
+                          </span>
+                        </span>
                       ) : (
                         <><Zap className="h-4 w-4" /> Sync Data</>
                       )}
@@ -3013,8 +3011,8 @@ function AdminDashboardContent() {
 
 export default function AdminDashboard() {
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-500"></div>
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
+      <DashboardLoader variant="page" label="Loading dashboard..." className="text-emerald-500" />
     </div>}>
       <AdminDashboardContent />
     </Suspense>
@@ -4431,7 +4429,7 @@ function BlogManagementSection({
 
       {loading ? (
         <div className="flex items-center justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500"></div>
+          <DashboardLoader variant="card" label="Loading posts..." className="text-emerald-500" />
         </div>
       ) : posts.length === 0 ? (
         <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 p-12 text-center">
@@ -4822,7 +4820,7 @@ function NewsManagementSection({
 
       {loading ? (
         <div className="flex items-center justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500"></div>
+          <DashboardLoader variant="card" label="Loading articles..." className="text-emerald-500" />
         </div>
       ) : articles.length === 0 ? (
         <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 p-12 text-center">

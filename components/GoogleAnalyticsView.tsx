@@ -7,10 +7,11 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
 } from 'recharts';
 import {
-  TrendingUp, Users, Globe, Search, RefreshCw, Loader2, FileText,
+  TrendingUp, Users, Globe, Search, RefreshCw, FileText,
   ArrowUpRight, ArrowDownRight, BarChart3, MousePointerClick,
   Eye, Target, Zap, MapPin, Phone, Navigation, ExternalLink,
 } from 'lucide-react';
+import DashboardLoader from './DashboardLoader';
 
 const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
@@ -157,7 +158,7 @@ export default function GoogleAnalyticsView({ clinicId, isDark = false, isClient
       return (
         <div className={`rounded-2xl p-10 border text-center ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
           <div className="h-14 w-14 rounded-2xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center mx-auto mb-4">
-            <Loader2 className="h-7 w-7 animate-spin text-blue-500" />
+            <DashboardLoader variant="inline" className="text-blue-500" />
           </div>
           <p className={`text-sm font-semibold ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>Loading Google integration data...</p>
           <p className={`text-xs mt-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Checking connection status</p>
@@ -184,7 +185,7 @@ export default function GoogleAnalyticsView({ clinicId, isDark = false, isClient
     return (
       <div className={`rounded-2xl p-10 border text-center ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
         <div className="h-14 w-14 rounded-2xl bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center mx-auto mb-4">
-          <Loader2 className="h-7 w-7 animate-spin text-emerald-500" />
+          <DashboardLoader variant="inline" className="text-emerald-500" />
         </div>
         <p className={`text-sm font-semibold ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>Fetching analytics data...</p>
         <p className={`text-xs mt-1.5 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Pulling the latest data from Google — this may take a few seconds</p>
@@ -229,7 +230,7 @@ export default function GoogleAnalyticsView({ clinicId, isDark = false, isClient
             className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold transition-all shadow-sm hover:shadow-md disabled:opacity-60"
           >
             {syncing ? (
-              <><Loader2 className="h-4 w-4 animate-spin" /> Syncing...</>
+              <><DashboardLoader variant="inline" className="text-white" /> Syncing...</>
             ) : (
               <><RefreshCw className="h-4 w-4" /> Sync Now</>
             )}
@@ -357,7 +358,7 @@ export default function GoogleAnalyticsView({ clinicId, isDark = false, isClient
               } disabled:opacity-70`}
             >
               {syncing ? (
-                <><Loader2 className="h-4 w-4 animate-spin" /> Syncing...</>
+                <><DashboardLoader variant="inline" className="text-blue-500 dark:text-blue-400" /> Syncing...</>
               ) : (
                 <><RefreshCw className="h-4 w-4" /> Sync Now</>
               )}
@@ -609,7 +610,7 @@ export default function GoogleAnalyticsView({ clinicId, isDark = false, isClient
               disabled={syncing}
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-bold disabled:opacity-50 transition-colors"
             >
-              {syncing ? <><Loader2 className="h-4 w-4 animate-spin" /> Syncing...</> : <><RefreshCw className="h-4 w-4" /> Sync Now</>}
+              {syncing ? <><DashboardLoader variant="inline" className="text-white" /> Syncing...</> : <><RefreshCw className="h-4 w-4" /> Sync Now</>}
             </button>
           )}
         </div>

@@ -7,6 +7,7 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
 import { TrendingUp, FileText, Globe, Phone, DollarSign, Users, Loader2, Building2, ChevronDown, ArrowUpRight, Database, MousePointerClick, Target, Eye, BarChart3, Search } from 'lucide-react';
+import DashboardLoader from './DashboardLoader';
 import SearchConsolePerformanceChart from './SearchConsolePerformanceChart';
 import AnalyticsDateFilter, { type DateRange, type FilterPreset } from './AnalyticsDateFilter';
 
@@ -384,7 +385,7 @@ export default function AdminAnalyticsView({ isDark, refreshTrigger }: AdminAnal
   if (loading && clinics.length === 0) {
     return (
       <div className="flex items-center justify-center py-24">
-        <Loader2 className="h-8 w-8 animate-spin text-emerald-500" />
+        <DashboardLoader variant="page" label="Loading analytics..." className="text-emerald-500" />
       </div>
     );
   }
