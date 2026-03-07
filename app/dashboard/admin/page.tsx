@@ -26,7 +26,6 @@ import {
   Edit,
   Trash2,
   Building2,
-  Brain,
   Target,
   Phone,
   DollarSign,
@@ -649,10 +648,10 @@ function AdminDashboardContent() {
     'User Management',
     'Registered Clients',
     'Client Sites',
-    'AI Models',
-    'Lead Database',
-    'Security Logs',
-    'System Config',
+    'Activity Feed',
+    'Platform Health',
+    'Content Overview',
+    'Lead Pipeline',
     'Analytics',
     'Blog Management',
     'News Management',
@@ -718,6 +717,10 @@ function AdminDashboardContent() {
     alerts: [] as any[],
     recentActivity: [] as any[],
   });
+
+  // Platform Health data for realtime tabs
+  const [platformHealth, setPlatformHealth] = useState<any>(null);
+  const [platformHealthLoading, setPlatformHealthLoading] = useState(false);
 
   const isAdminLike = useCallback((role?: string) => role === 'admin' || role === 'super_admin', []);
 
@@ -1084,6 +1087,31 @@ function AdminDashboardContent() {
     
     // Refresh every 30 seconds
     const intervalId = setInterval(fetchCommandCenterData, 30000);
+    return () => clearInterval(intervalId);
+  }, [section, user]);
+
+  // Fetch platform health data for Activity Feed, Platform Health, Content Overview, Lead Pipeline tabs
+  useEffect(() => {
+    const needsHealth = ['Activity Feed', 'Platform Health', 'Content Overview', 'Lead Pipeline'].includes(section);
+    if (!needsHealth || !user) return;
+
+    const fetchPlatformHealth = async () => {
+      setPlatformHealthLoading(true);
+      try {
+        const response = await fetch('/api/admin/stats/platform-health', { cache: 'no-store' });
+        if (response.ok) {
+          const data = await response.json();
+          setPlatformHealth(data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch platform health:', error);
+      } finally {
+        setPlatformHealthLoading(false);
+      }
+    };
+
+    fetchPlatformHealth();
+    const intervalId = setInterval(fetchPlatformHealth, 15000); // Refresh every 15s
     return () => clearInterval(intervalId);
   }, [section, user]);
 
@@ -1980,10 +2008,10 @@ function AdminDashboardContent() {
           <NavItem icon={Users} label={t('User Management')} active={section==='User Management'} onClick={() => { navigateToSection('User Management'); setShowMobileMenu(false); }} dark={dark} />
           <NavItem icon={Building2} label={t('Registered Clients')} active={section==='Registered Clients'} onClick={() => { navigateToSection('Registered Clients'); setShowMobileMenu(false); }} dark={dark} />
           <NavItem icon={Globe} label={t('Client Sites')} active={section==='Client Sites'} onClick={() => { navigateToSection('Client Sites'); setShowMobileMenu(false); }} dark={dark} />
-          <NavItem icon={Cpu} label={t('AI Models')} active={section==='AI Models'} onClick={() => { navigateToSection('AI Models'); setShowMobileMenu(false); }} dark={dark} />
-          <NavItem icon={Database} label={t('Lead Database')} active={section==='Lead Database'} onClick={() => { navigateToSection('Lead Database'); setShowMobileMenu(false); }} dark={dark} />
-          <NavItem icon={ShieldAlert} label={t('Security Logs')} active={section==='Security Logs'} onClick={() => { navigateToSection('Security Logs'); setShowMobileMenu(false); }} dark={dark} />
-          <NavItem icon={Settings} label={t('System Config')} active={section==='System Config'} onClick={() => { navigateToSection('System Config'); setShowMobileMenu(false); }} dark={dark} />
+          <NavItem icon={Activity} label={t('Activity Feed')} active={section==='Activity Feed'} onClick={() => { navigateToSection('Activity Feed'); setShowMobileMenu(false); }} dark={dark} />
+          <NavItem icon={Zap} label={t('Platform Health')} active={section==='Platform Health'} onClick={() => { navigateToSection('Platform Health'); setShowMobileMenu(false); }} dark={dark} />
+          <NavItem icon={FileText} label={t('Content Overview')} active={section==='Content Overview'} onClick={() => { navigateToSection('Content Overview'); setShowMobileMenu(false); }} dark={dark} />
+          <NavItem icon={Target} label={t('Lead Pipeline')} active={section==='Lead Pipeline'} onClick={() => { navigateToSection('Lead Pipeline'); setShowMobileMenu(false); }} dark={dark} />
           <NavItem icon={User} label={t('My Profile')} active={section==='My Profile'} onClick={() => { navigateToSection('My Profile'); setShowMobileMenu(false); }} dark={dark} />
           <NavItem icon={Lock} label={t('Settings')} active={section==='Settings'} onClick={() => { navigateToSection('Settings'); setShowMobileMenu(false); }} dark={dark} />
           <NavItem icon={FileText} label={t('Blog Management')} active={section==='Blog Management'} onClick={() => { navigateToSection('Blog Management'); setShowMobileMenu(false); }} dark={dark} />
@@ -2068,6 +2096,8 @@ function AdminDashboardContent() {
           navigateToSection={navigateToSection}
           addBackgroundTask={addBackgroundTask}
           updateBackgroundTask={updateBackgroundTask}
+          platformHealth={platformHealth}
+          platformHealthLoading={platformHealthLoading}
         />
         </div>
       </main>
@@ -3391,6 +3421,8 @@ function ContentForSection(props: {
   navigateToSection: (section: string) => void;
   addBackgroundTask: (type: 'blog' | 'news', message: string) => string;
   updateBackgroundTask: (id: string, status: 'success' | 'error', message: string, details?: string) => void;
+  platformHealth: any;
+  platformHealthLoading: boolean;
 }) {
   const {
     section,
@@ -3426,6 +3458,8 @@ function ContentForSection(props: {
     navigateToSection,
     addBackgroundTask,
     updateBackgroundTask,
+    platformHealth,
+    platformHealthLoading,
   } = props;
 
   switch(section) {
@@ -3903,185 +3937,359 @@ function ContentForSection(props: {
         </div>
       );
 
-    case 'AI Models':
+    case 'Activity Feed':
       return (
         <div>
-          <h2 className="text-2xl font-bold mb-2">AI Models</h2>
-          <p className="text-slate-600 dark:text-slate-400 mb-8">Manage and monitor AI model performance across the platform.</p>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div className="glass rounded-2xl p-6 border border-slate-200 dark:border-slate-700">
-              <div className="flex items-center gap-3 mb-4">
-                <Brain className="h-8 w-8 text-emerald-500" />
-                <div>
-                  <h3 className="font-bold">Intent Recognition</h3>
-                  <p className="text-sm text-slate-500">GPT-4 Turbo</p>
-                </div>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-3xl font-black">98%</span>
-                <span className="text-xs bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 px-3 py-1 rounded-full">Active</span>
-              </div>
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-2xl font-bold mb-1">Activity Feed</h2>
+              <p className="text-slate-600 dark:text-slate-400 text-sm">Live platform events — auto-refreshes every 15 seconds</p>
             </div>
-            
-            <div className="glass rounded-2xl p-6 border border-slate-200 dark:border-slate-700">
-              <div className="flex items-center gap-3 mb-4">
-                <Target className="h-8 w-8 text-blue-500" />
-                <div>
-                  <h3 className="font-bold">Lead Scoring</h3>
-                  <p className="text-sm text-slate-500">Custom ML Model</p>
-                </div>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-3xl font-black">94%</span>
-                <span className="text-xs bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 px-3 py-1 rounded-full">Active</span>
-              </div>
-            </div>
-            
-            <div className="glass rounded-2xl p-6 border border-slate-200 dark:border-slate-700">
-              <div className="flex items-center gap-3 mb-4">
-                <MessageSquare className="h-8 w-8 text-purple-500" />
-                <div>
-                  <h3 className="font-bold">Chatbot AI</h3>
-                  <p className="text-sm text-slate-500">Claude 3.5</p>
-                </div>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-3xl font-black">96%</span>
-                <span className="text-xs bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 px-3 py-1 rounded-full">Active</span>
-              </div>
-            </div>
+            {platformHealthLoading && <DashboardLoader variant="inline" />}
           </div>
 
-          <div className="glass rounded-2xl p-6 border border-slate-200 dark:border-slate-700">
-            <h3 className="text-lg font-bold mb-4">Recent Model Activity</h3>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
-                  <span>Intent model processed 1,247 requests</span>
+          {!platformHealth ? (
+            <DashboardLoader variant="card" label="Loading activity..." />
+          ) : (
+            <>
+              {/* Quick stats row */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                <div className="glass rounded-xl p-4 border border-slate-200 dark:border-slate-700">
+                  <p className="text-xs text-slate-500 uppercase tracking-wider">Leads (24h)</p>
+                  <p className="text-3xl font-black text-blue-500">{platformHealth.recent?.leads24h || 0}</p>
                 </div>
-                <span className="text-sm text-slate-500">Last hour</span>
-              </div>
-              <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                  <span>Lead scoring model updated with new training data</span>
+                <div className="glass rounded-xl p-4 border border-slate-200 dark:border-slate-700">
+                  <p className="text-xs text-slate-500 uppercase tracking-wider">New Users (7d)</p>
+                  <p className="text-3xl font-black text-emerald-500">{platformHealth.recent?.users7d || 0}</p>
                 </div>
-                <span className="text-sm text-slate-500">2 hours ago</span>
-              </div>
-              <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-                  <span>Chatbot handled 89 conversations</span>
+                <div className="glass rounded-xl p-4 border border-slate-200 dark:border-slate-700">
+                  <p className="text-xs text-slate-500 uppercase tracking-wider">Posts (7d)</p>
+                  <p className="text-3xl font-black text-purple-500">{platformHealth.recent?.posts7d || 0}</p>
                 </div>
-                <span className="text-sm text-slate-500">Today</span>
+                <div className="glass rounded-xl p-4 border border-slate-200 dark:border-slate-700">
+                  <p className="text-xs text-slate-500 uppercase tracking-wider">Chat Sessions (7d)</p>
+                  <p className="text-3xl font-black text-amber-500">{platformHealth.recent?.sessions7d || 0}</p>
+                </div>
               </div>
-            </div>
-          </div>
-        </div>
-      );
 
-    case 'Lead Database':
-      return (
-        <div>
-          <h2 className="text-2xl font-bold mb-2">Lead Database</h2>
-          <p className="text-slate-600 dark:text-slate-400 mb-6">All leads generated from contact forms and inquiries.</p>
-          
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-            <div className="glass rounded-xl p-4 border border-slate-200 dark:border-slate-700">
-              <p className="text-sm text-slate-500">Total Leads</p>
-              <p className="text-3xl font-black">{leads.length}</p>
-            </div>
-            <div className="glass rounded-xl p-4 border border-slate-200 dark:border-slate-700">
-              <p className="text-sm text-slate-500">New</p>
-              <p className="text-3xl font-black text-blue-500">{leads.filter(l => l.status === 'new').length}</p>
-            </div>
-            <div className="glass rounded-xl p-4 border border-slate-200 dark:border-slate-700">
-              <p className="text-sm text-slate-500">Qualified</p>
-              <p className="text-3xl font-black text-emerald-500">{leads.filter(l => l.status === 'qualified').length}</p>
-            </div>
-            <div className="glass rounded-xl p-4 border border-slate-200 dark:border-slate-700">
-              <p className="text-sm text-slate-500">Closed</p>
-              <p className="text-3xl font-black text-slate-500">{leads.filter(l => l.status === 'closed').length}</p>
-            </div>
-          </div>
-
-          <div className="overflow-x-auto glass rounded-2xl border border-slate-200 dark:border-slate-700">
-            <table className="w-full text-left">
-              <thead>
-                <tr className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-widest border-b border-slate-100 dark:border-slate-700">
-                  <th className="px-4 py-4">Name</th>
-                  <th className="px-4 py-4">Email</th>
-                  <th className="px-4 py-4">Phone</th>
-                  <th className="px-4 py-4">Business Type</th>
-                  <th className="px-4 py-4">Status</th>
-                  <th className="px-4 py-4">Date</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
-                {leads.slice(0, 10).map(lead => (
-                  <tr key={lead.id} className="hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-                    <td className="px-4 py-4 font-bold">{lead.name}</td>
-                    <td className="px-4 py-4 text-sm text-slate-600 dark:text-slate-400">{lead.email}</td>
-                    <td className="px-4 py-4 text-sm text-slate-600 dark:text-slate-400">{lead.phone || '-'}</td>
-                    <td className="px-4 py-4 text-sm text-slate-600 dark:text-slate-400">{lead.businessType || '-'}</td>
-                    <td className="px-4 py-4">
-                      <span className={`text-xs px-3 py-1 rounded-full ${
-                        lead.status === 'new' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700' :
-                        lead.status === 'qualified' ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700' :
-                        lead.status === 'contacted' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700' :
-                        'bg-slate-100 dark:bg-slate-800 text-slate-600'
-                      }`}>{lead.status}</span>
-                    </td>
-                    <td className="px-4 py-4 text-sm text-slate-600 dark:text-slate-400">{new Date(lead.createdAt).toLocaleDateString()}</td>
-                  </tr>
-                ))}
-                {leads.length === 0 && (
-                  <tr>
-                    <td colSpan={6} className="px-4 py-8 text-center text-slate-500 dark:text-slate-400">
-                      No leads yet. Leads will appear here when users submit contact forms.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-          {leads.length > 10 && (
-            <div className="mt-4 text-center">
-              <Link href="/dashboard/admin/leads" className="text-emerald-500 font-bold hover:underline">
-                View all {leads.length} leads →
-              </Link>
-            </div>
+              {/* Activity timeline */}
+              <div className="glass rounded-2xl p-6 border border-slate-200 dark:border-slate-700">
+                <h3 className="text-lg font-bold mb-4">Recent Activity</h3>
+                <div className="space-y-3">
+                  {(platformHealth.activityFeed || []).map((item: any, i: number) => (
+                    <div key={i} className="flex items-start gap-3 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl transition-all hover:bg-slate-100 dark:hover:bg-slate-800">
+                      <div className={`w-2 h-2 mt-2 rounded-full flex-shrink-0 ${
+                        item.type === 'lead' ? 'bg-blue-500' :
+                        item.type === 'user' ? 'bg-emerald-500' :
+                        item.type === 'post' ? 'bg-purple-500' :
+                        item.type === 'chat' ? 'bg-amber-500' :
+                        item.type === 'news' ? 'bg-rose-500' :
+                        'bg-slate-400'
+                      }`} />
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm truncate">{item.title}</p>
+                        <p className="text-xs text-slate-500 truncate">{item.detail}</p>
+                      </div>
+                      <span className="text-xs text-slate-400 whitespace-nowrap flex-shrink-0">
+                        {new Date(item.timestamp).toLocaleDateString()} {new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
+                  ))}
+                  {(!platformHealth.activityFeed || platformHealth.activityFeed.length === 0) && (
+                    <p className="text-center text-slate-500 py-8">No recent activity yet.</p>
+                  )}
+                </div>
+              </div>
+            </>
           )}
         </div>
       );
 
-    case 'Security Logs':
+    case 'Platform Health':
       return (
         <div>
-          <h2 className="text-2xl font-bold mb-6">Security Logs</h2>
-          <p className="text-slate-600 dark:text-slate-400 mb-4">Audit trail of authentication events, errors, and system alerts.</p>
-          <div className="font-mono text-xs text-slate-500 dark:text-slate-400 space-y-2">
-            <p><span className="text-red-500">[22:01:03]</span> Failed login attempt for user &quot;badguy@example.com&quot;</p>
-            <p><span className="text-red-500">[21:59:47]</span> Token expiry triggered logout for user ID abc123</p>
-            <p><span className="text-emerald-500">[21:58:22]</span> Admin user &quot;jane&quot; updated system configuration</p>
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-2xl font-bold mb-1">Platform Health</h2>
+              <p className="text-slate-600 dark:text-slate-400 text-sm">Real-time database stats and system overview</p>
+            </div>
+            {platformHealthLoading && <DashboardLoader variant="inline" />}
           </div>
+
+          {!platformHealth ? (
+            <DashboardLoader variant="card" label="Loading health data..." />
+          ) : (
+            <>
+              {/* Database record counts */}
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
+                {[
+                  { label: 'Users', value: platformHealth.counts?.users, color: 'text-blue-500' },
+                  { label: 'Clinics', value: platformHealth.counts?.clinics, color: 'text-emerald-500' },
+                  { label: 'Blog Posts', value: platformHealth.counts?.posts, color: 'text-purple-500' },
+                  { label: 'News Articles', value: platformHealth.counts?.news, color: 'text-rose-500' },
+                  { label: 'Leads', value: platformHealth.counts?.leads, color: 'text-amber-500' },
+                  { label: 'Subscribers', value: platformHealth.counts?.subscribers, color: 'text-cyan-500' },
+                  { label: 'Chat Sessions', value: platformHealth.counts?.chatSessions, color: 'text-indigo-500' },
+                  { label: 'Chat Messages', value: platformHealth.counts?.chatMessages, color: 'text-pink-500' },
+                  { label: 'Google Connected', value: platformHealth.counts?.connectedClinics, color: 'text-green-500' },
+                ].map((stat, i) => (
+                  <div key={i} className="glass rounded-xl p-4 border border-slate-200 dark:border-slate-700">
+                    <p className="text-xs text-slate-500 uppercase tracking-wider">{stat.label}</p>
+                    <p className={`text-2xl font-black ${stat.color}`}>{stat.value?.toLocaleString() ?? 0}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Content breakdown */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="glass rounded-2xl p-6 border border-slate-200 dark:border-slate-700">
+                  <h3 className="text-lg font-bold mb-4">Content Status</h3>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-slate-600 dark:text-slate-400">Published Posts</span>
+                      <span className="font-bold text-emerald-500">{platformHealth.content?.publishedPosts ?? 0}</span>
+                    </div>
+                    <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2">
+                      <div className="bg-emerald-500 h-2 rounded-full transition-all" style={{ width: `${platformHealth.counts?.posts ? Math.round((platformHealth.content?.publishedPosts / platformHealth.counts.posts) * 100) : 0}%` }} />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-slate-600 dark:text-slate-400">Draft Posts</span>
+                      <span className="font-bold text-amber-500">{platformHealth.content?.draftPosts ?? 0}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-slate-600 dark:text-slate-400">Published News</span>
+                      <span className="font-bold text-blue-500">{platformHealth.content?.publishedNews ?? 0}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="glass rounded-2xl p-6 border border-slate-200 dark:border-slate-700">
+                  <h3 className="text-lg font-bold mb-4">7-Day Snapshot</h3>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                      <span className="text-sm">New Leads</span>
+                      <span className="font-bold text-blue-600 dark:text-blue-400">{platformHealth.recent?.leads24h ?? 0} today</span>
+                    </div>
+                    <div className="flex items-center justify-between p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg">
+                      <span className="text-sm">New Users</span>
+                      <span className="font-bold text-emerald-600 dark:text-emerald-400">{platformHealth.recent?.users7d ?? 0} this week</span>
+                    </div>
+                    <div className="flex items-center justify-between p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+                      <span className="text-sm">New Posts</span>
+                      <span className="font-bold text-purple-600 dark:text-purple-400">{platformHealth.recent?.posts7d ?? 0} this week</span>
+                    </div>
+                    <div className="flex items-center justify-between p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
+                      <span className="text-sm">Chat Sessions</span>
+                      <span className="font-bold text-amber-600 dark:text-amber-400">{platformHealth.recent?.sessions7d ?? 0} this week</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
         </div>
       );
 
-    case 'System Config':
+    case 'Content Overview':
       return (
         <div>
-          <h2 className="text-2xl font-bold mb-6">System Config</h2>
-          <p className="text-slate-600 dark:text-slate-400 mb-4">Modify platform-wide settings and API keys.</p>
-          <div className="mt-8 p-6 glass border border-slate-200 dark:border-slate-700 rounded-2xl">
-            <label className="block mb-2 text-sm font-bold">Site-wide maintenance mode</label>
-            <select className="w-64 rounded-xl border border-slate-200 dark:border-slate-700 p-2 bg-white dark:bg-slate-800 dark:text-slate-200">
-              <option>Off</option>
-              <option>On</option>
-            </select>
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-2xl font-bold mb-1">Content Overview</h2>
+              <p className="text-slate-600 dark:text-slate-400 text-sm">Blog, news, and newsletter performance at a glance</p>
+            </div>
+            {platformHealthLoading && <DashboardLoader variant="inline" />}
           </div>
+
+          {!platformHealth ? (
+            <DashboardLoader variant="card" label="Loading content data..." />
+          ) : (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+                <div className="glass rounded-xl p-5 border border-slate-200 dark:border-slate-700">
+                  <div className="flex items-center gap-2 mb-2">
+                    <FileText className="h-5 w-5 text-purple-500" />
+                    <p className="text-xs text-slate-500 uppercase tracking-wider">Total Posts</p>
+                  </div>
+                  <p className="text-3xl font-black">{platformHealth.counts?.posts ?? 0}</p>
+                  <p className="text-xs text-slate-500 mt-1">{platformHealth.content?.publishedPosts ?? 0} published · {platformHealth.content?.draftPosts ?? 0} drafts</p>
+                </div>
+                <div className="glass rounded-xl p-5 border border-slate-200 dark:border-slate-700">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Newspaper className="h-5 w-5 text-rose-500" />
+                    <p className="text-xs text-slate-500 uppercase tracking-wider">News Articles</p>
+                  </div>
+                  <p className="text-3xl font-black">{platformHealth.counts?.news ?? 0}</p>
+                  <p className="text-xs text-slate-500 mt-1">{platformHealth.content?.publishedNews ?? 0} published</p>
+                </div>
+                <div className="glass rounded-xl p-5 border border-slate-200 dark:border-slate-700">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Mail className="h-5 w-5 text-cyan-500" />
+                    <p className="text-xs text-slate-500 uppercase tracking-wider">Subscribers</p>
+                  </div>
+                  <p className="text-3xl font-black text-cyan-500">{platformHealth.counts?.subscribers ?? 0}</p>
+                  <p className="text-xs text-slate-500 mt-1">Active newsletter subscribers</p>
+                </div>
+                <div className="glass rounded-xl p-5 border border-slate-200 dark:border-slate-700">
+                  <div className="flex items-center gap-2 mb-2">
+                    <MessageSquare className="h-5 w-5 text-amber-500" />
+                    <p className="text-xs text-slate-500 uppercase tracking-wider">Chat Messages</p>
+                  </div>
+                  <p className="text-3xl font-black text-amber-500">{platformHealth.counts?.chatMessages?.toLocaleString() ?? 0}</p>
+                  <p className="text-xs text-slate-500 mt-1">{platformHealth.counts?.chatSessions ?? 0} sessions total</p>
+                </div>
+              </div>
+
+              {/* Recent content */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="glass rounded-2xl p-6 border border-slate-200 dark:border-slate-700">
+                  <h3 className="text-lg font-bold mb-4">Recent Blog Posts</h3>
+                  <div className="space-y-3">
+                    {(platformHealth.activityFeed || []).filter((a: any) => a.type === 'post').slice(0, 5).map((item: any, i: number) => (
+                      <div key={i} className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="w-2 h-2 bg-purple-500 rounded-full flex-shrink-0" />
+                          <span className="text-sm truncate">{item.title?.replace('Blog: ', '')}</span>
+                        </div>
+                        <span className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 ${item.detail === 'published' ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700' : 'bg-amber-100 dark:bg-amber-900/30 text-amber-700'}`}>
+                          {item.detail}
+                        </span>
+                      </div>
+                    ))}
+                    {(platformHealth.activityFeed || []).filter((a: any) => a.type === 'post').length === 0 && (
+                      <p className="text-center text-slate-500 py-4 text-sm">No recent posts</p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="glass rounded-2xl p-6 border border-slate-200 dark:border-slate-700">
+                  <h3 className="text-lg font-bold mb-4">Recent News</h3>
+                  <div className="space-y-3">
+                    {(platformHealth.activityFeed || []).filter((a: any) => a.type === 'news').slice(0, 5).map((item: any, i: number) => (
+                      <div key={i} className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="w-2 h-2 bg-rose-500 rounded-full flex-shrink-0" />
+                          <span className="text-sm truncate">{item.title?.replace('News: ', '')}</span>
+                        </div>
+                        <span className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 ${item.detail === 'published' ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700' : 'bg-amber-100 dark:bg-amber-900/30 text-amber-700'}`}>
+                          {item.detail}
+                        </span>
+                      </div>
+                    ))}
+                    {(platformHealth.activityFeed || []).filter((a: any) => a.type === 'news').length === 0 && (
+                      <p className="text-center text-slate-500 py-4 text-sm">No recent news</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-6 flex gap-4">
+                <Link href="/dashboard/admin?view=blog-management" className="glass rounded-xl px-5 py-3 border border-slate-200 dark:border-slate-700 text-sm font-bold hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                  Manage Blog →
+                </Link>
+                <Link href="/dashboard/admin?view=news-management" className="glass rounded-xl px-5 py-3 border border-slate-200 dark:border-slate-700 text-sm font-bold hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                  Manage News →
+                </Link>
+              </div>
+            </>
+          )}
+        </div>
+      );
+
+    case 'Lead Pipeline':
+      return (
+        <div>
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-2xl font-bold mb-1">Lead Pipeline</h2>
+              <p className="text-slate-600 dark:text-slate-400 text-sm">Track leads through every stage of the funnel</p>
+            </div>
+            <div className="flex items-center gap-3">
+              {platformHealthLoading && <DashboardLoader variant="inline" />}
+              <Link href="/dashboard/admin/leads" className="text-sm font-bold text-emerald-500 hover:underline">
+                View All Leads →
+              </Link>
+            </div>
+          </div>
+
+          {!platformHealth ? (
+            <DashboardLoader variant="card" label="Loading pipeline..." />
+          ) : (
+            <>
+              {/* Pipeline funnel */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                {[
+                  { label: 'New', value: platformHealth.leadPipeline?.new ?? 0, color: 'bg-blue-500', textColor: 'text-blue-500', bgLight: 'bg-blue-50 dark:bg-blue-900/20' },
+                  { label: 'Contacted', value: platformHealth.leadPipeline?.contacted ?? 0, color: 'bg-yellow-500', textColor: 'text-yellow-600', bgLight: 'bg-yellow-50 dark:bg-yellow-900/20' },
+                  { label: 'Qualified', value: platformHealth.leadPipeline?.qualified ?? 0, color: 'bg-emerald-500', textColor: 'text-emerald-500', bgLight: 'bg-emerald-50 dark:bg-emerald-900/20' },
+                  { label: 'Closed', value: platformHealth.leadPipeline?.closed ?? 0, color: 'bg-slate-500', textColor: 'text-slate-500', bgLight: 'bg-slate-50 dark:bg-slate-800' },
+                ].map((stage, i) => (
+                  <div key={i} className={`rounded-xl p-5 border border-slate-200 dark:border-slate-700 ${stage.bgLight}`}>
+                    <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">{stage.label}</p>
+                    <p className={`text-3xl font-black ${stage.textColor}`}>{stage.value}</p>
+                    <div className="mt-3 w-full bg-slate-200 dark:bg-slate-700 rounded-full h-1.5">
+                      <div className={`${stage.color} h-1.5 rounded-full transition-all`} style={{ width: `${platformHealth.counts?.leads ? Math.max(5, Math.round((stage.value / platformHealth.counts.leads) * 100)) : 0}%` }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Total + conversion */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                <div className="glass rounded-xl p-5 border border-slate-200 dark:border-slate-700">
+                  <p className="text-xs text-slate-500 uppercase tracking-wider">Total Leads</p>
+                  <p className="text-3xl font-black">{platformHealth.counts?.leads ?? 0}</p>
+                </div>
+                <div className="glass rounded-xl p-5 border border-slate-200 dark:border-slate-700">
+                  <p className="text-xs text-slate-500 uppercase tracking-wider">Leads Today</p>
+                  <p className="text-3xl font-black text-blue-500">{platformHealth.recent?.leads24h ?? 0}</p>
+                </div>
+                <div className="glass rounded-xl p-5 border border-slate-200 dark:border-slate-700">
+                  <p className="text-xs text-slate-500 uppercase tracking-wider">Qualified Rate</p>
+                  <p className="text-3xl font-black text-emerald-500">
+                    {platformHealth.counts?.leads ? Math.round(((platformHealth.leadPipeline?.qualified ?? 0) / platformHealth.counts.leads) * 100) : 0}%
+                  </p>
+                </div>
+              </div>
+
+              {/* Recent leads table */}
+              <div className="glass rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+                <div className="p-4 border-b border-slate-200 dark:border-slate-700">
+                  <h3 className="font-bold">Latest Leads</h3>
+                </div>
+                <div className="divide-y divide-slate-100 dark:divide-slate-700">
+                  {(platformHealth.activityFeed || []).filter((a: any) => a.type === 'lead').slice(0, 8).map((item: any, i: number) => (
+                    <div key={i} className="flex items-center justify-between px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className={`w-2 h-2 rounded-full flex-shrink-0 ${
+                          item.status === 'new' ? 'bg-blue-500' :
+                          item.status === 'qualified' ? 'bg-emerald-500' :
+                          item.status === 'contacted' ? 'bg-yellow-500' :
+                          'bg-slate-400'
+                        }`} />
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium truncate">{item.title?.replace('New lead: ', '')}</p>
+                          <p className="text-xs text-slate-500 truncate">{item.detail}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <span className={`text-xs px-2 py-0.5 rounded-full ${
+                          item.status === 'new' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700' :
+                          item.status === 'qualified' ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700' :
+                          item.status === 'contacted' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700' :
+                          'bg-slate-100 dark:bg-slate-800 text-slate-600'
+                        }`}>{item.status}</span>
+                        <span className="text-xs text-slate-400">{new Date(item.timestamp).toLocaleDateString()}</span>
+                      </div>
+                    </div>
+                  ))}
+                  {(platformHealth.activityFeed || []).filter((a: any) => a.type === 'lead').length === 0 && (
+                    <p className="text-center text-slate-500 py-8 text-sm">No leads yet. Leads will appear here when users submit contact forms.</p>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
         </div>
       );
 
