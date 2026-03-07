@@ -125,11 +125,21 @@ export async function GET(request: Request) {
 
     // ── Update sync timestamps for all connections ───────────────────
     for (const conn of connections) {
+      const entry = clinicResults.get(conn.clinicId);
+      const errorParts: string[] = [];
+      if (entry) {
+        if ('error' in entry.gmb) errorParts.push(`GBP: ${entry.gmb.error}`);
+        if ('error' in entry.ga4) errorParts.push(`GA4: ${entry.ga4.error}`);
+        if ('error' in entry.sc) errorParts.push(`SC: ${entry.sc.error}`);
+        if ('error' in entry.ads) errorParts.push(`Ads: ${entry.ads.error}`);
+      }
+
       await prisma.gMBConnection.update({
         where: { id: conn.id },
         data: {
           lastSyncedAt: new Date(),
-          syncStatus: 'idle',
+          syncStatus: errorParts.length > 0 ? 'error' : 'idle',
+          lastSyncError: errorParts.length > 0 ? errorParts.join('; ') : null,
         },
       }).catch(() => {});
     }

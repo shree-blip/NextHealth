@@ -7,11 +7,70 @@
  *  3. Per-service rate limiting via semaphore
  *  4. SQL-backed API response cache (GoogleApiCache table)
  *  5. Authenticated request helper with retry
+ *  6. API health diagnostics
  */
 
 import prisma from '@/lib/prisma';
 
 const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token';
+
+// ══════════════════════════════════════════════════════════════
+// Google API Registry — Maps URLs to human-readable names & enablement links
+// ══════════════════════════════════════════════════════════════
+
+const API_REGISTRY: { pattern: string; name: string; enableUrl: string; testUrl?: string }[] = [
+  {
+    pattern: 'mybusinessaccountmanagement.googleapis.com',
+    name: 'My Business Account Management API',
+    enableUrl: 'https://console.cloud.google.com/apis/library/mybusinessaccountmanagement.googleapis.com',
+    testUrl: 'https://mybusinessaccountmanagement.googleapis.com/v1/accounts',
+  },
+  {
+    pattern: 'mybusinessbusinessinformation.googleapis.com',
+    name: 'My Business Business Information API',
+    enableUrl: 'https://console.cloud.google.com/apis/library/mybusinessbusinessinformation.googleapis.com',
+  },
+  {
+    pattern: 'businessprofileperformance.googleapis.com',
+    name: 'Business Profile Performance API',
+    enableUrl: 'https://console.cloud.google.com/apis/library/businessprofileperformance.googleapis.com',
+  },
+  {
+    pattern: 'analyticsdata.googleapis.com',
+    name: 'Google Analytics Data API',
+    enableUrl: 'https://console.cloud.google.com/apis/library/analyticsdata.googleapis.com',
+    testUrl: 'https://analyticsdata.googleapis.com/v1beta/properties/0:runReport',
+  },
+  {
+    pattern: 'analyticsadmin.googleapis.com',
+    name: 'Google Analytics Admin API',
+    enableUrl: 'https://console.cloud.google.com/apis/library/analyticsadmin.googleapis.com',
+    testUrl: 'https://analyticsadmin.googleapis.com/v1beta/accountSummaries',
+  },
+  {
+    pattern: 'googleapis.com/webmasters',
+    name: 'Google Search Console API',
+    enableUrl: 'https://console.cloud.google.com/apis/library/searchconsole.googleapis.com',
+    testUrl: 'https://www.googleapis.com/webmasters/v3/sites',
+  },
+  {
+    pattern: 'googleads.googleapis.com',
+    name: 'Google Ads API',
+    enableUrl: 'https://console.cloud.google.com/apis/library/googleads.googleapis.com',
+  },
+];
+
+function getApiInfoFromUrl(url: string): { name: string; enableUrl: string } {
+  for (const entry of API_REGISTRY) {
+    if (url.includes(entry.pattern)) {
+      return { name: entry.name, enableUrl: entry.enableUrl };
+    }
+  }
+  return { name: 'Google API', enableUrl: 'https://console.cloud.google.com/apis/library' };
+}
+
+// Negative-result cache: prevents hammering broken APIs
+const ERROR_CACHE_TTL_MS = 5 * 60 * 1000; // Cache errors for 5 minutes
 
 // ══════════════════════════════════════════════════════════════
 // 1. Unified Token Management
@@ -275,6 +334,13 @@ export async function googleApiRequestWithRetry(options: GoogleApiRequestOptions
     backoff: backoffOpts = {},
   } = options;
 
+  // ── Check negative cache — skip if API recently returned 403 ──
+  const errCacheKey = `api_error:${service}:403`;
+  const cachedError = await getCachedApiResponse<{ error: string; status: number }>(errCacheKey).catch(() => null);
+  if (cachedError && cachedError.status === 403) {
+    throw new Error(cachedError.error);
+  }
+
   const maxAttempts = backoffOpts.maxAttempts ?? 5;
   const baseDelayMs = backoffOpts.baseDelayMs ?? 1000;
   const maxDelayMs = backoffOpts.maxDelayMs ?? 64_000;
@@ -352,7 +418,12 @@ export async function googleApiRequestWithRetry(options: GoogleApiRequestOptions
       }
 
       // ── Other client errors — don't retry ─────────────────
-      const apiMessage = data?.error?.message || data?.error?.details?.[0]?.errors?.[0]?.message || data?.error;
+      const apiMessage = data?.error?.message
+        || data?.error?.details?.[0]?.errors?.[0]?.message
+        || (typeof data?.error === 'string' ? data.error : null)
+        || null;
+
+      const { name: apiName, enableUrl } = getApiInfoFromUrl(url);
 
       // Special GA4 metric error handling
       if (res.status === 400 && typeof apiMessage === 'string' && apiMessage.includes('is not a valid metric')) {
@@ -363,11 +434,42 @@ export async function googleApiRequestWithRetry(options: GoogleApiRequestOptions
 
       if (rawBody && (rawBody.includes('<!DOCTYPE') || rawBody.includes('<html'))) {
         throw new Error(
-          `Google API returned HTML instead of JSON (${res.status}). Verify required Google APIs are enabled.`
+          `${apiName} returned HTML instead of JSON (${res.status}). Ensure the API is enabled at: ${enableUrl}`
         );
       }
 
-      throw new Error(apiMessage || `Google API error (${res.status})`);
+      // ── 403 Permission Denied — usually means API not enabled or missing scopes
+      if (res.status === 403) {
+        const isNotEnabled = typeof apiMessage === 'string' && (
+          apiMessage.includes('has not been used') ||
+          apiMessage.includes('is disabled') ||
+          apiMessage.includes('not been enabled')
+        );
+        const isScopeIssue = typeof apiMessage === 'string' && apiMessage.includes('insufficient authentication scopes');
+
+        let guidance: string;
+        if (isNotEnabled) {
+          guidance = `${apiName} is not enabled. Enable it at: ${enableUrl}`;
+        } else if (isScopeIssue) {
+          guidance = `${apiName}: Insufficient OAuth scopes. Disconnect and reconnect your Google account to grant the required permissions.`;
+        } else {
+          guidance = `${apiName}: Access denied (403). ${apiMessage || 'Ensure the API is enabled and your account has permission.'}  Enable API: ${enableUrl}`;
+        }
+
+        // Cache the 403 error to stop hammering a misconfigured API
+        const errCacheKey = `api_error:${service}:403`;
+        await setCachedApiResponse(errCacheKey, { error: guidance, status: 403 }, ERROR_CACHE_TTL_MS).catch(() => {});
+
+        const err = new Error(guidance);
+        (err as any).statusCode = 403;
+        (err as any).apiName = apiName;
+        (err as any).enableUrl = enableUrl;
+        throw err;
+      }
+
+      throw new Error(
+        `${apiName}: ${apiMessage || `API error (${res.status})`}`
+      );
 
     } catch (err: any) {
       lastError = err;
@@ -389,7 +491,147 @@ export async function googleApiRequestWithRetry(options: GoogleApiRequestOptions
 }
 
 // ══════════════════════════════════════════════════════════════
-// 6. Background Sync Worker — Concurrency-Controlled
+// 6. API Health Diagnostics — Test connectivity for each Google API
+// ══════════════════════════════════════════════════════════════
+
+export interface ApiHealthStatus {
+  api: string;
+  enabled: boolean;
+  error?: string;
+  enableUrl: string;
+  latencyMs?: number;
+}
+
+/**
+ * Tests connectivity for each Google API by making lightweight probe requests.
+ * Returns per-API status so admins can see exactly which APIs need attention.
+ */
+export async function checkGoogleApiHealth(connectionId: string): Promise<ApiHealthStatus[]> {
+  let token: string;
+  try {
+    token = await getValidToken(connectionId);
+  } catch (err: any) {
+    return API_REGISTRY.map(api => ({
+      api: api.name,
+      enabled: false,
+      error: `Token error: ${err.message}`,
+      enableUrl: api.enableUrl,
+    }));
+  }
+
+  const results: ApiHealthStatus[] = [];
+
+  const probes: { name: string; url: string; enableUrl: string; method?: string }[] = [
+    {
+      name: 'My Business Account Management API',
+      url: 'https://mybusinessaccountmanagement.googleapis.com/v1/accounts',
+      enableUrl: 'https://console.cloud.google.com/apis/library/mybusinessaccountmanagement.googleapis.com',
+    },
+    {
+      name: 'Business Profile Performance API',
+      url: 'https://businessprofileperformance.googleapis.com/v1/locations/0:fetchMultiDailyMetricsTimeSeries',
+      enableUrl: 'https://console.cloud.google.com/apis/library/businessprofileperformance.googleapis.com',
+    },
+    {
+      name: 'Google Analytics Admin API',
+      url: 'https://analyticsadmin.googleapis.com/v1beta/accountSummaries',
+      enableUrl: 'https://console.cloud.google.com/apis/library/analyticsadmin.googleapis.com',
+    },
+    {
+      name: 'Google Analytics Data API',
+      url: 'https://analyticsdata.googleapis.com/v1beta/properties/0:runReport',
+      enableUrl: 'https://console.cloud.google.com/apis/library/analyticsdata.googleapis.com',
+      method: 'POST',
+    },
+    {
+      name: 'Google Search Console API',
+      url: 'https://www.googleapis.com/webmasters/v3/sites',
+      enableUrl: 'https://console.cloud.google.com/apis/library/searchconsole.googleapis.com',
+    },
+  ];
+
+  // Run probes in parallel
+  const probePromises = probes.map(async (probe) => {
+    const start = Date.now();
+    try {
+      const res = await fetch(probe.url, {
+        method: probe.method || 'GET',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        ...(probe.method === 'POST' ? { body: JSON.stringify({}) } : {}),
+      });
+
+      const latencyMs = Date.now() - start;
+      const contentType = res.headers.get('content-type') || '';
+      let data: any = null;
+      if (contentType.includes('application/json')) {
+        data = await res.json().catch(() => null);
+      }
+
+      // 200 or 400 (bad request but API is reachable) means the API is enabled
+      // 403 with "not been used" / "disabled" means the API is not enabled
+      // 404 on a known endpoint means the API is enabled but resource doesn't exist
+      if (res.ok || res.status === 400 || res.status === 404) {
+        return {
+          api: probe.name,
+          enabled: true,
+          enableUrl: probe.enableUrl,
+          latencyMs,
+        };
+      }
+
+      if (res.status === 403) {
+        const msg = data?.error?.message || '';
+        const isNotEnabled = msg.includes('has not been used') || msg.includes('disabled') || msg.includes('not been enabled');
+        return {
+          api: probe.name,
+          enabled: !isNotEnabled,
+          error: isNotEnabled
+            ? `API not enabled. Enable at: ${probe.enableUrl}`
+            : `Access denied: ${msg || 'Check permissions'}`,
+          enableUrl: probe.enableUrl,
+          latencyMs,
+        };
+      }
+
+      return {
+        api: probe.name,
+        enabled: false,
+        error: `HTTP ${res.status}: ${data?.error?.message || 'Unknown error'}`,
+        enableUrl: probe.enableUrl,
+        latencyMs,
+      };
+    } catch (err: any) {
+      return {
+        api: probe.name,
+        enabled: false,
+        error: `Network error: ${err.message}`,
+        enableUrl: probe.enableUrl,
+      };
+    }
+  });
+
+  return Promise.all(probePromises);
+}
+
+/**
+ * Clears the negative (error) cache for a specific service or all services.
+ * Call this after the user fixes their API configuration.
+ */
+export async function clearApiErrorCache(service?: ServiceKey) {
+  if (service) {
+    await clearCachedApiResponse(`api_error:${service}:`).catch(() => {});
+  } else {
+    for (const svc of ['gbp', 'ga4', 'search_console', 'google_ads'] as ServiceKey[]) {
+      await clearCachedApiResponse(`api_error:${svc}:`).catch(() => {});
+    }
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// 7. Background Sync Worker — Concurrency-Controlled
 // ══════════════════════════════════════════════════════════════
 
 interface SyncTask {

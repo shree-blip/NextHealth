@@ -54,6 +54,8 @@ export async function GET(req: NextRequest) {
     const STALE_MS = 60 * 60 * 1000; // 1 hour
     const forceSync = req.nextUrl.searchParams.get('sync') === '1';
     const isStale = !connection.lastSyncedAt || (Date.now() - connection.lastSyncedAt.getTime() > STALE_MS);
+    const syncErrors: string[] = [];
+
     if ((isStale || forceSync) && connection.refreshToken) {
       try {
         await prisma.gMBConnection.update({
@@ -62,17 +64,22 @@ export async function GET(req: NextRequest) {
         });
         const syncDays = Math.max(days, 90); // Sync at least 90 days for cache coverage
         const syncPromises: Promise<any>[] = [];
-        if (connection.ga4PropertyId) syncPromises.push(syncGA4Data(connection.id, syncDays).catch(e => console.error('GA4 sync error:', e.message)));
-        if (connection.searchConsoleSite) syncPromises.push(syncSearchConsoleData(connection.id, syncDays).catch(e => console.error('SC sync error:', e.message)));
-        if (connection.businessLocationId) syncPromises.push(syncGmbConnection(connection.id).catch(e => console.error('GMB sync error:', e.message)));
-        if (connection.googleAdsCustomerId) syncPromises.push(syncGoogleAdsData(connection.id, syncDays).catch(e => console.error('Google Ads sync error:', e.message)));
+        if (connection.ga4PropertyId) syncPromises.push(syncGA4Data(connection.id, syncDays).catch(e => { console.error('GA4 sync error:', e.message); syncErrors.push(`GA4: ${e.message}`); }));
+        if (connection.searchConsoleSite) syncPromises.push(syncSearchConsoleData(connection.id, syncDays).catch(e => { console.error('SC sync error:', e.message); syncErrors.push(`SC: ${e.message}`); }));
+        if (connection.businessLocationId) syncPromises.push(syncGmbConnection(connection.id).catch(e => { console.error('GMB sync error:', e.message); syncErrors.push(`GBP: ${e.message}`); }));
+        if (connection.googleAdsCustomerId) syncPromises.push(syncGoogleAdsData(connection.id, syncDays).catch(e => { console.error('Google Ads sync error:', e.message); syncErrors.push(`Ads: ${e.message}`); }));
         if (syncPromises.length > 0) await Promise.allSettled(syncPromises);
         await prisma.gMBConnection.update({
           where: { id: connection.id },
-          data: { lastSyncedAt: new Date(), syncStatus: 'idle', lastSyncError: null },
+          data: {
+            lastSyncedAt: new Date(),
+            syncStatus: syncErrors.length > 0 ? 'error' : 'idle',
+            lastSyncError: syncErrors.length > 0 ? syncErrors.join('; ') : null,
+          },
         });
       } catch (syncErr: any) {
         console.error('Auto-sync failed:', syncErr.message);
+        syncErrors.push(syncErr.message);
         await prisma.gMBConnection.update({
           where: { id: connection.id },
           data: { syncStatus: 'error', lastSyncError: syncErr.message },
@@ -156,6 +163,7 @@ export async function GET(req: NextRequest) {
         avgCpc: d.avgCpc,
         costPerConversion: d.costPerConversion,
       })),
+      ...(syncErrors.length > 0 ? { syncErrors } : {}),
     });
   } catch (error: any) {
     console.error('Client analytics data fetch error:', error);

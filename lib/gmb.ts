@@ -5,6 +5,7 @@ import {
   getCachedApiResponse,
   setCachedApiResponse,
   clearCachedApiResponse,
+  clearApiErrorCache,
 } from '@/lib/google-api-core';
 
 const GOOGLE_OAUTH_BASE = 'https://accounts.google.com/o/oauth2/v2/auth';
@@ -17,6 +18,8 @@ export async function clearGmbCache(clinicId?: string) {
   if (clinicId) {
     await clearCachedApiResponse(`gmb:${clinicId}`);
   }
+  // Also clear negative API error cache so retries work after fixing config
+  await clearApiErrorCache('gbp');
 }
 
 export const GMB_SCOPES = [
