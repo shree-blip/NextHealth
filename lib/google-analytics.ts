@@ -450,8 +450,11 @@ export async function syncSearchConsoleData(connectionId: string, syncDays = 90)
   ]);
 
   let synced = 0;
-  for (const day of dailyData) {
+  const lastIndex = dailyData.length - 1;
+  for (let i = 0; i < dailyData.length; i++) {
+    const day = dailyData[i];
     const date = new Date(day.date + 'T00:00:00Z');
+    const isLatest = i === lastIndex;
 
     await prisma.searchConsoleData.upsert({
       where: {
@@ -464,15 +467,15 @@ export async function syncSearchConsoleData(connectionId: string, syncDays = 90)
         impressions: day.impressions,
         ctr: day.ctr,
         avgPosition: day.avgPosition,
-        topQueries: synced === 0 ? topQueries : undefined,
-        topPages: synced === 0 ? topPages : undefined,
+        topQueries: isLatest ? topQueries : undefined,
+        topPages: isLatest ? topPages : undefined,
       },
       update: {
         clicks: day.clicks,
         impressions: day.impressions,
         ctr: day.ctr,
         avgPosition: day.avgPosition,
-        ...(synced === 0 ? { topQueries, topPages } : {}),
+        ...(isLatest ? { topQueries, topPages } : {}),
       },
     });
     synced++;
