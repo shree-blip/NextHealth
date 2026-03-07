@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { RefreshCw, CheckCircle2, XCircle, Minimize2, Maximize2, X } from 'lucide-react';
+import { CheckCircle2, XCircle, Minimize2, Maximize2, X } from 'lucide-react';
+import RunningPersonAnimation from './RunningPersonAnimation';
 
 export type SyncStatus = 'idle' | 'syncing' | 'success' | 'error';
 
@@ -65,7 +66,7 @@ export default function SyncProgressPopup({
           exit={{ opacity: 0, y: 20, scale: 0.9 }}
           onClick={onMaximize}
           className={`
-            fixed bottom-6 right-6 z-[80] flex items-center gap-2.5 px-4 py-2.5 rounded-full shadow-2xl border
+            fixed bottom-6 right-6 z-[80] flex items-center gap-2 px-3.5 py-2 rounded-full shadow-2xl border
             backdrop-blur-sm cursor-pointer transition-all hover:scale-105 active:scale-95
             ${state.status === 'syncing'
               ? 'bg-white/95 dark:bg-slate-900/95 border-blue-300 dark:border-blue-700 shadow-blue-200/30 dark:shadow-blue-900/30'
@@ -77,7 +78,7 @@ export default function SyncProgressPopup({
         >
           {state.status === 'syncing' && (
             <>
-              <RefreshCw className="h-4 w-4 text-blue-500 animate-spin" />
+              <RunningPersonAnimation size={22} className="text-blue-500 dark:text-blue-400" />
               <span className="text-sm font-bold text-blue-600 dark:text-blue-400">Syncing… {state.progress}%</span>
             </>
           )}
@@ -93,7 +94,7 @@ export default function SyncProgressPopup({
               <span className="text-sm font-bold text-red-600 dark:text-red-400">Sync Failed</span>
             </>
           )}
-          <Maximize2 className="h-3.5 w-3.5 text-slate-400 ml-1" />
+          <Maximize2 className="h-3.5 w-3.5 text-slate-400 ml-0.5" />
         </motion.button>
       </AnimatePresence>
     );
@@ -123,18 +124,18 @@ export default function SyncProgressPopup({
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2.5">
             {state.status === 'syncing' && (
-              <div className="h-8 w-8 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                <RefreshCw className="h-4 w-4 text-blue-600 dark:text-blue-400 animate-spin" />
+              <div className="h-10 w-10 rounded-xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center">
+                <RunningPersonAnimation size={28} className="text-blue-600 dark:text-blue-400" />
               </div>
             )}
             {state.status === 'success' && (
-              <div className="h-8 w-8 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
-                <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+              <div className="h-10 w-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
+                <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
               </div>
             )}
             {state.status === 'error' && (
-              <div className="h-8 w-8 rounded-xl bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
-                <XCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
+              <div className="h-10 w-10 rounded-xl bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+                <XCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
               </div>
             )}
             <div>

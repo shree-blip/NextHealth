@@ -871,6 +871,28 @@ function AdminDashboardContent() {
     }
   };
 
+  // ── Sync cooldown countdown timer ──
+  const startSyncCooldown = (seconds: number) => {
+    setGmbState(prev => ({ ...prev, syncCooldownSeconds: Math.max(0, Math.round(seconds)) }));
+  };
+
+  useEffect(() => {
+    if (gmbState.syncCooldownSeconds <= 0) return;
+    const iv = setInterval(() => {
+      setGmbState(prev => {
+        const next = prev.syncCooldownSeconds - 1;
+        return { ...prev, syncCooldownSeconds: next <= 0 ? 0 : next };
+      });
+    }, 1000);
+    return () => clearInterval(iv);
+  }, [gmbState.syncCooldownSeconds > 0]); // only re-subscribe when transitioning 0↔nonzero
+
+  const formatCooldown = (s: number) => {
+    const m = Math.floor(s / 60);
+    const sec = s % 60;
+    return `${m}:${sec.toString().padStart(2, '0')}`;
+  };
+
   const startActionFeedback = (loadingText: string) => {
     setActionFeedback(prev => ({
       ...prev,
@@ -2810,6 +2832,7 @@ function AdminDashboardContent() {
                               });
                               if (r.status === 429) {
                                 const data = await r.json();
+                                if (data.secondsUntilNext) startSyncCooldown(data.secondsUntilNext);
                                 throw new Error(data.error || 'Sync cooldown active. Please wait before retrying.');
                               }
                               if (!r.ok) throw new Error('GBP sync failed');
@@ -2829,6 +2852,7 @@ function AdminDashboardContent() {
                               });
                               const syncResult = await r.json().catch(() => ({}));
                               if (r.status === 429) {
+                                if (syncResult.secondsUntilNext) startSyncCooldown(syncResult.secondsUntilNext);
                                 throw new Error(syncResult.error || 'Analytics sync is on cooldown. Please wait before retrying.');
                               }
                               if (!r.ok) {
@@ -2842,8 +2866,9 @@ function AdminDashboardContent() {
                             updateSyncPopup({ progress: 85, label: 'Refreshing connection status...' });
                             await fetchGmbConnection(editingClinic.id, true);
                             
-                            // Done — show success in popup
+                            // Done — show success in popup & start cooldown
                             setGmbState(prev => ({ ...prev, confirmSyncing: false }));
+                            startSyncCooldown(5 * 60); // 5-min cooldown matching server
                             finishSyncPopup(true, 'Your report is ready. Please view it in the View tab.');
                           } catch (err: any) {
                             setGmbState(prev => ({ ...prev, confirmSyncing: false }));
@@ -2851,16 +2876,23 @@ function AdminDashboardContent() {
                           }
                         })();
                       }}
-                      disabled={gmbState.confirmSyncing || syncPopup.status === 'syncing' || (!gmbState.connection.businessLocationId && !gmbState.selectedGA4Property && !gmbState.selectedSCSite && !gmbState.selectedAdsCustomerId)}
+                      disabled={gmbState.confirmSyncing || syncPopup.status === 'syncing' || gmbState.syncCooldownSeconds > 0 || (!gmbState.connection.businessLocationId && !gmbState.selectedGA4Property && !gmbState.selectedSCSite && !gmbState.selectedAdsCustomerId)}
                       className={`w-full px-4 py-3 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 border ${
                         gmbState.confirmSyncing || syncPopup.status === 'syncing'
                           ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800/40 text-emerald-700 dark:text-emerald-400 cursor-wait'
-                          : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 disabled:opacity-40 disabled:cursor-not-allowed'
+                          : gmbState.syncCooldownSeconds > 0
+                            ? 'bg-amber-50 dark:bg-amber-900/15 border-amber-200 dark:border-amber-800/40 text-amber-700 dark:text-amber-400 cursor-not-allowed'
+                            : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 disabled:opacity-40 disabled:cursor-not-allowed'
                       }`}
-                      title="Sync your Google data now"
+                      title={gmbState.syncCooldownSeconds > 0 ? `Sync available in ${formatCooldown(gmbState.syncCooldownSeconds)}` : 'Sync your Google data now'}
                     >
                       {gmbState.confirmSyncing || syncPopup.status === 'syncing' ? (
                         <><RefreshCw className="h-4 w-4 animate-spin" /> Syncing...</>
+                      ) : gmbState.syncCooldownSeconds > 0 ? (
+                        <>
+                          <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
+                          <span className="tabular-nums">Cooldown {formatCooldown(gmbState.syncCooldownSeconds)}</span>
+                        </>
                       ) : (
                         <><Zap className="h-4 w-4" /> Sync Data</>
                       )}
