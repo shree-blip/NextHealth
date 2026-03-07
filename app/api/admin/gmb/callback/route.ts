@@ -118,7 +118,7 @@ export async function GET(req: NextRequest) {
     });
 
     // Clear cached API responses so fresh data is fetched
-    clearGmbCache(parsedState.clinicId);
+    await clearGmbCache(parsedState.clinicId);
 
     return new NextResponse(popupHtml(true, 'Google Business Profile connected. Select account and location to finish setup.', parsedState.clinicId), {
       status: 200,

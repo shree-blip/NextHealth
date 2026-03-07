@@ -1,32 +1,21 @@
 import prisma from '@/lib/prisma';
+import {
+  getValidToken,
+  googleApiRequestWithRetry,
+  getCachedApiResponse,
+  setCachedApiResponse,
+  clearCachedApiResponse,
+} from '@/lib/google-api-core';
 
 const GOOGLE_OAUTH_BASE = 'https://accounts.google.com/o/oauth2/v2/auth';
 const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token';
 
-// ─── Simple in-memory cache to avoid quota exhaustion ─────────
-const apiCache = new Map<string, { data: any; expiresAt: number }>();
-const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+// Cache TTL: 30 minutes for discovery endpoints (accounts, locations)
+const DISCOVERY_CACHE_TTL_MS = 30 * 60 * 1000;
 
-function getCached<T>(key: string): T | null {
-  const entry = apiCache.get(key);
-  if (!entry || Date.now() > entry.expiresAt) {
-    apiCache.delete(key);
-    return null;
-  }
-  return entry.data as T;
-}
-
-function setCache(key: string, data: any) {
-  apiCache.set(key, { data, expiresAt: Date.now() + CACHE_TTL_MS });
-}
-
-export function clearGmbCache(clinicId?: string) {
+export async function clearGmbCache(clinicId?: string) {
   if (clinicId) {
-    for (const key of apiCache.keys()) {
-      if (key.includes(clinicId)) apiCache.delete(key);
-    }
-  } else {
-    apiCache.clear();
+    await clearCachedApiResponse(`gmb:${clinicId}`);
   }
 }
 
@@ -189,137 +178,15 @@ export async function fetchGoogleEmail(accessToken: string) {
   return (data.email as string | undefined) || null;
 }
 
-async function refreshGmbToken(connectionId: string) {
-  const connection = await prisma.gMBConnection.findUnique({ where: { id: connectionId } });
-  if (!connection?.refreshToken) {
-    throw new Error('Missing refresh token. Please reconnect Google Business Profile.');
-  }
-
-  const clientId = process.env.GOOGLE_CLIENT_ID;
-  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
-
-  if (!clientId || !clientSecret) {
-    throw new Error('Google OAuth credentials are not configured');
-  }
-
-  const response = await fetch(GOOGLE_TOKEN_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({
-      client_id: clientId,
-      client_secret: clientSecret,
-      refresh_token: connection.refreshToken,
-      grant_type: 'refresh_token',
-    }),
-  });
-
-  const data = await response.json();
-  if (!response.ok) {
-    await prisma.gMBConnection.update({
-      where: { id: connectionId },
-      data: {
-        connectionStatus: 'refresh_failed',
-        syncStatus: 'error',
-        lastSyncError: data?.error_description || data?.error || 'Token refresh failed',
-      },
-    });
-
-    throw new Error(data?.error_description || data?.error || 'Failed to refresh Google token');
-  }
-
-  const updated = await prisma.gMBConnection.update({
-    where: { id: connectionId },
-    data: {
-      accessToken: data.access_token,
-      tokenExpiry: new Date(Date.now() + ((data.expires_in || 3600) * 1000)),
-      connectionStatus: 'connected',
-      syncStatus: 'idle',
-      lastSyncError: null,
-    },
-  });
-
-  return updated.accessToken;
-}
-
+// gmbApiRequest now delegates to the core with rate limiting + backoff
 async function gmbApiRequest(connectionId: string, url: string, init: RequestInit = {}) {
-  let connection = await prisma.gMBConnection.findUnique({ where: { id: connectionId } });
-  if (!connection) throw new Error('GMB connection not found');
-
-  let accessToken = connection.accessToken;
-
-  if (connection.tokenExpiry && connection.tokenExpiry.getTime() < Date.now() + 60_000 && connection.refreshToken) {
-    accessToken = await refreshGmbToken(connectionId);
-  }
-
-  const makeRequest = async (token: string) => {
-    return fetch(url, {
-      ...init,
-      headers: {
-        ...(init.headers || {}),
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-    });
-  };
-
-  let response = await makeRequest(accessToken);
-
-  if (response.status === 401 && connection.refreshToken) {
-    accessToken = await refreshGmbToken(connectionId);
-    response = await makeRequest(accessToken);
-  }
-
-  // Handle 429 rate limit with exponential backoff + jitter
-  if (response.status === 429) {
-    const maxAttempts = 3;
-    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-      // Use Retry-After header if available, otherwise exponential backoff
-      const baseDelaySeconds = attempt === 1 
-        ? parseInt(response.headers.get('Retry-After') || '1', 10)
-        : Math.pow(2, attempt - 1);
-      
-      // Add random jitter (±20%) to prevent thundering herd
-      const jitter = baseDelaySeconds * 0.2 * (Math.random() * 2 - 1);
-      const delaySeconds = Math.max(1, baseDelaySeconds + jitter);
-      const delayMs = Math.min(delaySeconds * 1000, 60_000);
-      
-      console.log(`[Rate Limit] Attempt ${attempt}/${maxAttempts}, waiting ${delayMs}ms before retry...`);
-      await new Promise(resolve => setTimeout(resolve, delayMs));
-      
-      response = await makeRequest(accessToken);
-      if (response.status !== 429) break;
-    }
-  }
-
-  // Robust response parsing — handle non-JSON gracefully
-  const contentType = response.headers.get('content-type') || '';
-  let data: any = null;
-
-  if (contentType.includes('application/json')) {
-    try { data = await response.json(); } catch { data = null; }
-  } else {
-    const rawBody = await response.text().catch(() => '');
-    if (!response.ok) {
-      if (rawBody.includes('<!DOCTYPE') || rawBody.includes('<html')) {
-        throw new Error(
-          `Google API returned HTML instead of JSON (${response.status}). Is the My Business API enabled for this project?`
-        );
-      }
-      throw new Error(`Google API error (${response.status}): ${rawBody.slice(0, 200)}`);
-    }
-    // Try to parse text as JSON as a fallback
-    try { data = JSON.parse(rawBody); } catch { data = {}; }
-  }
-
-  if (!response.ok) {
-    // Provide specific error for rate limits
-    if (response.status === 429) {
-      throw new Error('Google API rate limited after multiple retries. Please wait 30+ minutes before retrying.');
-    }
-    throw new Error(data?.error?.message || data?.error || `Google API error (${response.status})`);
-  }
-
-  return data ?? {};
+  return googleApiRequestWithRetry({
+    connectionId,
+    url,
+    init,
+    service: 'gbp',
+    backoff: { maxAttempts: 5, baseDelayMs: 2000, maxDelayMs: 64_000, jitterFactor: 0.5 },
+  });
 }
 
 export async function upsertOAuthConnection(params: {
@@ -392,9 +259,9 @@ export async function listGmbAccounts(clinicId: string) {
   const connection = await prisma.gMBConnection.findUnique({ where: { clinicId } });
   if (!connection) throw new Error('No Google connection found for this clinic');
 
-  // Check cache first
-  const cacheKey = `accounts:${clinicId}`;
-  const cached = getCached<any[]>(cacheKey);
+  // Check SQL cache first (30-min TTL)
+  const cacheKey = `gmb:${clinicId}:accounts`;
+  const cached = await getCachedApiResponse<any[]>(cacheKey);
   if (cached) return { connection, accounts: cached };
 
   const data = await gmbApiRequest(connection.id, 'https://mybusinessaccountmanagement.googleapis.com/v1/accounts');
@@ -404,7 +271,7 @@ export async function listGmbAccounts(clinicId: string) {
     type: account.type,
   }));
 
-  setCache(cacheKey, accounts);
+  await setCachedApiResponse(cacheKey, accounts, DISCOVERY_CACHE_TTL_MS);
   return { connection, accounts };
 }
 
@@ -413,9 +280,9 @@ export async function listGmbLocations(clinicId: string, accountName: string) {
   const connection = await prisma.gMBConnection.findUnique({ where: { clinicId } });
   if (!connection) throw new Error('No Google connection found for this clinic');
 
-  // Check cache first
-  const cacheKey = `locations:${clinicId}:${normalizedAccount}`;
-  const cached = getCached<any[]>(cacheKey);
+  // Check SQL cache first (30-min TTL)
+  const cacheKey = `gmb:${clinicId}:locations:${normalizedAccount}`;
+  const cached = await getCachedApiResponse<any[]>(cacheKey);
   if (cached) return cached;
 
   const readMask = [
@@ -433,7 +300,7 @@ export async function listGmbLocations(clinicId: string, accountName: string) {
     address: formatStorefrontAddress(location.storefrontAddress),
   }));
 
-  setCache(cacheKey, locations);
+  await setCachedApiResponse(cacheKey, locations, DISCOVERY_CACHE_TTL_MS);
   return locations;
 }
 

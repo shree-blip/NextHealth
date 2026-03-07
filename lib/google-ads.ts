@@ -2,116 +2,58 @@
  * Google Ads API Integration
  *
  * Uses the same OAuth connection stored in GMBConnection.
- * Requires a Google Ads developer token (GOOGLE_ADS_DEVELOPER_TOKEN env var).
- *
- * Required scope (added to GMB_SCOPES):
- *   - https://www.googleapis.com/auth/adwords
+ * All requests go through google-api-core.ts which provides:
+ *   - Unified token management
+ *   - Exponential backoff with jitter for 429/5xx
+ *   - Per-service rate limiting
+ *   - SQL-backed response cache
  */
 
 import prisma from '@/lib/prisma';
+import {
+  googleApiRequestWithRetry,
+  getCachedApiResponse,
+  setCachedApiResponse,
+} from '@/lib/google-api-core';
 
 const GOOGLE_ADS_API = 'https://googleads.googleapis.com/v16';
-const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token';
 
-// ─── Token helpers (shared pattern with google-analytics.ts) ──
-async function getValidToken(connectionId: string): Promise<string> {
-  const conn = await prisma.gMBConnection.findUnique({ where: { id: connectionId } });
-  if (!conn) throw new Error('Connection not found');
+// Cache TTL: 30 minutes for discovery endpoints
+const DISCOVERY_CACHE_TTL_MS = 30 * 60 * 1000;
 
-  if (conn.tokenExpiry && conn.tokenExpiry.getTime() > Date.now() + 60_000) {
-    return conn.accessToken;
-  }
-
-  if (!conn.refreshToken) throw new Error('No refresh token. Please reconnect Google.');
-  const clientId = process.env.GOOGLE_CLIENT_ID;
-  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
-  if (!clientId || !clientSecret) throw new Error('Google OAuth credentials missing');
-
-  const res = await fetch(GOOGLE_TOKEN_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({
-      client_id: clientId,
-      client_secret: clientSecret,
-      refresh_token: conn.refreshToken,
-      grant_type: 'refresh_token',
-    }),
-  });
-
-  const data = await res.json();
-  if (!res.ok) {
-    await prisma.gMBConnection.update({
-      where: { id: connectionId },
-      data: {
-        connectionStatus: 'refresh_failed',
-        syncStatus: 'error',
-        lastSyncError: data?.error_description || data?.error || 'Token refresh failed',
-      },
-    });
-    throw new Error(data?.error_description || 'Token refresh failed');
-  }
-
-  await prisma.gMBConnection.update({
-    where: { id: connectionId },
-    data: {
-      accessToken: data.access_token,
-      tokenExpiry: new Date(Date.now() + (data.expires_in || 3600) * 1000),
-      connectionStatus: 'connected',
-      syncStatus: 'idle',
-      lastSyncError: null,
-    },
-  });
-
-  return data.access_token as string;
-}
-
-// ─── Authenticated Google Ads request ─────────────────────────
+// ─── Thin request wrapper using google-api-core ───────────────
 async function googleAdsRequest(connectionId: string, url: string, init: RequestInit = {}, loginCustomerId?: string) {
-  const token = await getValidToken(connectionId);
   const developerToken = process.env.GOOGLE_ADS_DEVELOPER_TOKEN;
-
   if (!developerToken) {
     throw new Error('GOOGLE_ADS_DEVELOPER_TOKEN is not configured. Add it to your environment variables.');
   }
 
-  const headers: Record<string, string> = {
-    ...(init.headers as Record<string, string> || {}),
-    Authorization: `Bearer ${token}`,
-    'Content-Type': 'application/json',
+  const extraHeaders: Record<string, string> = {
     'developer-token': developerToken,
   };
-
   if (loginCustomerId) {
-    headers['login-customer-id'] = loginCustomerId.replace(/-/g, '');
+    extraHeaders['login-customer-id'] = loginCustomerId.replace(/-/g, '');
   }
 
-  const res = await fetch(url, { ...init, headers });
-
-  const contentType = res.headers.get('content-type') || '';
-  let data: any = null;
-
-  if (contentType.includes('application/json')) {
-    try { data = await res.json(); } catch { data = null; }
-  } else {
-    const rawBody = await res.text().catch(() => '');
-    if (!res.ok) {
-      throw new Error(`Google Ads API error (${res.status}): ${rawBody.slice(0, 200)}`);
-    }
-    try { data = JSON.parse(rawBody); } catch { data = {}; }
-  }
-
-  if (!res.ok) {
-    const errMsg = data?.error?.message || data?.error?.details?.[0]?.errors?.[0]?.message || `Google Ads API error (${res.status})`;
-    throw new Error(errMsg);
-  }
-
-  return data ?? {};
+  return googleApiRequestWithRetry({
+    connectionId,
+    url,
+    init,
+    service: 'google_ads',
+    extraHeaders,
+    backoff: { maxAttempts: 5, baseDelayMs: 1000, maxDelayMs: 64_000, jitterFactor: 0.5 },
+  });
 }
 
 // ══════════════════════════════════════════════════════════════
 // Google Ads — List Accessible Customer Accounts
 // ══════════════════════════════════════════════════════════════
 export async function listGoogleAdsAccounts(connectionId: string) {
+  // Check SQL cache first (30-min TTL)
+  const cacheKey = `ads:${connectionId}:accounts`;
+  const cached = await getCachedApiResponse<{ customerId: string; descriptiveName: string; currencyCode: string; isManager: boolean }[]>(cacheKey);
+  if (cached) return cached;
+
   // Step 1: Get list of accessible customer IDs
   const listData = await googleAdsRequest(
     connectionId,
@@ -158,6 +100,7 @@ export async function listGoogleAdsAccounts(connectionId: string) {
     }
   }
 
+  await setCachedApiResponse(cacheKey, accounts, DISCOVERY_CACHE_TTL_MS);
   return accounts;
 }
 

@@ -4,139 +4,58 @@
  * Uses the same OAuth connection stored in GMBConnection but calls
  * the GA4 Data API and Search Console API.
  *
- * Required scopes (already added to GMB_SCOPES):
- *   - https://www.googleapis.com/auth/analytics.readonly
- *   - https://www.googleapis.com/auth/webmasters.readonly
+ * All requests go through google-api-core.ts which provides:
+ *   - Unified token management
+ *   - Exponential backoff with jitter for 429/5xx
+ *   - Per-service rate limiting
+ *   - SQL-backed response cache
  */
 
 import prisma from '@/lib/prisma';
+import {
+  googleApiRequestWithRetry,
+  getCachedApiResponse,
+  setCachedApiResponse,
+} from '@/lib/google-api-core';
 
 // ─── Constants ────────────────────────────────────────────────
 const GA4_DATA_API = 'https://analyticsdata.googleapis.com/v1beta';
 const GA4_ADMIN_API = 'https://analyticsadmin.googleapis.com/v1beta';
 const SEARCH_CONSOLE_API = 'https://www.googleapis.com/webmasters/v3';
-const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token';
 
-// ─── Token helpers ────────────────────────────────────────────
-async function getValidToken(connectionId: string): Promise<string> {
-  const conn = await prisma.gMBConnection.findUnique({ where: { id: connectionId } });
-  if (!conn) throw new Error('Connection not found');
+// Cache TTL: 30 minutes for discovery endpoints
+const DISCOVERY_CACHE_TTL_MS = 30 * 60 * 1000;
 
-  // If the token is still fresh, return it
-  if (conn.tokenExpiry && conn.tokenExpiry.getTime() > Date.now() + 60_000) {
-    return conn.accessToken;
-  }
-
-  // Refresh
-  if (!conn.refreshToken) throw new Error('No refresh token. Please reconnect Google.');
-  const clientId = process.env.GOOGLE_CLIENT_ID;
-  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
-  if (!clientId || !clientSecret) throw new Error('Google OAuth credentials missing');
-
-  const res = await fetch(GOOGLE_TOKEN_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({
-      client_id: clientId,
-      client_secret: clientSecret,
-      refresh_token: conn.refreshToken,
-      grant_type: 'refresh_token',
-    }),
+// ─── Thin request wrappers using google-api-core ─────────────
+async function ga4ApiRequest(connectionId: string, url: string, init: RequestInit = {}) {
+  return googleApiRequestWithRetry({
+    connectionId,
+    url,
+    init,
+    service: 'ga4',
+    backoff: { maxAttempts: 5, baseDelayMs: 1000, maxDelayMs: 64_000, jitterFactor: 0.5 },
   });
-
-  const data = await res.json();
-  if (!res.ok) {
-    // Mark the connection as refresh_failed so the cron won't keep retrying
-    await prisma.gMBConnection.update({
-      where: { id: connectionId },
-      data: {
-        connectionStatus: 'refresh_failed',
-        syncStatus: 'error',
-        lastSyncError: data?.error_description || data?.error || 'Token refresh failed',
-      },
-    });
-    throw new Error(data?.error_description || 'Token refresh failed');
-  }
-
-  await prisma.gMBConnection.update({
-    where: { id: connectionId },
-    data: {
-      accessToken: data.access_token,
-      tokenExpiry: new Date(Date.now() + (data.expires_in || 3600) * 1000),
-      connectionStatus: 'connected',
-      syncStatus: 'idle',
-      lastSyncError: null,
-    },
-  });
-
-  return data.access_token as string;
 }
 
-// ─── Generic authenticated request ───────────────────────────
-async function googleApiRequest(connectionId: string, url: string, init: RequestInit = {}) {
-  const token = await getValidToken(connectionId);
-  const res = await fetch(url, {
-    ...init,
-    headers: {
-      ...(init.headers || {}),
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
+async function searchConsoleApiRequest(connectionId: string, url: string, init: RequestInit = {}) {
+  return googleApiRequestWithRetry({
+    connectionId,
+    url,
+    init,
+    service: 'search_console',
+    backoff: { maxAttempts: 5, baseDelayMs: 1000, maxDelayMs: 64_000, jitterFactor: 0.5 },
   });
-
-  const contentType = res.headers.get('content-type') || '';
-  let data: any = null;
-  let rawBody = '';
-
-  if (contentType.includes('application/json')) {
-    try {
-      data = await res.json();
-    } catch {
-      data = null;
-    }
-  } else {
-    try {
-      rawBody = await res.text();
-    } catch {
-      rawBody = '';
-    }
-  }
-
-  if (!res.ok) {
-    const apiMessage = data?.error?.message || data?.error;
-
-    // Handle "metric not found" for GA4 gracefully — allow caller to retry
-    // with different metrics (e.g. "conversions" → "keyEvents")
-    if (res.status === 400 && typeof apiMessage === 'string' && apiMessage.includes('is not a valid metric')) {
-      const err = new Error(apiMessage);
-      (err as any).isMetricError = true;
-      throw err;
-    }
-
-    if (apiMessage) {
-      throw new Error(apiMessage);
-    }
-
-    if (rawBody) {
-      if (rawBody.includes('<!DOCTYPE') || rawBody.includes('<html')) {
-        throw new Error(
-          `Google API returned HTML instead of JSON (${res.status}). Verify required Google APIs are enabled and OAuth scopes are granted.`
-        );
-      }
-
-      throw new Error(`Google API error (${res.status}): ${rawBody.slice(0, 200)}`);
-    }
-
-    throw new Error(`Google API error (${res.status})`);
-  }
-
-  return data ?? {};
 }
 
 // ══════════════════════════════════════════════════════════════
 // GA4 — Property Discovery
 // ══════════════════════════════════════════════════════════════
 export async function listGA4Properties(connectionId: string) {
+  // Check SQL cache first (30-min TTL)
+  const cacheKey = `ga4:${connectionId}:properties`;
+  const cached = await getCachedApiResponse<{ propertyId: string; displayName: string; account: string }[]>(cacheKey);
+  if (cached) return cached;
+
   const properties: { propertyId: string; displayName: string; account: string }[] = [];
   let pageToken: string | undefined;
   let attempts = 0;
@@ -146,7 +65,7 @@ export async function listGA4Properties(connectionId: string) {
       ? `${GA4_ADMIN_API}/accountSummaries?pageToken=${encodeURIComponent(pageToken)}`
       : `${GA4_ADMIN_API}/accountSummaries`;
 
-    const data = await googleApiRequest(connectionId, url);
+    const data = await ga4ApiRequest(connectionId, url);
 
     for (const acct of data.accountSummaries || []) {
       for (const prop of acct.propertySummaries || []) {
@@ -162,6 +81,7 @@ export async function listGA4Properties(connectionId: string) {
     attempts++;
   } while (pageToken && attempts < 10);
 
+  await setCachedApiResponse(cacheKey, properties, DISCOVERY_CACHE_TTL_MS);
   return properties;
 }
 
@@ -193,7 +113,7 @@ export async function fetchGA4Data(connectionId: string, propertyId: string, sta
     };
 
     try {
-      const data = await googleApiRequest(
+      const data = await ga4ApiRequest(
         connectionId,
         `${GA4_DATA_API}/${propId}:runReport`,
         { method: 'POST', body: JSON.stringify(body) },
@@ -238,7 +158,7 @@ export async function fetchGA4TrafficSources(connectionId: string, propertyId: s
     metrics: [{ name: 'sessions' }],
   };
 
-  const data = await googleApiRequest(
+  const data = await ga4ApiRequest(
     connectionId,
     `${GA4_DATA_API}/${propId}:runReport`,
     { method: 'POST', body: JSON.stringify(body) },
@@ -277,15 +197,23 @@ export async function fetchGA4TrafficSources(connectionId: string, propertyId: s
 // Search Console — Site Discovery
 // ══════════════════════════════════════════════════════════════
 export async function listSearchConsoleSites(connectionId: string) {
-  const data = await googleApiRequest(
+  // Check SQL cache first (30-min TTL)
+  const cacheKey = `sc:${connectionId}:sites`;
+  const cached = await getCachedApiResponse<{ siteUrl: string; permissionLevel: string }[]>(cacheKey);
+  if (cached) return cached;
+
+  const data = await searchConsoleApiRequest(
     connectionId,
     `${SEARCH_CONSOLE_API}/sites`,
   );
 
-  return (data.siteEntry || []).map((s: any) => ({
+  const sites = (data.siteEntry || []).map((s: any) => ({
     siteUrl: s.siteUrl,
     permissionLevel: s.permissionLevel,
   }));
+
+  await setCachedApiResponse(cacheKey, sites, DISCOVERY_CACHE_TTL_MS);
+  return sites;
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -299,7 +227,7 @@ export async function fetchSearchConsoleData(connectionId: string, siteUrl: stri
     rowLimit: 500,
   };
 
-  const data = await googleApiRequest(
+  const data = await searchConsoleApiRequest(
     connectionId,
     `${SEARCH_CONSOLE_API}/sites/${encodeURIComponent(siteUrl)}/searchAnalytics/query`,
     { method: 'POST', body: JSON.stringify(body) },
@@ -324,7 +252,7 @@ export async function fetchTopQueries(connectionId: string, siteUrl: string, sta
     type: 'web',
   };
 
-  const data = await googleApiRequest(
+  const data = await searchConsoleApiRequest(
     connectionId,
     `${SEARCH_CONSOLE_API}/sites/${encodeURIComponent(siteUrl)}/searchAnalytics/query`,
     { method: 'POST', body: JSON.stringify(body) },
@@ -349,7 +277,7 @@ export async function fetchTopPages(connectionId: string, siteUrl: string, start
     type: 'web',
   };
 
-  const data = await googleApiRequest(
+  const data = await searchConsoleApiRequest(
     connectionId,
     `${SEARCH_CONSOLE_API}/sites/${encodeURIComponent(siteUrl)}/searchAnalytics/query`,
     { method: 'POST', body: JSON.stringify(body) },

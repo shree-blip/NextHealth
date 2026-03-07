@@ -83,8 +83,8 @@ export async function POST(request: NextRequest) {
     // ── 3. Delete the GMBConnection record ─────────────────────────
     await prisma.gMBConnection.delete({ where: { clinicId } });
 
-    // ── 4. Clear in-memory caches ──────────────────────────────────
-    clearGmbCache(clinicId);
+    // ── 4. Clear cached API responses ──────────────────────────────
+    await clearGmbCache(clinicId);
 
     console.log(
       `[Disconnect] Clinic ${clinicId} disconnected from Google (${connection.googleEmail || 'unknown email'}). ` +
