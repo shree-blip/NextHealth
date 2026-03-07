@@ -564,12 +564,12 @@ export default function AdminAnalyticsView({ isDark, refreshTrigger }: AdminAnal
           <div className="flex items-center justify-between mb-3">
             <MousePointerClick className="h-8 w-8 text-blue-500" />
             <span className={`text-xs font-bold px-2 py-1 rounded-full ${isDark ? 'bg-blue-900/30 text-blue-400' : 'bg-blue-100 text-blue-600'}`}>
-              Search Console
+              Organic Google Traffic
             </span>
           </div>
           <h3 className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{scSummary ? scSummary.clicks.toLocaleString() : '—'}</h3>
           <p className={`text-sm font-semibold ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>Organic Clicks</p>
-          <p className={`text-xs mt-1 ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>Auto-synced from Google Search Console</p>
+          <p className={`text-xs mt-1 ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>Auto-synced from Organic Google Traffic</p>
         </motion.div>
 
         <motion.div
@@ -581,7 +581,7 @@ export default function AdminAnalyticsView({ isDark, refreshTrigger }: AdminAnal
           <div className="flex items-center justify-between mb-3">
             <Target className="h-8 w-8 text-purple-500" />
             <span className={`text-xs font-bold px-2 py-1 rounded-full ${isDark ? 'bg-purple-900/30 text-purple-400' : 'bg-purple-100 text-purple-600'}`}>
-              Search Console
+              Organic Google Traffic
             </span>
           </div>
           <h3 className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{scSummary ? scSummary.avgPosition : '—'}</h3>
@@ -826,7 +826,7 @@ export default function AdminAnalyticsView({ isDark, refreshTrigger }: AdminAnal
         </div>
       )}
 
-      {/* Search Console Performance */}
+      {/* Organic Google Traffic Performance */}
       <SearchConsolePerformanceChart
         clinicId={selectedClinic}
         mode="admin"

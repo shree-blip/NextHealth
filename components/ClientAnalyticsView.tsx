@@ -437,16 +437,16 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false, o
         </>
       )}
 
-      {/* ═══════════════════ SEARCH CONSOLE SECTION ═══════════════════ */}
+      {/* ═══════════════════ ORGANIC GOOGLE TRAFFIC SECTION ═══════════════════ */}
       {scSummary && (
         <>
           <div className="flex items-center gap-2 pt-4">
             <Search className="h-5 w-5 text-purple-400" />
-            <h2 className="text-lg font-bold text-white">Google Search Console</h2>
+            <h2 className="text-lg font-bold text-white">Organic Google Traffic</h2>
             <span className="text-xs text-slate-500 ml-2">Filtered range</span>
           </div>
 
-          {/* SC Summary Cards */}
+          {/* Organic Google Traffic Summary Cards */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <div className="rounded-xl p-4 bg-slate-800 border border-slate-700">
               <p className="text-2xl font-bold text-white">{scSummary.totalClicks.toLocaleString()}</p>

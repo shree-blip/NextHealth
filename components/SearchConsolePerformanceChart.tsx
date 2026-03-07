@@ -127,7 +127,7 @@ export default function SearchConsolePerformanceChart({
         animate={{ opacity: 1, scale: 1 }}
         className={`rounded-3xl border p-6 text-center ${isDark ? 'border-red-800/50 bg-red-950/20' : 'border-red-200 bg-red-50'}`}
       >
-        <p className={`text-sm font-bold mb-1 ${isDark ? 'text-red-400' : 'text-red-700'}`}>Failed to load Search Console data</p>
+        <p className={`text-sm font-bold mb-1 ${isDark ? 'text-red-400' : 'text-red-700'}`}>Failed to load Organic Google Traffic data</p>
         <p className={`text-xs mb-4 ${isDark ? 'text-red-400/60' : 'text-red-500/80'}`}>{error}</p>
         <button
           onClick={fetchData}
@@ -148,9 +148,9 @@ export default function SearchConsolePerformanceChart({
         className={glassCard + ' text-center py-10'}
       >
         <Globe className={`h-10 w-10 mx-auto mb-3 ${isDark ? 'text-slate-600' : 'text-slate-300'}`} />
-        <p className={`text-base font-bold mb-1 ${isDark ? 'text-white' : 'text-slate-900'}`}>No Search Console Data</p>
+        <p className={`text-base font-bold mb-1 ${isDark ? 'text-white' : 'text-slate-900'}`}>No Organic Google Traffic Data</p>
         <p className={`text-sm max-w-md mx-auto ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-          No Search Console data found for the selected filters. Connect a site or change the date range.
+          No Organic Google Traffic data found for the selected filters. Connect a site or change the date range.
         </p>
       </motion.div>
     );
@@ -194,10 +194,10 @@ export default function SearchConsolePerformanceChart({
         </div>
         <div>
           <h3 className={`text-xl font-extrabold tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
-            {title || '🔍 Search Console Performance'}
+            {title || '🔍 Organic Google Traffic Performance'}
           </h3>
           <p className={`text-xs mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-            Average Position, Clicks & Impressions from Google Search Console
+            Average Position, Clicks & Impressions from Organic Google Traffic
           </p>
         </div>
       </div>
