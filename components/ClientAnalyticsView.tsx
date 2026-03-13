@@ -8,6 +8,7 @@ import {
 import { Loader2, Building2, TrendingUp, Users, Globe, MousePointerClick, Eye, BarChart3, Search, DollarSign } from 'lucide-react';
 import DashboardLoader from './DashboardLoader';
 import AnalyticsDateFilter, { type DateRange, type FilterPreset } from './AnalyticsDateFilter';
+import { useSitePreferences } from '@/components/SitePreferencesProvider';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface WeeklyAnalytics {
@@ -79,7 +80,23 @@ interface ClientAnalyticsViewProps {
 
 const TRAFFIC_COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6'];
 
+/** Compute the Monday of a given ISO week number */
+function getWeekStartDate(year: number, weekNumber: number): Date {
+  // Jan 4 always falls in ISO week 1
+  const jan4 = new Date(year, 0, 4);
+  const dayOfWeek = jan4.getDay() || 7; // Mon=1..Sun=7
+  const isoWeek1Monday = new Date(jan4);
+  isoWeek1Monday.setDate(jan4.getDate() - dayOfWeek + 1);
+  const monday = new Date(isoWeek1Monday);
+  monday.setDate(isoWeek1Monday.getDate() + (weekNumber - 1) * 7);
+  monday.setHours(0, 0, 0, 0);
+  return monday;
+}
+
 export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false, onLoadingStateChange }: ClientAnalyticsViewProps) {
+  const { theme } = useSitePreferences();
+  const isDark = theme === 'dark';
+
   const [analytics, setAnalytics] = useState<WeeklyAnalytics[]>([]);
   const [clinics, setClinics] = useState<any[]>([]);
   const [selectedClinic, setSelectedClinic] = useState<string>('');
@@ -181,6 +198,16 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false, o
     fetchGoogleData();
   }, [selectedClinic, refreshTrigger, isAdmin, dateRange]);
 
+  // Theme-aware chart styles
+  const tooltipStyle = {
+    backgroundColor: isDark ? '#1e293b' : '#ffffff',
+    border: `1px solid ${isDark ? '#475569' : '#e2e8f0'}`,
+    borderRadius: '12px',
+    color: isDark ? '#e2e8f0' : '#334155',
+  };
+  const axisStroke = isDark ? '#94a3b8' : '#64748b';
+  const gridStroke = isDark ? '#334155' : '#e2e8f0';
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-24">
@@ -191,13 +218,24 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false, o
 
   if (clinics.length === 0) {
     return (
-      <div className="rounded-2xl p-8 border bg-slate-800 border-slate-700 text-center">
-        <Building2 className="h-12 w-12 mx-auto mb-4 text-slate-500" />
-        <h3 className="text-xl font-bold mb-2 text-white">No Clinics Assigned</h3>
-        <p className="text-slate-400">Please contact your admin to assign clinics to your account.</p>
+      <div className="rounded-2xl p-8 border bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-center">
+        <Building2 className="h-12 w-12 mx-auto mb-4 text-slate-400 dark:text-slate-500" />
+        <h3 className="text-xl font-bold mb-2 text-slate-900 dark:text-white">No Clinics Assigned</h3>
+        <p className="text-slate-500 dark:text-slate-400">Please contact your admin to assign clinics to your account.</p>
       </div>
     );
   }
+
+  // ── Filter weekly analytics by selected date range ──────────────────────────
+  const filteredAnalytics = analytics.filter(week => {
+    const weekStart = getWeekStartDate(week.year, week.weekNumber);
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 6);
+    const rangeStart = new Date(dateRange.startDate + 'T00:00:00');
+    const rangeEnd = new Date(dateRange.endDate + 'T23:59:59');
+    // Include week if it overlaps the selected range
+    return weekStart <= rangeEnd && weekEnd >= rangeStart;
+  });
 
   // ── GA4 Aggregates ──────────────────────────────────────────────────────────
   const ga4Summary = ga4Data.length > 0 ? {
@@ -263,8 +301,8 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false, o
     totalDirections: gbpData.reduce((s, d) => s + (d.directionRequests || 0), 0),
   } : null;
 
-  // GA4 chart data (last 30 days)
-  const ga4ChartData = ga4Data.slice(-30).map(d => ({
+  // GA4 chart data (use all data returned by the filter-aware API)
+  const ga4ChartData = ga4Data.map(d => ({
     date: d.date.slice(5), // MM-DD
     users: d.activeUsers,
     sessions: d.sessions,
@@ -272,22 +310,22 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false, o
   }));
 
   // SC chart data
-  const scChartData = scData.slice(-30).map(d => ({
+  const scChartData = scData.map(d => ({
     date: d.date.slice(5),
     clicks: d.clicks,
     impressions: d.impressions,
   }));
 
-  // Weekly analytics summaries
-  const weekSummary = analytics.length > 0 ? {
-    totalPosts: analytics.reduce((s, w) => s + (w.socialPosts || 0), 0),
-    totalViews: analytics.reduce((s, w) => s + (w.socialViews || 0), 0),
-    totalPatients: analytics.reduce((s, w) => s + (w.patientCount || 0), 0),
-    totalConversions: analytics.reduce((s, w) => s + (w.digitalConversion || 0), 0),
-    avgConversionRate: +(analytics.reduce((s, w) => s + (w.conversionRate || 0), 0) / analytics.length).toFixed(2),
+  // Weekly analytics summaries (using filtered data)
+  const weekSummary = filteredAnalytics.length > 0 ? {
+    totalPosts: filteredAnalytics.reduce((s, w) => s + (w.socialPosts || 0), 0),
+    totalViews: filteredAnalytics.reduce((s, w) => s + (w.socialViews || 0), 0),
+    totalPatients: filteredAnalytics.reduce((s, w) => s + (w.patientCount || 0), 0),
+    totalConversions: filteredAnalytics.reduce((s, w) => s + (w.digitalConversion || 0), 0),
+    avgConversionRate: +(filteredAnalytics.reduce((s, w) => s + (w.conversionRate || 0), 0) / filteredAnalytics.length).toFixed(2),
   } : null;
 
-  const chartData = analytics.map(week => ({
+  const chartData = filteredAnalytics.map(week => ({
     week: `W${week.weekNumber}`,
     socialPosts: week.socialPosts || 0,
     socialViews: week.socialViews || 0,
@@ -296,14 +334,39 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false, o
   }));
 
   const hasGoogleData = ga4Data.length > 0 || scData.length > 0 || gbpData.length > 0 || adsData.length > 0;
-  const hasWeeklyData = analytics.length > 0;
+  const hasWeeklyData = filteredAnalytics.length > 0;
+  const hasAnyRawData = hasGoogleData || analytics.length > 0;
 
   if (!hasGoogleData && !hasWeeklyData) {
     return (
-      <div className="rounded-2xl p-8 border bg-slate-800 border-slate-700 text-center">
-        <TrendingUp className="h-12 w-12 mx-auto mb-4 text-slate-500" />
-        <h3 className="text-xl font-bold mb-2 text-white">No Analytics Data Yet</h3>
-        <p className="text-slate-400">Connect Google Analytics or add weekly data to see insights here.</p>
+      <div className="space-y-6">
+        {/* Still show the date filter so users can change the range */}
+        {!isAdmin && clinics.length > 1 && (
+          <div className="flex items-center gap-4">
+            <label className="text-slate-900 dark:text-white font-semibold">Clinic:</label>
+            <select
+              value={selectedClinic}
+              onChange={(e) => setSelectedClinic(e.target.value)}
+              className="px-4 py-2 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-white border border-slate-300 dark:border-slate-600"
+            >
+              {clinics.map((clinic) => (
+                <option key={clinic.id} value={clinic.id}>{clinic.name}</option>
+              ))}
+            </select>
+          </div>
+        )}
+        <AnalyticsDateFilter isDark={isDark} onChange={handleFilterChange} initialPreset={filterPreset} />
+        <div className="rounded-2xl p-8 border bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-center">
+          <TrendingUp className="h-12 w-12 mx-auto mb-4 text-slate-400 dark:text-slate-500" />
+          <h3 className="text-xl font-bold mb-2 text-slate-900 dark:text-white">
+            {hasAnyRawData ? 'No Data for Selected Period' : 'No Analytics Data Yet'}
+          </h3>
+          <p className="text-slate-500 dark:text-slate-400">
+            {hasAnyRawData
+              ? 'Try selecting a different date range, or choose "All" to see all available data.'
+              : 'Connect Google Analytics or add weekly data to see insights here.'}
+          </p>
+        </div>
       </div>
     );
   }
@@ -313,11 +376,11 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false, o
       {/* Clinic Selector */}
       {!isAdmin && clinics.length > 1 && (
         <div className="flex items-center gap-4">
-          <label className="text-white font-semibold">Clinic:</label>
+          <label className="text-slate-900 dark:text-white font-semibold">Clinic:</label>
           <select
             value={selectedClinic}
             onChange={(e) => setSelectedClinic(e.target.value)}
-            className="px-4 py-2 rounded-lg bg-slate-700 text-white border border-slate-600"
+            className="px-4 py-2 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-white border border-slate-300 dark:border-slate-600"
           >
             {clinics.map((clinic) => (
               <option key={clinic.id} value={clinic.id}>{clinic.name}</option>
@@ -328,7 +391,7 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false, o
 
       {/* Date Filter */}
       <AnalyticsDateFilter
-        isDark={true}
+        isDark={isDark}
         onChange={handleFilterChange}
         initialPreset="last_week"
       />
@@ -338,7 +401,7 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false, o
         <>
           <div className="flex items-center gap-2 pt-2">
             <BarChart3 className="h-5 w-5 text-blue-400" />
-            <h2 className="text-lg font-bold text-white">Google Analytics (GA4)</h2>
+            <h2 className="text-lg font-bold text-slate-900 dark:text-white">Google Analytics (GA4)</h2>
             <span className="text-xs text-slate-500 ml-2">Filtered range</span>
           </div>
 
@@ -353,24 +416,24 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false, o
               { label: 'Engagement', value: `${ga4Summary.avgEngagement}%`, icon: <TrendingUp className="h-5 w-5 text-green-400" /> },
               { label: 'Conversions', value: ga4Summary.totalConversions.toLocaleString(), icon: <MousePointerClick className="h-5 w-5 text-amber-400" /> },
             ].map((card) => (
-              <div key={card.label} className="rounded-xl p-4 bg-slate-800 border border-slate-700">
+              <div key={card.label} className="rounded-xl p-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
                 <div className="flex items-center gap-2 mb-2">{card.icon}</div>
-                <p className="text-2xl font-bold text-white">{card.value}</p>
-                <p className="text-slate-400 text-xs mt-1">{card.label}</p>
+                <p className="text-2xl font-bold text-slate-900 dark:text-white">{card.value}</p>
+                <p className="text-slate-500 dark:text-slate-400 text-xs mt-1">{card.label}</p>
               </div>
             ))}
           </div>
 
           {/* GA4 Users / Sessions / Page Views Chart */}
           {ga4ChartData.length > 0 && (
-            <div className="rounded-xl p-6 bg-slate-800 border border-slate-700">
-              <h3 className="text-xl font-bold text-white mb-4">📈 Website Traffic (Daily)</h3>
+            <div className="rounded-xl p-6 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+              <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-4">📈 Website Traffic (Daily)</h3>
               <ResponsiveContainer width="100%" height={300}>
                 <AreaChart data={ga4ChartData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                  <XAxis dataKey="date" stroke="#94a3b8" fontSize={11} />
-                  <YAxis stroke="#94a3b8" />
-                  <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #475569', borderRadius: '12px', color: '#e2e8f0' }} />
+                  <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
+                  <XAxis dataKey="date" stroke={axisStroke} fontSize={11} />
+                  <YAxis stroke={axisStroke} />
+                  <Tooltip contentStyle={tooltipStyle} />
                   <Legend />
                   <Area type="monotone" dataKey="users" name="Active Users" stroke="#10b981" fill="#10b981" fillOpacity={0.3} />
                   <Area type="monotone" dataKey="sessions" name="Sessions" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.2} />
@@ -383,8 +446,8 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false, o
           {/* Traffic Sources Pie */}
           {trafficSources.length > 0 && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div className="rounded-xl p-6 bg-slate-800 border border-slate-700">
-                <h3 className="text-xl font-bold text-white mb-4">🎯 Traffic Sources</h3>
+              <div className="rounded-xl p-6 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-4">🎯 Traffic Sources</h3>
                 <ResponsiveContainer width="100%" height={280}>
                   <PieChart>
                     <Pie
@@ -400,27 +463,27 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false, o
                         <Cell key={i} fill={TRAFFIC_COLORS[i % TRAFFIC_COLORS.length]} />
                       ))}
                     </Pie>
-                    <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #475569', borderRadius: '12px', color: '#e2e8f0' }} />
+                    <Tooltip contentStyle={tooltipStyle} />
                   </PieChart>
                 </ResponsiveContainer>
               </div>
 
               {/* Traffic Sources Table */}
-              <div className="rounded-xl p-6 bg-slate-800 border border-slate-700">
-                <h3 className="text-xl font-bold text-white mb-4">📊 Session Breakdown</h3>
-                <table className="w-full text-sm text-slate-300">
+              <div className="rounded-xl p-6 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-4">📊 Session Breakdown</h3>
+                <table className="w-full text-sm text-slate-600 dark:text-slate-300">
                   <thead>
-                    <tr className="border-b border-slate-700">
-                      <th className="text-left py-2 px-3 text-white">Source</th>
-                      <th className="text-right py-2 px-3 text-white">Sessions</th>
-                      <th className="text-right py-2 px-3 text-white">%</th>
+                    <tr className="border-b border-slate-200 dark:border-slate-700">
+                      <th className="text-left py-2 px-3 text-slate-900 dark:text-white">Source</th>
+                      <th className="text-right py-2 px-3 text-slate-900 dark:text-white">Sessions</th>
+                      <th className="text-right py-2 px-3 text-slate-900 dark:text-white">%</th>
                     </tr>
                   </thead>
                   <tbody>
                     {trafficSources.map((src, i) => {
                       const total = trafficSources.reduce((s, t) => s + t.value, 0);
                       return (
-                        <tr key={src.name} className="border-b border-slate-700/50">
+                        <tr key={src.name} className="border-b border-slate-200/50 dark:border-slate-700/50">
                           <td className="py-2 px-3 flex items-center gap-2">
                             <span className="w-3 h-3 rounded-full inline-block" style={{ backgroundColor: TRAFFIC_COLORS[i % TRAFFIC_COLORS.length] }} />
                             {src.name}
@@ -443,41 +506,41 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false, o
         <>
           <div className="flex items-center gap-2 pt-4">
             <Search className="h-5 w-5 text-purple-400" />
-            <h2 className="text-lg font-bold text-white">Organic Google Traffic</h2>
+            <h2 className="text-lg font-bold text-slate-900 dark:text-white">Organic Google Traffic</h2>
             <span className="text-xs text-slate-500 ml-2">Filtered range</span>
           </div>
 
           {/* Organic Google Traffic Summary Cards */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <div className="rounded-xl p-4 bg-slate-800 border border-slate-700">
-              <p className="text-2xl font-bold text-white">{scSummary.totalClicks.toLocaleString()}</p>
-              <p className="text-slate-400 text-xs mt-1">Total Clicks</p>
+            <div className="rounded-xl p-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+              <p className="text-2xl font-bold text-slate-900 dark:text-white">{scSummary.totalClicks.toLocaleString()}</p>
+              <p className="text-slate-500 dark:text-slate-400 text-xs mt-1">Total Clicks</p>
             </div>
-            <div className="rounded-xl p-4 bg-slate-800 border border-slate-700">
-              <p className="text-2xl font-bold text-white">{scSummary.totalImpressions.toLocaleString()}</p>
-              <p className="text-slate-400 text-xs mt-1">Impressions</p>
+            <div className="rounded-xl p-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+              <p className="text-2xl font-bold text-slate-900 dark:text-white">{scSummary.totalImpressions.toLocaleString()}</p>
+              <p className="text-slate-500 dark:text-slate-400 text-xs mt-1">Impressions</p>
             </div>
-            <div className="rounded-xl p-4 bg-slate-800 border border-slate-700">
-              <p className="text-2xl font-bold text-white">{scSummary.avgCTR}%</p>
-              <p className="text-slate-400 text-xs mt-1">Avg CTR</p>
+            <div className="rounded-xl p-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+              <p className="text-2xl font-bold text-slate-900 dark:text-white">{scSummary.avgCTR}%</p>
+              <p className="text-slate-500 dark:text-slate-400 text-xs mt-1">Avg CTR</p>
             </div>
-            <div className="rounded-xl p-4 bg-slate-800 border border-slate-700">
-              <p className="text-2xl font-bold text-white">{scSummary.avgPosition}</p>
-              <p className="text-slate-400 text-xs mt-1">Avg Position</p>
+            <div className="rounded-xl p-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+              <p className="text-2xl font-bold text-slate-900 dark:text-white">{scSummary.avgPosition}</p>
+              <p className="text-slate-500 dark:text-slate-400 text-xs mt-1">Avg Position</p>
             </div>
           </div>
 
           {/* SC Clicks & Impressions Chart */}
           {scChartData.length > 0 && (
-            <div className="rounded-xl p-6 bg-slate-800 border border-slate-700">
-              <h3 className="text-xl font-bold text-white mb-4">🔍 Search Performance (Daily)</h3>
+            <div className="rounded-xl p-6 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+              <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-4">🔍 Search Performance (Daily)</h3>
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart data={scChartData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                  <XAxis dataKey="date" stroke="#94a3b8" fontSize={11} />
-                  <YAxis yAxisId="left" stroke="#94a3b8" />
-                  <YAxis yAxisId="right" orientation="right" stroke="#94a3b8" />
-                  <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #475569', borderRadius: '12px', color: '#e2e8f0' }} />
+                  <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
+                  <XAxis dataKey="date" stroke={axisStroke} fontSize={11} />
+                  <YAxis yAxisId="left" stroke={axisStroke} />
+                  <YAxis yAxisId="right" orientation="right" stroke={axisStroke} />
+                  <Tooltip contentStyle={tooltipStyle} />
                   <Legend />
                   <Line yAxisId="left" type="monotone" dataKey="clicks" name="Clicks" stroke="#10b981" strokeWidth={2} dot={false} />
                   <Line yAxisId="right" type="monotone" dataKey="impressions" name="Impressions" stroke="#8b5cf6" strokeWidth={2} dot={false} />
@@ -489,14 +552,14 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false, o
           {/* Top Pages & Top Queries */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {topPages.length > 0 && (
-              <div className="rounded-xl p-6 bg-slate-800 border border-slate-700 overflow-x-auto">
-                <h3 className="text-xl font-bold text-white mb-4">📄 Top Visited Pages</h3>
-                <table className="w-full text-sm text-slate-300">
+              <div className="rounded-xl p-6 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 overflow-x-auto">
+                <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-4">📄 Top Visited Pages</h3>
+                <table className="w-full text-sm text-slate-600 dark:text-slate-300">
                   <thead>
-                    <tr className="border-b border-slate-700">
-                      <th className="text-left py-2 px-3 text-white">Page</th>
-                      <th className="text-right py-2 px-3 text-white">Clicks</th>
-                      <th className="text-right py-2 px-3 text-white">Impressions</th>
+                    <tr className="border-b border-slate-200 dark:border-slate-700">
+                      <th className="text-left py-2 px-3 text-slate-900 dark:text-white">Page</th>
+                      <th className="text-right py-2 px-3 text-slate-900 dark:text-white">Clicks</th>
+                      <th className="text-right py-2 px-3 text-slate-900 dark:text-white">Impressions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -505,7 +568,7 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false, o
                       let path = p.page;
                       try { path = new URL(p.page).pathname; } catch {}
                       return (
-                        <tr key={i} className="border-b border-slate-700/50 hover:bg-slate-700/30">
+                        <tr key={i} className="border-b border-slate-200/50 dark:border-slate-700/50 hover:bg-slate-100 dark:hover:bg-slate-700/30">
                           <td className="py-2 px-3 truncate max-w-[200px]" title={p.page}>{path}</td>
                           <td className="text-right py-2 px-3 font-semibold text-emerald-400">{p.clicks.toLocaleString()}</td>
                           <td className="text-right py-2 px-3">{p.impressions.toLocaleString()}</td>
@@ -517,19 +580,19 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false, o
               </div>
             )}
             {topQueries.length > 0 && (
-              <div className="rounded-xl p-6 bg-slate-800 border border-slate-700 overflow-x-auto">
-                <h3 className="text-xl font-bold text-white mb-4">🔎 Top Search Queries</h3>
-                <table className="w-full text-sm text-slate-300">
+              <div className="rounded-xl p-6 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 overflow-x-auto">
+                <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-4">🔎 Top Search Queries</h3>
+                <table className="w-full text-sm text-slate-600 dark:text-slate-300">
                   <thead>
-                    <tr className="border-b border-slate-700">
-                      <th className="text-left py-2 px-3 text-white">Query</th>
-                      <th className="text-right py-2 px-3 text-white">Clicks</th>
-                      <th className="text-right py-2 px-3 text-white">Position</th>
+                    <tr className="border-b border-slate-200 dark:border-slate-700">
+                      <th className="text-left py-2 px-3 text-slate-900 dark:text-white">Query</th>
+                      <th className="text-right py-2 px-3 text-slate-900 dark:text-white">Clicks</th>
+                      <th className="text-right py-2 px-3 text-slate-900 dark:text-white">Position</th>
                     </tr>
                   </thead>
                   <tbody>
                     {topQueries.map((q, i) => (
-                      <tr key={i} className="border-b border-slate-700/50 hover:bg-slate-700/30">
+                      <tr key={i} className="border-b border-slate-200/50 dark:border-slate-700/50 hover:bg-slate-100 dark:hover:bg-slate-700/30">
                         <td className="py-2 px-3">{q.query}</td>
                         <td className="text-right py-2 px-3 font-semibold text-blue-400">{q.clicks.toLocaleString()}</td>
                         <td className="text-right py-2 px-3">{q.position.toFixed(1)}</td>
@@ -548,25 +611,25 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false, o
         <>
           <div className="flex items-center gap-2 pt-4">
             <Globe className="h-5 w-5 text-emerald-400" />
-            <h2 className="text-lg font-bold text-white">Google Business Profile</h2>
+            <h2 className="text-lg font-bold text-slate-900 dark:text-white">Google Business Profile</h2>
             <span className="text-xs text-slate-500 ml-2">Filtered range</span>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <div className="rounded-xl p-4 bg-slate-800 border border-slate-700">
-              <p className="text-2xl font-bold text-white">{gbpSummary.totalViews.toLocaleString()}</p>
-              <p className="text-slate-400 text-xs mt-1">Profile Views</p>
+            <div className="rounded-xl p-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+              <p className="text-2xl font-bold text-slate-900 dark:text-white">{gbpSummary.totalViews.toLocaleString()}</p>
+              <p className="text-slate-500 dark:text-slate-400 text-xs mt-1">Profile Views</p>
             </div>
-            <div className="rounded-xl p-4 bg-slate-800 border border-slate-700">
-              <p className="text-2xl font-bold text-white">{gbpSummary.totalCalls.toLocaleString()}</p>
-              <p className="text-slate-400 text-xs mt-1">Phone Calls</p>
+            <div className="rounded-xl p-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+              <p className="text-2xl font-bold text-slate-900 dark:text-white">{gbpSummary.totalCalls.toLocaleString()}</p>
+              <p className="text-slate-500 dark:text-slate-400 text-xs mt-1">Phone Calls</p>
             </div>
-            <div className="rounded-xl p-4 bg-slate-800 border border-slate-700">
-              <p className="text-2xl font-bold text-white">{gbpSummary.totalClicks.toLocaleString()}</p>
-              <p className="text-slate-400 text-xs mt-1">Website Clicks</p>
+            <div className="rounded-xl p-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+              <p className="text-2xl font-bold text-slate-900 dark:text-white">{gbpSummary.totalClicks.toLocaleString()}</p>
+              <p className="text-slate-500 dark:text-slate-400 text-xs mt-1">Website Clicks</p>
             </div>
-            <div className="rounded-xl p-4 bg-slate-800 border border-slate-700">
-              <p className="text-2xl font-bold text-white">{gbpSummary.totalDirections.toLocaleString()}</p>
-              <p className="text-slate-400 text-xs mt-1">Direction Requests</p>
+            <div className="rounded-xl p-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+              <p className="text-2xl font-bold text-slate-900 dark:text-white">{gbpSummary.totalDirections.toLocaleString()}</p>
+              <p className="text-slate-500 dark:text-slate-400 text-xs mt-1">Direction Requests</p>
             </div>
           </div>
         </>
@@ -577,7 +640,7 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false, o
         <>
           <div className="flex items-center gap-2 pt-4">
             <DollarSign className="h-5 w-5 text-green-400" />
-            <h2 className="text-lg font-bold text-white">Google Ads & Ad Spend</h2>
+            <h2 className="text-lg font-bold text-slate-900 dark:text-white">Google Ads & Ad Spend</h2>
             <span className="text-xs text-slate-500 ml-2">Filtered range</span>
           </div>
           {(() => {
@@ -589,37 +652,37 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false, o
             return (
               <>
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-                  <div className="rounded-xl p-4 bg-slate-800 border border-slate-700">
+                  <div className="rounded-xl p-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
                     <p className="text-2xl font-bold text-green-400">${totalGoogleAdsSpend.toFixed(2)}</p>
-                    <p className="text-slate-400 text-xs mt-1">Total Ad Spend</p>
+                    <p className="text-slate-500 dark:text-slate-400 text-xs mt-1">Total Ad Spend</p>
                   </div>
-                  <div className="rounded-xl p-4 bg-slate-800 border border-slate-700">
+                  <div className="rounded-xl p-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
                     <p className="text-2xl font-bold text-blue-400">{totalGoogleAdsClicks.toLocaleString()}</p>
-                    <p className="text-slate-400 text-xs mt-1">Clicks</p>
+                    <p className="text-slate-500 dark:text-slate-400 text-xs mt-1">Clicks</p>
                   </div>
-                  <div className="rounded-xl p-4 bg-slate-800 border border-slate-700">
+                  <div className="rounded-xl p-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
                     <p className="text-2xl font-bold text-purple-400">{totalGoogleAdsImpressions.toLocaleString()}</p>
-                    <p className="text-slate-400 text-xs mt-1">Impressions</p>
+                    <p className="text-slate-500 dark:text-slate-400 text-xs mt-1">Impressions</p>
                   </div>
-                  <div className="rounded-xl p-4 bg-slate-800 border border-slate-700">
+                  <div className="rounded-xl p-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
                     <p className="text-2xl font-bold text-amber-400">{totalGoogleAdsConversions.toLocaleString()}</p>
-                    <p className="text-slate-400 text-xs mt-1">Conversions</p>
+                    <p className="text-slate-500 dark:text-slate-400 text-xs mt-1">Conversions</p>
                   </div>
-                  <div className="rounded-xl p-4 bg-slate-800 border border-slate-700">
+                  <div className="rounded-xl p-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
                     <p className="text-2xl font-bold text-indigo-400">${avgCpc.toFixed(2)}</p>
-                    <p className="text-slate-400 text-xs mt-1">Avg CPC</p>
+                    <p className="text-slate-500 dark:text-slate-400 text-xs mt-1">Avg CPC</p>
                   </div>
                 </div>
-                <div className="rounded-2xl p-6 bg-slate-800 border border-slate-700">
-                  <h3 className="text-lg font-bold text-white mb-4">Daily Ad Spend & Clicks</h3>
+                <div className="rounded-2xl p-6 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                  <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4">Daily Ad Spend & Clicks</h3>
                   <ResponsiveContainer width="100%" height={280}>
                     <AreaChart data={adsData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                      <XAxis dataKey="date" stroke="#94a3b8" tick={{ fontSize: 11 }} />
-                      <YAxis yAxisId="left" stroke="#94a3b8" />
-                      <YAxis yAxisId="right" orientation="right" stroke="#94a3b8" />
+                      <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
+                      <XAxis dataKey="date" stroke={axisStroke} tick={{ fontSize: 11 }} />
+                      <YAxis yAxisId="left" stroke={axisStroke} />
+                      <YAxis yAxisId="right" orientation="right" stroke={axisStroke} />
                       <Tooltip
-                        contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #475569', borderRadius: '12px' }}
+                        contentStyle={tooltipStyle}
                         formatter={(value: any, name: any) => [name === 'Spend ($)' ? `$${Number(value || 0).toFixed(2)}` : Number(value || 0).toLocaleString(), name]}
                       />
                       <Legend />
@@ -636,16 +699,16 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false, o
 
       {/* Loading indicator for Google data */}
       {googleLoading && (
-        <div className="flex items-center gap-2 text-slate-400 text-sm py-2">
-          <DashboardLoader variant="inline" className="text-slate-400" /> Syncing Google data...
+        <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 text-sm py-2">
+          <DashboardLoader variant="inline" className="text-slate-500 dark:text-slate-400" /> Syncing Google data...
         </div>
       )}
 
       {/* No Google data message */}
       {!hasGoogleData && !googleLoading && (
-        <div className="rounded-xl p-6 bg-slate-800/50 border border-slate-700/50 text-center">
-          <Globe className="h-8 w-8 mx-auto mb-3 text-slate-600" />
-          <p className="text-slate-400 text-sm">No Google Analytics data connected yet. Ask your admin to connect Google Analytics.</p>
+        <div className="rounded-xl p-6 bg-slate-100/50 dark:bg-slate-800/50 border border-slate-200/50 dark:border-slate-700/50 text-center">
+          <Globe className="h-8 w-8 mx-auto mb-3 text-slate-400 dark:text-slate-600" />
+          <p className="text-slate-500 dark:text-slate-400 text-sm">No Google Analytics data connected yet. Ask your admin to connect Google Analytics.</p>
         </div>
       )}
 
@@ -654,45 +717,45 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false, o
         <>
           <div className="flex items-center gap-2 pt-4">
             <TrendingUp className="h-5 w-5 text-amber-400" />
-            <h2 className="text-lg font-bold text-white">Weekly Performance</h2>
+            <h2 className="text-lg font-bold text-slate-900 dark:text-white">Weekly Performance</h2>
           </div>
 
           {/* Weekly Summary Cards */}
           {weekSummary && (
             <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-              <div className="rounded-xl p-4 bg-slate-800 border border-slate-700">
-                <p className="text-2xl font-bold text-white">{weekSummary.totalPosts}</p>
-                <p className="text-slate-400 text-xs mt-1">Total Posts</p>
+              <div className="rounded-xl p-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                <p className="text-2xl font-bold text-slate-900 dark:text-white">{weekSummary.totalPosts}</p>
+                <p className="text-slate-500 dark:text-slate-400 text-xs mt-1">Total Posts</p>
               </div>
-              <div className="rounded-xl p-4 bg-slate-800 border border-slate-700">
-                <p className="text-2xl font-bold text-white">{weekSummary.totalViews.toLocaleString()}</p>
-                <p className="text-slate-400 text-xs mt-1">Social Views</p>
+              <div className="rounded-xl p-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                <p className="text-2xl font-bold text-slate-900 dark:text-white">{weekSummary.totalViews.toLocaleString()}</p>
+                <p className="text-slate-500 dark:text-slate-400 text-xs mt-1">Social Views</p>
               </div>
-              <div className="rounded-xl p-4 bg-slate-800 border border-slate-700">
-                <p className="text-2xl font-bold text-white">{weekSummary.totalPatients}</p>
-                <p className="text-slate-400 text-xs mt-1">Patients</p>
+              <div className="rounded-xl p-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                <p className="text-2xl font-bold text-slate-900 dark:text-white">{weekSummary.totalPatients}</p>
+                <p className="text-slate-500 dark:text-slate-400 text-xs mt-1">Patients</p>
               </div>
-              <div className="rounded-xl p-4 bg-slate-800 border border-slate-700">
-                <p className="text-2xl font-bold text-white">{Math.round(weekSummary.totalConversions)}</p>
-                <p className="text-slate-400 text-xs mt-1">Conversions</p>
+              <div className="rounded-xl p-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                <p className="text-2xl font-bold text-slate-900 dark:text-white">{Math.round(weekSummary.totalConversions)}</p>
+                <p className="text-slate-500 dark:text-slate-400 text-xs mt-1">Conversions</p>
               </div>
-              <div className="rounded-xl p-4 bg-slate-800 border border-slate-700">
-                <p className="text-2xl font-bold text-white">{weekSummary.avgConversionRate}%</p>
-                <p className="text-slate-400 text-xs mt-1">Avg Conv Rate</p>
+              <div className="rounded-xl p-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                <p className="text-2xl font-bold text-slate-900 dark:text-white">{weekSummary.avgConversionRate}%</p>
+                <p className="text-slate-500 dark:text-slate-400 text-xs mt-1">Avg Conv Rate</p>
               </div>
             </div>
           )}
 
           {/* Social Media Chart */}
-          <div className="rounded-xl p-6 bg-slate-800 border border-slate-700">
-            <h3 className="text-xl font-bold text-white mb-6">📱 Social Media Performance</h3>
+          <div className="rounded-xl p-6 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+            <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-6">📱 Social Media Performance</h3>
             <ResponsiveContainer width="100%" height={300}>
               <LineChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                <XAxis dataKey="week" stroke="#94a3b8" />
-                <YAxis stroke="#94a3b8" yAxisId="left" />
-                <YAxis stroke="#94a3b8" yAxisId="right" orientation="right" />
-                <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #475569', borderRadius: '12px', color: '#e2e8f0' }} />
+                <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
+                <XAxis dataKey="week" stroke={axisStroke} />
+                <YAxis stroke={axisStroke} yAxisId="left" />
+                <YAxis stroke={axisStroke} yAxisId="right" orientation="right" />
+                <Tooltip contentStyle={tooltipStyle} />
                 <Legend />
                 <Line yAxisId="left" type="monotone" dataKey="socialPosts" name="Posts" stroke="#8b5cf6" strokeWidth={2} />
                 <Line yAxisId="right" type="monotone" dataKey="socialViews" name="Views" stroke="#06b6d4" strokeWidth={2} />
@@ -701,15 +764,15 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false, o
           </div>
 
           {/* Patient Metrics Chart */}
-          <div className="rounded-xl p-6 bg-slate-800 border border-slate-700">
-            <h3 className="text-xl font-bold text-white mb-6">👥 Patient Metrics</h3>
+          <div className="rounded-xl p-6 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+            <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-6">👥 Patient Metrics</h3>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                <XAxis dataKey="week" stroke="#94a3b8" />
-                <YAxis yAxisId="left" stroke="#94a3b8" />
-                <YAxis yAxisId="right" orientation="right" stroke="#94a3b8" />
-                <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #475569', borderRadius: '12px', color: '#e2e8f0' }} />
+                <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
+                <XAxis dataKey="week" stroke={axisStroke} />
+                <YAxis yAxisId="left" stroke={axisStroke} />
+                <YAxis yAxisId="right" orientation="right" stroke={axisStroke} />
+                <Tooltip contentStyle={tooltipStyle} />
                 <Legend />
                 <Bar yAxisId="left" dataKey="patientCount" name="Patients" fill="#10b981" />
                 <Bar yAxisId="right" dataKey="conversionRate" name="Conv Rate (%)" fill="#f59e0b" />
@@ -718,12 +781,12 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false, o
           </div>
 
           {/* Weekly Detailed Table */}
-          <div className="rounded-xl p-6 bg-slate-800 border border-slate-700 overflow-x-auto">
-            <h3 className="text-xl font-bold text-white mb-4">📊 Weekly Breakdown</h3>
-            <table className="w-full text-sm text-slate-300">
+          <div className="rounded-xl p-6 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 overflow-x-auto">
+            <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-4">📊 Weekly Breakdown</h3>
+            <table className="w-full text-sm text-slate-600 dark:text-slate-300">
               <thead>
-                <tr className="border-b border-slate-700">
-                  <th className="text-left py-3 px-4 font-semibold text-white">Week</th>
+                <tr className="border-b border-slate-200 dark:border-slate-700">
+                  <th className="text-left py-3 px-4 font-semibold text-slate-900 dark:text-white">Week</th>
                   <th className="text-right py-3 px-4">Posts</th>
                   <th className="text-right py-3 px-4">Views</th>
                   <th className="text-right py-3 px-4">Patients</th>
@@ -732,8 +795,8 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false, o
                 </tr>
               </thead>
               <tbody>
-                {analytics.map((week) => (
-                  <tr key={week.id} className="border-b border-slate-700 hover:bg-slate-700/50">
+                {filteredAnalytics.map((week) => (
+                  <tr key={week.id} className="border-b border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700/50">
                     <td className="py-3 px-4 font-medium">{week.weekLabel}</td>
                     <td className="text-right py-3 px-4">{week.socialPosts || 0}</td>
                     <td className="text-right py-3 px-4">{(week.socialViews || 0).toLocaleString()}</td>

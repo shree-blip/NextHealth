@@ -97,7 +97,7 @@ export async function PATCH(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { id, name, email, role, password } = body;
+    const { id, name, email, role, password, membershipRole } = body;
 
     if (!id) {
       return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
@@ -140,6 +140,36 @@ export async function PATCH(req: NextRequest) {
         return NextResponse.json({ error: 'Invalid role. Use client or admin' }, { status: 400 });
       }
       updateData.role = role;
+    }
+
+    if (typeof membershipRole === 'string') {
+      const normalizedMembershipRole = membershipRole.trim().toLowerCase();
+      const validMembershipRoles = ['free', 'starter-care', 'growth-pro', 'scale-elite'];
+
+      if (!validMembershipRoles.includes(normalizedMembershipRole)) {
+        return NextResponse.json(
+          { error: 'Invalid membership role. Use free, starter-care, growth-pro, or scale-elite' },
+          { status: 400 }
+        );
+      }
+
+      if (normalizedMembershipRole === 'free') {
+        updateData.plan = null;
+        updateData.planId = null;
+        updateData.subscriptionStatus = null;
+      } else if (normalizedMembershipRole === 'starter-care') {
+        updateData.plan = 'Starter Care';
+        updateData.planId = 'silver';
+        updateData.subscriptionStatus = 'active';
+      } else if (normalizedMembershipRole === 'growth-pro') {
+        updateData.plan = 'Growth Pro';
+        updateData.planId = 'gold';
+        updateData.subscriptionStatus = 'active';
+      } else if (normalizedMembershipRole === 'scale-elite') {
+        updateData.plan = 'Scale Elite';
+        updateData.planId = 'premium';
+        updateData.subscriptionStatus = 'active';
+      }
     }
 
     if (typeof password === 'string' && password.trim()) {

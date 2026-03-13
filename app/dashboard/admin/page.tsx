@@ -127,6 +127,7 @@ function StaffManagementSection({
     name: '',
     email: '',
     role: 'client',
+    membershipRole: 'free',
     password: '',
   });
   const [deleteModal, setDeleteModal] = useState({
@@ -144,6 +145,16 @@ function StaffManagementSection({
     if (planId === 'gold' || plan.includes('growth pro') || plan === 'gold') return 'Growth Pro';
     if (planId === 'silver' || plan.includes('starter care') || plan === 'silver') return 'Starter Care';
     return 'Free';
+  };
+
+  const normalizeMembershipRole = (listedUser: any) => {
+    const planId = String(listedUser?.planId || '').toLowerCase();
+    const plan = String(listedUser?.plan || '').toLowerCase();
+
+    if (planId === 'premium' || plan.includes('scale elite') || plan === 'premium') return 'scale-elite';
+    if (planId === 'gold' || plan.includes('growth pro') || plan === 'gold') return 'growth-pro';
+    if (planId === 'silver' || plan.includes('starter care') || plan === 'silver') return 'starter-care';
+    return 'free';
   };
 
   const isPremiumClient = (listedUser: any) => {
@@ -310,6 +321,7 @@ function StaffManagementSection({
       name: selectedUser.name || '',
       email: selectedUser.email || '',
       role: selectedUser.role || 'client',
+      membershipRole: normalizeMembershipRole(selectedUser),
       password: '',
     });
     setShowEditModal(true);
@@ -330,6 +342,7 @@ function StaffManagementSection({
         name: editForm.name,
         email: editForm.email,
         role: editForm.role,
+        membershipRole: editForm.membershipRole,
       };
 
       if (editForm.password.trim()) {
@@ -594,6 +607,18 @@ function StaffManagementSection({
             options={[
               { value: 'client', label: 'Client' },
               { value: 'admin', label: 'Admin' },
+            ]}
+            required
+          />
+          <AdminSelect
+            label="Membership Role"
+            value={editForm.membershipRole}
+            onChange={(value) => setEditForm((prev) => ({ ...prev, membershipRole: value }))}
+            options={[
+              { value: 'free', label: 'Free' },
+              { value: 'starter-care', label: 'Starter Care' },
+              { value: 'growth-pro', label: 'Growth Pro' },
+              { value: 'scale-elite', label: 'Scale Elite' },
             ]}
             required
           />

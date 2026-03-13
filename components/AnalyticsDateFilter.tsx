@@ -4,7 +4,7 @@ import { useState, useMemo, useCallback } from 'react';
 import { Calendar, Search, RotateCcw } from 'lucide-react';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
-export type FilterPreset = 'last_week' | 'current_month' | 'last_month' | 'year' | 'custom';
+export type FilterPreset = 'last_week' | 'current_month' | 'last_month' | 'year' | 'all' | 'custom';
 
 export interface DateRange {
   startDate: string; // YYYY-MM-DD
@@ -60,6 +60,10 @@ function computeRange(preset: FilterPreset): DateRange {
     }
     case 'year': {
       const start = new Date(now.getFullYear(), 0, 1);
+      return { startDate: fmt(start), endDate: fmt(now) };
+    }
+    case 'all': {
+      const start = new Date(2020, 0, 1);
       return { startDate: fmt(start), endDate: fmt(now) };
     }
     case 'custom':
@@ -133,6 +137,7 @@ export default function AnalyticsDateFilter({
         {presetBtn('current_month', 'Current Month')}
         {presetBtn('last_month', 'Last Month')}
         {presetBtn('year', 'Year')}
+        {presetBtn('all', 'All')}
       </div>
 
       {/* Custom Date Range */}

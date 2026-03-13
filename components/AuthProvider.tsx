@@ -56,9 +56,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const intervalId = window.setInterval(() => {
       refreshUser();
-    }, 30000);
+    }, 10000);
 
     return () => window.clearInterval(intervalId);
+  }, [user, refreshUser]);
+
+  useEffect(() => {
+    if (!user) return;
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        refreshUser();
+      }
+    };
+
+    const handleFocus = () => {
+      refreshUser();
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+    };
   }, [user, refreshUser]);
 
   const login = useCallback(async (email: string, password: string) => {

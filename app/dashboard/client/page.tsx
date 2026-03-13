@@ -434,7 +434,7 @@ function ClientDashboard() {
       />
 
       {/* Sidebar */}
-      <aside className="w-64 border-r border-slate-200/60 dark:border-slate-800/60 flex flex-col px-4 py-6 hidden lg:flex bg-white/40 dark:bg-slate-900/40 backdrop-blur-sm">
+      <aside className="w-64 border-r border-slate-200/60 dark:border-slate-800/60 hidden px-4 py-6 lg:flex lg:flex-col bg-white/40 dark:bg-slate-900/40 backdrop-blur-sm">
         <nav className="space-y-1 flex-grow mt-4">
           <NavItem icon={BarChart3} label="Overview" active={activeView === 'overview'} onClick={() => setActiveView('overview')} />
           <NavItem icon={TrendingUp} label="Analytics" active={activeView === 'analytics'} onClick={() => { setAnalyticsTabLoading(true); setActiveView('analytics'); }} />
