@@ -193,6 +193,50 @@ const ASSIGNMENTS: Array<{
   },
 ];
 
+export async function GET(req: NextRequest) {
+  const cronSecret = process.env.CRON_SECRET;
+  const authHeader = req.headers.get('authorization');
+  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  try {
+    const [userCount, clinicCount, assignmentCount, analyticsCount, weeklyCount] =
+      await Promise.all([
+        prisma.user.count(),
+        prisma.clinic.count(),
+        prisma.clientClinic.count(),
+        prisma.analyticsData.count(),
+        prisma.weeklyAnalytics.count(),
+      ]);
+
+    const users = await prisma.user.findMany({
+      select: { id: true, email: true, name: true, role: true, plan: true, planId: true },
+    });
+    const clinics = await prisma.clinic.findMany({
+      select: { id: true, name: true, type: true },
+    });
+    const assignments = await prisma.clientClinic.findMany({
+      select: { userId: true, clinicId: true, serviceCategories: true },
+    });
+
+    return NextResponse.json({
+      counts: {
+        users: userCount,
+        clinics: clinicCount,
+        clientClinicAssignments: assignmentCount,
+        analyticsData: analyticsCount,
+        weeklyAnalytics: weeklyCount,
+      },
+      users,
+      clinics,
+      assignments,
+    });
+  } catch (err) {
+    return NextResponse.json({ error: String(err) }, { status: 500 });
+  }
+}
+
 export async function POST(req: NextRequest) {
   // ── Auth check ─────────────────────────────────────────────────────────
   const cronSecret = process.env.CRON_SECRET;
