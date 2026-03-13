@@ -10,10 +10,6 @@ export const metadata: Metadata = {
   },
 };
 
-const DEMO_EMBED_URL =
-  process.env.NEXT_PUBLIC_BOOK_DEMO_EMBED_URL ||
-  'https://calendar.google.com/calendar/appointments/schedules/AcZssZ3demo-placeholder?gv=true';
-
 export default function BookADemoPage() {
   return (
     <main className="min-h-screen bg-slate-50">
@@ -29,13 +25,17 @@ export default function BookADemoPage() {
           </div>
 
           <div className="rounded-3xl border border-slate-200 bg-white p-3 sm:p-6 shadow-sm">
+            {/* Google Calendar Appointment Scheduling begin */}
             <iframe
-              src={DEMO_EMBED_URL}
+              src="https://calendar.google.com/calendar/appointments/schedules/AcZssZ3LZ4mnG3SynIotGMFwBP9vGwEg3MUBWLke38kVC6sPe75GfAIEhyRQd_vitpZSwFN2zOqo019G?gv=true"
               title="Book a demo calendar"
-              className="w-full min-h-[700px] rounded-2xl"
+              style={{ border: 0 }}
+              width="100%"
+              height={600}
+              frameBorder={0}
               loading="lazy"
-              referrerPolicy="no-referrer-when-downgrade"
             />
+            {/* end Google Calendar Appointment Scheduling */}
           </div>
 
           <p className="mt-4 text-center text-sm text-slate-600">
