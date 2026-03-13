@@ -231,9 +231,7 @@ export default function ChatBot() {
             aria-label="Open chat"
           >
             <MessageCircle className="h-5 w-5" />
-            <span className="text-sm font-bold hidden sm:inline">
-              {language === 'es' ? 'Chat con Nex' : 'Chat with Nex'}
-            </span>
+            <span className="text-sm font-bold hidden sm:inline">Chat</span>
             {/* Pulse ring */}
             <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-300 opacity-75" />
