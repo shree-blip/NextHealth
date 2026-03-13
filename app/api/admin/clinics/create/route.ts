@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { requireAdmin } from '@/lib/auth';
+import { normalizeServiceCategories } from '@/lib/service-categories';
 
 export async function POST(request: NextRequest) {
   try {
@@ -8,7 +9,8 @@ export async function POST(request: NextRequest) {
     const auth = await requireAdmin(request);
     if ('response' in auth) return auth.response;
 
-    const { name, type, location, assignedUsers } = await request.json();
+    const { name, type, location, assignedUsers, serviceCategories } = await request.json();
+    const normalizedServiceCategories = normalizeServiceCategories(serviceCategories);
 
     // Validate input
     if (!name || !type || !location) {
@@ -44,6 +46,7 @@ export async function POST(request: NextRequest) {
             create: {
               userId,
               clinicId: clinic.id,
+              serviceCategories: normalizedServiceCategories,
             },
           })
         )

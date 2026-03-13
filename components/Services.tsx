@@ -41,6 +41,13 @@ export default function Services({ compact = false, showImages = true }: Service
       href: '/services/google-ads',
     },
     {
+      title: 'On-Site Field Marketing',
+      description: 'Local events and community activations that drive patient appointments.',
+      icon: '📍',
+      image: '/17.png',
+      href: '/services/on-site-field-marketing',
+    },
+    {
       title: 'Meta Ads',
       description: 'Facebook & Instagram ads that convert scrollers into patients.',
       icon: '👥',

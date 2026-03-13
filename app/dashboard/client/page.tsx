@@ -55,6 +55,7 @@ import { useSitePreferences } from '@/components/SitePreferencesProvider';
 import PricingCard from '@/components/PricingCard';
 import BillingView from '@/components/BillingView';
 import ManageBillingModal from '@/components/ManageBillingModal';
+import WeeklyOngoingWork from '@/components/WeeklyOngoingWork';
 
 /* ─── Plan Definitions ─── */
 const PLANS = [
@@ -128,6 +129,28 @@ export default function ClientDashboardPage() {
 }
 
 function ClientDashboard() {
+  const hasPaidPlanAccess = (
+    currentPlanId: string | null,
+    fallbackPlanId: string,
+    fallbackPlanText: string,
+  ) => {
+    return (
+      currentPlanId === 'silver' ||
+      currentPlanId === 'gold' ||
+      currentPlanId === 'premium' ||
+      fallbackPlanId === 'silver' ||
+      fallbackPlanId === 'gold' ||
+      fallbackPlanId === 'premium' ||
+      fallbackPlanId === 'platinum' ||
+      fallbackPlanText.includes('starter care') ||
+      fallbackPlanText.includes('growth pro') ||
+      fallbackPlanText.includes('scale elite') ||
+      fallbackPlanText === 'silver' ||
+      fallbackPlanText === 'gold' ||
+      fallbackPlanText === 'premium'
+    );
+  };
+
   const router = useRouter();
   const searchParams = useSearchParams();
   const CLIENT_VIEWS = ['overview', 'membership', 'analytics', 'ga4-analytics', 'search-console', 'ai-chat', 'profile', 'settings', 'billing'] as const;
@@ -280,6 +303,18 @@ function ClientDashboard() {
     }
   }, [activeView]);
 
+  useEffect(() => {
+    const currentPlanIdRaw = subStatus?.planId || null;
+    const currentPlanId = currentPlanIdRaw === 'platinum' ? 'premium' : currentPlanIdRaw;
+    const fallbackPlanId = String(user?.planId || '').toLowerCase();
+    const fallbackPlanText = String(user?.plan || '').toLowerCase();
+    const hasPaidPlan = hasPaidPlanAccess(currentPlanId, fallbackPlanId, fallbackPlanText);
+
+    if (activeView === 'ai-chat' && !hasPaidPlan) {
+      setActiveView('overview');
+    }
+  }, [activeView, subStatus?.planId, user?.planId, user?.plan]);
+
   // Auto-select first clinic for GA4/SC tabs
   useEffect(() => {
     if (myClinics.length > 0 && !selectedGoogleClinicId) {
@@ -370,12 +405,7 @@ function ClientDashboard() {
   const currentPlanTier = PLANS.find(p => p.id === currentPlanId)?.tier || 0;
   const fallbackPlanId = String(user?.planId || '').toLowerCase();
   const fallbackPlanText = String(user?.plan || '').toLowerCase();
-  const isPremiumClient =
-    currentPlanId === 'premium' ||
-    fallbackPlanId === 'premium' ||
-    fallbackPlanId === 'platinum' ||
-    fallbackPlanText.includes('scale elite') ||
-    fallbackPlanText === 'premium';
+  const hasPaidPlan = hasPaidPlanAccess(currentPlanId, fallbackPlanId, fallbackPlanText);
   const fallbackPlanLabel = (() => {
     if (fallbackPlanId === 'premium') return 'Scale Elite';
     if (fallbackPlanId === 'gold') return 'Growth Pro';
@@ -442,13 +472,14 @@ function ClientDashboard() {
           <NavItem icon={Globe} label="Search Console" active={activeView === 'search-console'} onClick={() => setActiveView('search-console')} />
           <NavItem icon={Users} label="Patient Leads" badge="Coming Soon" onClick={() => {}} />
           <NavItem icon={Calendar} label="Patient Count" badge="Coming Soon" onClick={() => {}} />
-          <NavItem
-            icon={MessageSquare}
-            label="AI Analytics"
-            active={activeView === 'ai-chat'}
-            onClick={() => setActiveView('ai-chat')}
-            badge={isPremiumClient ? 'Premium' : 'Premium Only'}
-          />
+          {hasPaidPlan && (
+            <NavItem
+              icon={MessageSquare}
+              label="AI Analytics"
+              active={activeView === 'ai-chat'}
+              onClick={() => setActiveView('ai-chat')}
+            />
+          )}
           <NavItem
             icon={CreditCard}
             label="Membership"
@@ -724,7 +755,7 @@ function ClientDashboard() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
             >
-              {isPremiumClient ? (
+              {hasPaidPlan ? (
                 <PremiumAnalyticsChat defaultExpanded userName={user.name} clinicNames={myClinics.map((c: any) => c.name)} />
               ) : (
                 <div className="rounded-3xl p-8 border border-slate-200 dark:border-slate-700 bg-gradient-to-r from-slate-50 to-violet-50 dark:from-slate-900 dark:to-violet-950/30">
@@ -1128,6 +1159,10 @@ function OverviewView({
             <StatCard label="Total Traffic" value={totalTraffic.toLocaleString()} change={fmtChange(totalTraffic, totalPrevTraffic)} negative={totalTraffic < totalPrevTraffic} />
             <StatCard label="GMB Calls" value={totalCalls.toLocaleString()} change={fmtChange(totalCalls, totalPrevCalls)} negative={totalCalls < totalPrevCalls} />
             <StatCard label="Active Locations" value={myClinics.length.toString()} change="" />
+          </div>
+
+          <div className="mb-12">
+            <WeeklyOngoingWork />
           </div>
 
           {/* Assigned Clinics Cards */}

@@ -31,6 +31,7 @@ export async function GET(req: NextRequest) {
         select: {
           userId: true,
           clinicId: true,
+          serviceCategories: true,
         },
       }),
     ]);

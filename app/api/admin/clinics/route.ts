@@ -9,6 +9,17 @@ export async function GET(req: NextRequest) {
   try {
     const clinics = await prisma.clinic.findMany({
       orderBy: { name: 'asc' },
+      include: {
+        clientAssignments: {
+          select: {
+            id: true,
+            userId: true,
+            clinicId: true,
+            serviceCategories: true,
+            assignedAt: true,
+          },
+        },
+      },
     });
     return NextResponse.json({ clinics });
   } catch (error) {

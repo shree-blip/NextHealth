@@ -9,6 +9,7 @@ import { Loader2, Building2, TrendingUp, Users, Globe, MousePointerClick, Eye, B
 import DashboardLoader from './DashboardLoader';
 import AnalyticsDateFilter, { type DateRange, type FilterPreset } from './AnalyticsDateFilter';
 import { useSitePreferences } from '@/components/SitePreferencesProvider';
+import WeeklyOngoingWork from './WeeklyOngoingWork';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface WeeklyAnalytics {
@@ -395,6 +396,8 @@ export default function ClientAnalyticsView({ refreshTrigger, isAdmin = false, o
         onChange={handleFilterChange}
         initialPreset="last_week"
       />
+
+      {!isAdmin && selectedClinic && <WeeklyOngoingWork clinicId={selectedClinic} />}
 
       {/* ═══════════════════ GOOGLE ANALYTICS (GA4) SECTION ═══════════════════ */}
       {ga4Summary && (

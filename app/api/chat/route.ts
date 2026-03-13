@@ -68,49 +68,137 @@ interface ChatRequestBody {
   language?: 'en' | 'es';
 }
 
-function fallbackReply(input: string, language: 'en' | 'es' = 'en'): string {
-  const q = input.toLowerCase();
-  const isEs = language === 'es' || /[¿¡]|\b(precio|servicio|consulta|clinica|urgencia)\b/.test(q);
+type FallbackIntent =
+  | 'pricing'
+  | 'services'
+  | 'booking'
+  | 'dashboard'
+  | 'industries'
+  | 'results'
+  | 'about-company';
 
-  if (q.includes('price') || q.includes('pricing') || q.includes('cost') || q.includes('precio')) {
-    return isEs
-      ? 'Nuestros planes comienzan en $5,000/mes (Starter Care) y $10,000/mes (Growth Pro), con opciones Enterprise personalizadas. ¿Te gustaría ver el desglose completo? 👉 https://thenextgenhealth.com/pricing'
-      : "We offer two core plans: **Starter Care** starting at $5,000/mo and **Growth Pro** at $10,000/mo, plus custom Enterprise options. Check out the full breakdown here: https://thenextgenhealth.com/pricing — or tell me what kind of practice you have and I'll suggest the best fit!";
+interface FallbackDecision {
+  reply: string;
+  matchedIntent: boolean;
+}
+
+function isLikelySpanish(text: string, language: 'en' | 'es') {
+  return language === 'es' || /[¿¡]|\b(precio|servicio|consulta|clinica|urgencia|empresa|agendar)\b/.test(text);
+}
+
+function detectFallbackIntent(text: string): FallbackIntent | null {
+  const q = text.toLowerCase();
+
+  if (/(price|pricing|cost|rates?|plans?|precio|precios|costo|tarifa|plan)/.test(q)) return 'pricing';
+  if (/(services?|offer|offering|field marketing|marketing services?|servicio|servicios|estrategia|seo|ads?|google ads|meta ads|social media|email|automation|automatiz)/.test(q)) return 'services';
+  if (/(book|consult|schedule|demo|call|consulta|agendar|cita|llamada)/.test(q)) return 'booking';
+  if (/(dashboard|analytics|reporting|data|roi|métricas|metricas|anal[ií]tica)/.test(q)) return 'dashboard';
+  if (/(urgent care|er\b|medspa|clinic|dental|specialt|industry|industria|cl[ií]nica|clinica)/.test(q)) return 'industries';
+  if (/(result|patient|growth|performance|outcome|inquiries?|leads?|resultado|paciente|crecimiento|rendimiento)/.test(q)) return 'results';
+  if (/(next\s?gen|thenextgenhealth|about|who are you|your company|company|agencia|empresa|quienes|quiénes|acerca de)/.test(q)) return 'about-company';
+
+  return null;
+}
+
+function buildFallbackQuery(input: string, recentUserMessages: string[]): string {
+  const normalizedInput = input.trim();
+  if (!normalizedInput) return '';
+
+  const wordCount = normalizedInput.split(/\s+/).length;
+  const lower = normalizedInput.toLowerCase();
+  const vaguePattern = /^(this|that|it|more|details|info|field marketing|marketing|next gen|about|tell me more)$/;
+  const isVagueFollowUp = wordCount <= 3 || vaguePattern.test(lower);
+
+  if (!isVagueFollowUp || recentUserMessages.length < 2) {
+    return normalizedInput;
   }
 
-  if (q.includes('service') || q.includes('offer') || q.includes('servicio')) {
-    return isEs
-      ? 'Ofrecemos SEO local, Google/Meta Ads, diseño web HIPAA, redes sociales, contenido, email marketing, automatización con IA y un dashboard unificado. Todo especializado en healthcare. Más detalles en https://thenextgenhealth.com/services'
-      : "We handle **SEO**, **Google & Meta Ads**, **website design**, **social media**, **content**, **email campaigns**, **automation**, and more — all specialized in healthcare. See the full list: https://thenextgenhealth.com/services. What's your biggest marketing challenge right now?";
+  const previousMessage = recentUserMessages[recentUserMessages.length - 2]?.trim() || '';
+  if (!previousMessage) return normalizedInput;
+
+  return `${previousMessage} ${normalizedInput}`.trim();
+}
+
+function fallbackReply(
+  input: string,
+  recentUserMessages: string[],
+  language: 'en' | 'es' = 'en'
+): FallbackDecision {
+  const fallbackQuery = buildFallbackQuery(input, recentUserMessages);
+  const directIntent = detectFallbackIntent(input);
+  const contextIntent = detectFallbackIntent(fallbackQuery);
+  const intent = directIntent || contextIntent;
+  const isEs = isLikelySpanish(fallbackQuery.toLowerCase(), language);
+
+  if (intent === 'pricing') {
+    return {
+      matchedIntent: true,
+      reply: isEs
+        ? 'Nuestros planes comienzan en $5,000/mes (Starter Care) y $10,000/mes (Growth Pro), con opciones Enterprise personalizadas. ¿Te gustaría ver el desglose completo? 👉 https://thenextgenhealth.com/pricing'
+        : "We offer two core plans: **Starter Care** starting at $5,000/mo and **Growth Pro** at $10,000/mo, plus custom Enterprise options. Check out the full breakdown here: https://thenextgenhealth.com/pricing — or tell me what kind of practice you have and I'll suggest the best fit!",
+    };
   }
 
-  if (q.includes('book') || q.includes('consult') || q.includes('schedule') || q.includes('demo') || q.includes('consulta') || q.includes('agendar')) {
-    return isEs
-      ? 'Puedes agendar una consulta estratégica gratuita aquí 👉 https://thenextgenhealth.com/contact. ¡Estaremos felices de ayudarte!'
-      : "You can book a **free strategy call** right here: https://thenextgenhealth.com/contact. We'd love to learn about your practice and show you how we can help!";
+  if (intent === 'services') {
+    return {
+      matchedIntent: true,
+      reply: isEs
+        ? 'Ofrecemos SEO local, Google/Meta Ads, diseño web HIPAA, redes sociales, contenido, email marketing, automatización con IA y un dashboard unificado. Todo especializado en healthcare. Más detalles en https://thenextgenhealth.com/services'
+        : "We handle **SEO**, **Google & Meta Ads**, **website design**, **social media**, **content**, **email campaigns**, **automation**, and more — all specialized in healthcare. See the full list: https://thenextgenhealth.com/services. What's your biggest marketing challenge right now?",
+    };
   }
 
-  if (q.includes('dashboard') || q.includes('analytics') || q.includes('reporting') || q.includes('data')) {
-    return isEs
-      ? 'Nuestro dashboard unificado te muestra datos reales de Google Ads, Meta, SEO y pacientes en un solo lugar. ¡Pide una demo! https://thenextgenhealth.com/contact'
-      : "Our **unified dashboard** puts all your marketing data in one place — Google Ads, Meta, SEO, patient metrics. No more juggling tools! Want to see it in action? Book a demo: https://thenextgenhealth.com/contact";
+  if (intent === 'booking') {
+    return {
+      matchedIntent: true,
+      reply: isEs
+        ? 'Puedes agendar una consulta estratégica gratuita aquí 👉 https://thenextgenhealth.com/contact. ¡Estaremos felices de ayudarte!'
+        : "You can book a **free strategy call** right here: https://thenextgenhealth.com/contact. We'd love to learn about your practice and show you how we can help!",
+    };
   }
 
-  if (q.includes('urgent care') || q.includes('er') || q.includes('medspa') || q.includes('clinic') || q.includes('dental') || q.includes('clínica')) {
-    return isEs
-      ? 'Sí, trabajamos con urgent cares, ERs, MedSpas, consultorios dentales y clínicas de bienestar. Adaptamos todo por especialidad. Más info: https://thenextgenhealth.com/industries'
-      : "Absolutely! We specialize in **urgent care, ERs, MedSpas, dental offices, and wellness clinics**. Each strategy is tailored to your specialty. Learn more: https://thenextgenhealth.com/industries";
+  if (intent === 'dashboard') {
+    return {
+      matchedIntent: true,
+      reply: isEs
+        ? 'Nuestro dashboard unificado te muestra datos reales de Google Ads, Meta, SEO y pacientes en un solo lugar. ¡Pide una demo! https://thenextgenhealth.com/contact'
+        : "Our **unified dashboard** puts all your marketing data in one place — Google Ads, Meta, SEO, patient metrics. No more juggling tools! Want to see it in action? Book a demo: https://thenextgenhealth.com/contact",
+    };
   }
 
-  if (q.includes('result') || q.includes('patient') || q.includes('growth')) {
-    return isEs
-      ? 'Nuestros clientes ven un aumento promedio del 340%+ en consultas de pacientes. Mira nuestros resultados: https://thenextgenhealth.com/proven-results'
-      : "Our clients see an average **340%+ increase** in patient inquiries. Check out our proven results: https://thenextgenhealth.com/proven-results. What growth goals do you have in mind?";
+  if (intent === 'industries') {
+    return {
+      matchedIntent: true,
+      reply: isEs
+        ? 'Sí, trabajamos con urgent cares, ERs, MedSpas, consultorios dentales y clínicas de bienestar. Adaptamos todo por especialidad. Más info: https://thenextgenhealth.com/industries'
+        : 'Absolutely! We specialize in **urgent care, ERs, MedSpas, dental offices, and wellness clinics**. Each strategy is tailored to your specialty. Learn more: https://thenextgenhealth.com/industries',
+    };
   }
 
-  return isEs
-    ? 'Soy Nex, tu asistente de marketing médico. Puedo ayudarte con servicios, precios, nuestro dashboard y más. ¿Qué te gustaría saber? 😊'
-    : "I'm Nex, your healthcare marketing assistant! I can help with services, pricing, our dashboard, and more. What would you like to know? 😊";
+  if (intent === 'results') {
+    return {
+      matchedIntent: true,
+      reply: isEs
+        ? 'Nuestros clientes ven un aumento promedio del 340%+ en consultas de pacientes. Mira nuestros resultados: https://thenextgenhealth.com/proven-results'
+        : 'Our clients see an average **340%+ increase** in patient inquiries. Check out our proven results: https://thenextgenhealth.com/proven-results. What growth goals do you have in mind?',
+    };
+  }
+
+  if (intent === 'about-company') {
+    return {
+      matchedIntent: true,
+      reply: isEs
+        ? 'The NextGen Healthcare Marketing es una agencia enfocada 100% en marketing para clínicas y marcas de salud. Ayudamos con SEO, anuncios, contenido y analítica en un dashboard unificado para crecer más rápido. Conócenos: https://thenextgenhealth.com/about y servicios: https://thenextgenhealth.com/services'
+        : 'The NextGen Healthcare Marketing is a healthcare-specialized growth agency. We help practices with SEO, ads, content, and analytics through one unified approach and dashboard. Learn more at https://thenextgenhealth.com/about and explore services at https://thenextgenhealth.com/services',
+    };
+  }
+
+  return {
+    matchedIntent: false,
+    reply: isEs
+      ? 'Soy Nex, tu asistente de marketing médico. Puedo ayudarte con servicios, precios, nuestro dashboard y más. ¿Qué te gustaría saber? 😊'
+      : "I'm Nex, your healthcare marketing assistant! I can help with services, pricing, our dashboard, and more. What would you like to know? 😊",
+  };
 }
 
 function summarizeConversation(messages: Message[], language: 'en' | 'es' = 'en') {
@@ -177,6 +265,13 @@ export async function POST(req: NextRequest) {
 
     const latestUserMessage = [...messages].reverse().find((m) => m.role === 'user')?.content || '';
 
+    // Keep only last 10 messages to control context length
+    const recentMessages = messages.slice(-10);
+    const recentUserMessages = recentMessages
+      .filter((m) => m.role === 'user')
+      .map((m) => m.content)
+      .filter(Boolean);
+
     if (latestUserMessage && session) {
       try {
         await prisma.chatMessage.create({
@@ -196,16 +291,17 @@ export async function POST(req: NextRequest) {
     let sources: { url: string; title: string }[] = [];
     let isUnanswered = false;
 
+    const retrievalQuery = buildFallbackQuery(latestUserMessage, recentUserMessages);
+
     try {
-      retrievedChunks = await retrieveContext(latestUserMessage, 5);
+      retrievedChunks = await retrieveContext(retrievalQuery, 5);
       if (retrievedChunks.length === 0) {
         // Fallback to keyword search
-        retrievedChunks = keywordSearch(latestUserMessage, 3);
+        retrievedChunks = keywordSearch(retrievalQuery, 3);
       }
       sources = extractSources(retrievedChunks);
       if (retrievedChunks.length === 0) {
-        isUnanswered = true;
-        console.log('[Chat API] No relevant content found for:', latestUserMessage.substring(0, 80));
+        console.log('[Chat API] No relevant content found for:', retrievalQuery.substring(0, 80));
       }
     } catch (ragError) {
       console.error('[Chat API] RAG retrieval failed, continuing without context:', ragError);
@@ -213,9 +309,6 @@ export async function POST(req: NextRequest) {
 
     const retrievedContext = formatContextForPrompt(retrievedChunks);
     const systemPrompt = buildSystemPrompt(retrievedContext, currentLanguage);
-
-    // Keep only last 10 messages to control context length
-    const recentMessages = messages.slice(-10);
 
     // Build Gemini conversation contents with RAG context
     const contents = [
@@ -229,12 +322,15 @@ export async function POST(req: NextRequest) {
 
     let reply = '';
     let usedFallback = false;
+    let fallbackMatchedIntent = false;
 
     // Check if API key is properly configured
     if (!GEMINI_API_KEY || GEMINI_API_KEY.trim() === '') {
       console.error('[Chat API] GEMINI_API_KEY is not configured.');
       usedFallback = true;
-      reply = fallbackReply(latestUserMessage, currentLanguage);
+      const fallbackDecision = fallbackReply(latestUserMessage, recentUserMessages, currentLanguage);
+      reply = fallbackDecision.reply;
+      fallbackMatchedIntent = fallbackDecision.matchedIntent;
     } else {
       try {
         console.log('[Chat API] Calling Gemini with', recentMessages.length, 'messages and', retrievedChunks.length, 'RAG chunks');
@@ -259,7 +355,9 @@ export async function POST(req: NextRequest) {
           const errorText = await response.text();
           console.error('[Chat API] Gemini API error:', response.status, errorText);
           usedFallback = true;
-          reply = fallbackReply(latestUserMessage, currentLanguage);
+          const fallbackDecision = fallbackReply(latestUserMessage, recentUserMessages, currentLanguage);
+          reply = fallbackDecision.reply;
+          fallbackMatchedIntent = fallbackDecision.matchedIntent;
         } else {
           const data = await response.json();
           const generatedText = data.candidates?.[0]?.content?.parts?.[0]?.text;
@@ -267,7 +365,9 @@ export async function POST(req: NextRequest) {
           if (!generatedText || generatedText.trim() === '') {
             console.warn('[Chat API] Gemini returned empty response, using fallback');
             usedFallback = true;
-            reply = fallbackReply(latestUserMessage, currentLanguage);
+            const fallbackDecision = fallbackReply(latestUserMessage, recentUserMessages, currentLanguage);
+            reply = fallbackDecision.reply;
+            fallbackMatchedIntent = fallbackDecision.matchedIntent;
           } else {
             reply = generatedText;
             console.log('[Chat API] Gemini response OK (%d RAG chunks used)', retrievedChunks.length);
@@ -276,9 +376,13 @@ export async function POST(req: NextRequest) {
       } catch (error) {
         console.error('[Chat API] Gemini API call failed:', error);
         usedFallback = true;
-        reply = fallbackReply(latestUserMessage, currentLanguage);
+        const fallbackDecision = fallbackReply(latestUserMessage, recentUserMessages, currentLanguage);
+        reply = fallbackDecision.reply;
+        fallbackMatchedIntent = fallbackDecision.matchedIntent;
       }
     }
+
+    isUnanswered = retrievedChunks.length === 0 && usedFallback && !fallbackMatchedIntent;
 
     // Log unanswered questions for review
     if (isUnanswered && latestUserMessage.length > 5) {

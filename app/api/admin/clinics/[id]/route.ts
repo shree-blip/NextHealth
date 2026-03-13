@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { requireAdmin } from '@/lib/auth';
+import { normalizeServiceCategories } from '@/lib/service-categories';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -16,7 +17,12 @@ export async function PATCH(
     if ('response' in auth) return auth.response;
 
     const { id: clinicId } = await context.params;
-    const { name, type, location, assignedUsers } = await request.json();
+    const body = await request.json();
+    const { name, type, location, assignedUsers } = body;
+    const hasServiceCategories = Object.prototype.hasOwnProperty.call(body, 'serviceCategories');
+    const normalizedServiceCategories = hasServiceCategories
+      ? normalizeServiceCategories(body.serviceCategories)
+      : null;
 
     // Fetch current clinic
     const clinic = await prisma.clinic.findUnique({
@@ -28,8 +34,12 @@ export async function PATCH(
       return NextResponse.json({ error: 'Clinic not found' }, { status: 404 });
     }
 
+    const inheritedServiceCategories = normalizeServiceCategories(
+      clinic.clientAssignments[0]?.serviceCategories ?? [],
+    );
+
     // Update clinic details
-    const updatedClinic = await prisma.clinic.update({
+    await prisma.clinic.update({
       where: { id: clinicId },
       data: {
         ...(name && { name }),
@@ -65,14 +75,24 @@ export async function PATCH(
                 clinicId,
               },
             },
-            update: {},
+            update: hasServiceCategories
+              ? { serviceCategories: normalizedServiceCategories ?? [] }
+              : {},
             create: {
               userId,
               clinicId,
+              serviceCategories: normalizedServiceCategories ?? inheritedServiceCategories,
             },
           });
         }
       }
+    }
+
+    if (hasServiceCategories) {
+      await prisma.clientClinic.updateMany({
+        where: { clinicId },
+        data: { serviceCategories: normalizedServiceCategories ?? [] },
+      });
     }
 
     // Fetch full updated clinic data

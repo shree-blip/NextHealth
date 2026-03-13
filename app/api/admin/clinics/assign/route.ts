@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { requireAdmin } from '@/lib/auth';
+import { normalizeServiceCategories } from '@/lib/service-categories';
 
 export async function POST(request: NextRequest) {
   try {
@@ -8,7 +9,7 @@ export async function POST(request: NextRequest) {
     const auth = await requireAdmin(request);
     if ('response' in auth) return auth.response;
 
-    const { userId, clinicId } = await request.json();
+    const { userId, clinicId, serviceCategories } = await request.json();
 
     if (!userId || !clinicId) {
       return NextResponse.json(
@@ -31,6 +32,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Clinic not found' }, { status: 404 });
     }
 
+    const inheritedAssignment = await prisma.clientClinic.findFirst({
+      where: { clinicId },
+      select: { serviceCategories: true },
+      orderBy: { assignedAt: 'asc' },
+    });
+
+    const normalizedServiceCategories = normalizeServiceCategories(
+      serviceCategories ?? inheritedAssignment?.serviceCategories ?? [],
+    );
+
     // Create assignment
     const assignment = await prisma.clientClinic.upsert({
       where: {
@@ -39,10 +50,13 @@ export async function POST(request: NextRequest) {
           clinicId,
         },
       },
-      update: {},
+      update: {
+        serviceCategories: normalizedServiceCategories,
+      },
       create: {
         userId,
         clinicId,
+        serviceCategories: normalizedServiceCategories,
       },
     });
 

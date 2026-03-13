@@ -63,6 +63,7 @@ import { useAdminTranslation } from '@/hooks/useAdminTranslation';
 import AdminSelect from '@/components/AdminSelect';
 import Image from 'next/image';
 import ClientErrorBoundary from '@/components/ClientErrorBoundary';
+import { SERVICE_CATEGORY_OPTIONS } from '@/lib/service-categories';
 
 // Modal Component
 function Modal({ isOpen, onClose, title, children, size = 'default' }: { isOpen: boolean; onClose: () => void; title: string; children: React.ReactNode; size?: 'default' | 'large' }) {
@@ -89,6 +90,53 @@ function Modal({ isOpen, onClose, title, children, size = 'default' }: { isOpen:
           {children}
         </div>
       </motion.div>
+    </div>
+  );
+}
+
+function toggleServiceCategorySelection(selectedCategories: string[], category: string) {
+  return selectedCategories.includes(category)
+    ? selectedCategories.filter((selectedCategory) => selectedCategory !== category)
+    : [...selectedCategories, category];
+}
+
+function ServiceCategoryCheckboxGrid({
+  selectedCategories,
+  onChange,
+}: {
+  selectedCategories: string[];
+  onChange: (categories: string[]) => void;
+}) {
+  return (
+    <div className="space-y-2">
+      <div>
+        <label className="block text-sm font-medium mb-1">Service Categories</label>
+        <p className="text-xs text-slate-500 dark:text-slate-400">Choose the ongoing services tied to this clinic assignment.</p>
+      </div>
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+        {SERVICE_CATEGORY_OPTIONS.map((category) => {
+          const checked = selectedCategories.includes(category);
+
+          return (
+            <label
+              key={category}
+              className={`flex cursor-pointer items-start gap-3 rounded-xl border px-3 py-2.5 text-sm transition-colors ${
+                checked
+                  ? 'border-emerald-300 bg-emerald-50 text-emerald-900 dark:border-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-100'
+                  : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:border-slate-600'
+              }`}
+            >
+              <input
+                type="checkbox"
+                checked={checked}
+                onChange={() => onChange(toggleServiceCategorySelection(selectedCategories, category))}
+                className="mt-0.5 h-4 w-4 rounded border-slate-300 text-emerald-500 focus:ring-emerald-500"
+              />
+              <span className="leading-5">{category}</span>
+            </label>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -726,6 +774,7 @@ function AdminDashboardContent() {
   const [newClinicType, setNewClinicType] = useState('');
   const [newClinicLocation, setNewClinicLocation] = useState('');
   const [newClinicAssignedUser, setNewClinicAssignedUser] = useState('');
+  const [newClinicServiceCategories, setNewClinicServiceCategories] = useState<string[]>([]);
   // Analytics refresh trigger – incremented after form saves
   const [analyticsRefreshKey, setAnalyticsRefreshKey] = useState(0);
 
@@ -748,6 +797,14 @@ function AdminDashboardContent() {
   const [platformHealthLoading, setPlatformHealthLoading] = useState(false);
 
   const isAdminLike = useCallback((role?: string) => role === 'admin' || role === 'super_admin', []);
+
+  const openClinicEditor = useCallback((clinic: any) => {
+    setEditingClinic({
+      ...clinic,
+      serviceCategories: clinic.clientAssignments?.[0]?.serviceCategories || [],
+    });
+    setShowEditClinicModal(true);
+  }, []);
 
   const fetchAdminData = useCallback(async () => {
     try {
@@ -1047,8 +1104,7 @@ function AdminDashboardContent() {
     // Find the clinic in our loaded list and open its edit modal
     const matchedClinic = clinics.find(c => c.id === clinicId);
     if (matchedClinic) {
-      setEditingClinic({ ...matchedClinic });
-      setShowEditClinicModal(true);
+      openClinicEditor(matchedClinic);
     }
 
     // Update GMB state with the OAuth result
@@ -1072,7 +1128,7 @@ function AdminDashboardContent() {
         error: message || 'Google connection failed. Please try again.',
       }));
     }
-  }, [clinics]); // Run when clinics are loaded so we can match the clinicId
+  }, [clinics, openClinicEditor]); // Run when clinics are loaded so we can match the clinicId
 
   // Sync TO URL whenever section changes
   useEffect(() => {
@@ -1169,7 +1225,7 @@ function AdminDashboardContent() {
       setAssignments(prev => {
         const exists = prev.some(a => a.userId === selectedUser && a.clinicId === selectedClinic);
         if (exists) return prev;
-        return [...prev, { userId: selectedUser, clinicId: selectedClinic }];
+        return [...prev, data.assignment || { userId: selectedUser, clinicId: selectedClinic, serviceCategories: [] }];
       });
 
       finishActionSuccess('Clinic assigned successfully.');
@@ -1207,7 +1263,7 @@ function AdminDashboardContent() {
       setAssignments(prev => {
         const exists = prev.some(a => a.userId === userId && a.clinicId === quickAssignClinicId);
         if (exists) return prev;
-        return [...prev, { userId, clinicId: quickAssignClinicId }];
+        return [...prev, data.assignment || { userId, clinicId: quickAssignClinicId, serviceCategories: [] }];
       });
 
       finishActionSuccess('Clinic assigned successfully.');
@@ -1320,6 +1376,7 @@ function AdminDashboardContent() {
           type: newClinicType,
           location: newClinicLocation,
           assignedUsers: newClinicAssignedUser ? [newClinicAssignedUser] : [],
+          serviceCategories: newClinicServiceCategories,
         }),
       });
 
@@ -1334,7 +1391,7 @@ function AdminDashboardContent() {
         setAssignments(prev => {
           const exists = prev.some(a => a.userId === newClinicAssignedUser && a.clinicId === data.id);
           if (exists) return prev;
-          return [...prev, { userId: newClinicAssignedUser, clinicId: data.id }];
+          return [...prev, { userId: newClinicAssignedUser, clinicId: data.id, serviceCategories: newClinicServiceCategories }];
         });
       }
 
@@ -1343,6 +1400,7 @@ function AdminDashboardContent() {
       setNewClinicType('');
       setNewClinicLocation('');
       setNewClinicAssignedUser('');
+      setNewClinicServiceCategories([]);
       setShowAddClinicModal(false);
       fetchAdminData();
     } catch (error) {
@@ -1365,6 +1423,7 @@ function AdminDashboardContent() {
           name: editingClinic.name,
           type: editingClinic.type,
           location: editingClinic.location,
+          serviceCategories: editingClinic.serviceCategories || [],
         }),
       });
 
@@ -2097,10 +2156,7 @@ function AdminDashboardContent() {
           handleUpdateStats={handleUpdateStats}
           onAddClient={() => setShowAddClientModal(true)}
           onAddClinic={() => setShowAddClinicModal(true)}
-          onEditClinic={(clinic: any) => {
-            setEditingClinic({ ...clinic });
-            setShowEditClinicModal(true);
-          }}
+          onEditClinic={openClinicEditor}
           onDeleteClinic={handleDeleteClinic}
           onDeleteClient={handleDeleteClient}
           onQuickAssign={(clinicId: string) => {
@@ -2242,6 +2298,10 @@ function AdminDashboardContent() {
             }))
           ]}
         />
+        <ServiceCategoryCheckboxGrid
+          selectedCategories={newClinicServiceCategories}
+          onChange={setNewClinicServiceCategories}
+        />
         <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">You can assign this clinic to a client immediately, or leave it unassigned</p>
         <div className="flex gap-3 pt-2">
           <button
@@ -2353,6 +2413,10 @@ function AdminDashboardContent() {
                   className="w-full appearance-none rounded-xl border border-slate-200/80 dark:border-slate-700/80 bg-white dark:bg-slate-900/60 px-4 py-3 text-sm font-semibold text-slate-800 dark:text-slate-200 placeholder:text-slate-400 shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400"
                 />
               </div>
+              <ServiceCategoryCheckboxGrid
+                selectedCategories={editingClinic.serviceCategories || []}
+                onChange={(serviceCategories) => setEditingClinic({ ...editingClinic, serviceCategories })}
+              />
               {/* Save Clinic Details button - now inside the card */}
               <button
                 onClick={handleEditClinic}

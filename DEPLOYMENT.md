@@ -62,6 +62,24 @@ npx prisma studio
 | `STRIPE_*_PRICE_ID` | Stripe dashboard | ✅ |
 | `NODE_ENV` | Set to `production` | ✅ |
 
+### Monthly Client Report Email Automation
+
+Add these environment variables in Vercel for monthly clinic report emails:
+
+| Variable | Purpose | Required |
+|----------|---------|----------|
+| `CRON_SECRET` | Protects cron endpoints | ✅ |
+| `REPORT_EMAIL_FROM` | Sender email address (e.g. `hello@thenextgenhealth.com`) | ✅ |
+| `REPORT_GMAIL_USER` | Gmail account used for SMTP sending | ✅ |
+| `REPORT_GMAIL_APP_PASSWORD` | Gmail app password for SMTP auth | ✅ |
+| `MONTHLY_REPORT_SINGLE_RECIPIENT` | Single destination for all monthly clinic reports | ✅ |
+
+Cron endpoint added: `/api/cron/monthly-client-reports`
+- Scheduled daily via Vercel cron.
+- Endpoint sends reports only during the **first week of the month** in `America/New_York` timezone.
+- Sends **all clinic monthly reports to one recipient only** (`MONTHLY_REPORT_SINGLE_RECIPIENT`).
+- Manual forced run: `GET /api/cron/monthly-client-reports?force=1` with `Authorization: Bearer <CRON_SECRET>`.
+
 ## ⚠️ Important Notes
 
 ### Socket.io Removed

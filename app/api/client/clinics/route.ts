@@ -25,11 +25,14 @@ export async function GET(request: NextRequest) {
     const assignments = await prisma.clientClinic.findMany({
       where: { userId },
       include: {
-        clinic: true
-      }
+        clinic: true,
+      },
     });
 
-    const clinics = assignments.map(a => a.clinic);
+    const clinics = assignments.map((assignment) => ({
+      ...assignment.clinic,
+      serviceCategories: assignment.serviceCategories,
+    }));
 
     return NextResponse.json({ clinics });
   } catch (error) {

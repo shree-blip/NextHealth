@@ -65,7 +65,7 @@ export default function Navbar({ forceSolid = false }: NavbarProps) {
       resources: 'Resources',
       healthcareNews: 'Healthcare News',
       login: 'Login',
-      getStarted: 'Get Started',
+      bookDemo: 'Book a Demo',
       language: 'Language',
       theme: 'Theme',
       light: 'Light',
@@ -82,7 +82,7 @@ export default function Navbar({ forceSolid = false }: NavbarProps) {
       resources: 'Recursos',
       healthcareNews: 'Noticias de Salud',
       login: 'Iniciar sesión',
-      getStarted: 'Comenzar',
+      bookDemo: 'Reservar una Demo',
       language: 'Idioma',
       theme: 'Tema',
       light: 'Claro',
@@ -107,15 +107,6 @@ export default function Navbar({ forceSolid = false }: NavbarProps) {
     : theme === 'dark'
       ? 'text-white/80 hover:text-white'
       : 'text-slate-700 hover:text-slate-900';
-
-  const membershipLabel = (() => {
-    const planId = String(user?.planId || '').toLowerCase();
-    const plan = String(user?.plan || '').toLowerCase();
-    if (planId === 'premium' || plan.includes('scale elite') || plan === 'premium') return 'Scale Elite';
-    if (planId === 'gold' || plan.includes('growth pro') || plan === 'gold') return 'Growth Pro';
-    if (planId === 'silver' || plan.includes('starter care') || plan === 'silver') return 'Starter Care';
-    return null;
-  })();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -237,34 +228,14 @@ export default function Navbar({ forceSolid = false }: NavbarProps) {
                       : theme === 'dark'
                         ? 'bg-white/30 ring-white/40'
                         : 'bg-emerald-500 ring-emerald-400/30'
-                  } text-white relative`}>
+                  } text-white`}>
                     {user.avatar ? (
                       <Image src={user.avatar} alt={user.name} width={32} height={32} className="rounded-full" />
                     ) : (
                       user.name.substring(0, 2).toUpperCase()
                     )}
-                    {membershipLabel && (
-                      <div className={`absolute -bottom-1 -right-1 h-3 w-3 rounded-full ring-1 ${
-                        membershipLabel === 'Scale Elite' 
-                          ? 'bg-amber-500 ring-white dark:ring-slate-900' 
-                            : membershipLabel === 'Growth Pro'
-                          ? 'bg-blue-500 ring-white dark:ring-slate-900'
-                          : 'bg-emerald-500 ring-white dark:ring-slate-900'
-                      }`} />
-                    )}
                   </div>
                   <span className="hidden lg:inline truncate">{user.name.split(' ')[0]}</span>
-                    {membershipLabel && (
-                    <span className={`hidden sm:inline text-[9px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap ${
-                        membershipLabel === 'Scale Elite' 
-                        ? 'bg-amber-500/20 text-amber-600 dark:text-amber-400' 
-                          : membershipLabel === 'Growth Pro'
-                        ? 'bg-blue-500/20 text-blue-600 dark:text-blue-400'
-                        : 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400'
-                    }`}>
-                        {membershipLabel}
-                    </span>
-                  )}
                   <ChevronDown className={`h-4 w-4 transition-transform duration-300 ${userMenuOpen ? 'rotate-180' : ''}`} />
                 </button>
 
@@ -495,8 +466,8 @@ export default function Navbar({ forceSolid = false }: NavbarProps) {
               </AnimatePresence>
             </div>
 
-            <Link href="/contact" className="rounded-full bg-emerald-500 px-6 py-2 font-semibold text-black hover:bg-emerald-400 transition-all hover:scale-105">
-              {text.getStarted}
+            <Link href="/book-a-demo" className="rounded-full bg-emerald-500 px-6 py-2 font-semibold text-black hover:bg-emerald-400 transition-all hover:scale-105">
+              {text.bookDemo}
             </Link>
           </div>
 
@@ -670,8 +641,8 @@ export default function Navbar({ forceSolid = false }: NavbarProps) {
             </div>
           </div>
 
-          <Link href="/contact" className="block w-full rounded-full bg-emerald-500 py-3 text-center font-bold text-black hover:bg-emerald-400">
-            {text.getStarted}
+          <Link href="/book-a-demo" className="block w-full rounded-full bg-emerald-500 py-3 text-center font-bold text-black hover:bg-emerald-400">
+            {text.bookDemo}
           </Link>
         </motion.div>
       )}

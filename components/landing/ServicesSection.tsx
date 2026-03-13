@@ -24,6 +24,12 @@ const services = [
     link: '/services/google-ads',
   },
   {
+    title: 'On-Site Field Marketing',
+    description: 'Local events and community activations that turn awareness into booked visits.',
+    image: '/17.png',
+    link: '/services/on-site-field-marketing',
+  },
+  {
     title: 'Medical Automation (n8n + Custom)',
     description: 'HIPAA-aware workflows for intake, follow-ups, reminders, and no-show recovery.',
     image: '/18.png',
