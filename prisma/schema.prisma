@@ -409,3 +409,29 @@ model GoogleApiCache {
 
   @@index([expiresAt])
 }
+
+// ─── RAG Knowledge Base ───
+model SiteKnowledge {
+  id            String   @id @default(cuid())
+  url           String
+  title         String
+  section       String   // e.g. "services", "pricing", "blog", "faq"
+  content       String   // text chunk
+  checksum      String   // md5 of content for dedup
+  lastCrawledAt DateTime @default(now())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([url])
+  @@index([section])
+  @@index([checksum])
+}
+
+model UnansweredQuestion {
+  id        String   @id @default(cuid())
+  question  String
+  sessionId String?
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}

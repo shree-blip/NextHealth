@@ -1,80 +1,60 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import {
+  retrieveContext,
+  formatContextForPrompt,
+  extractSources,
+  keywordSearch,
+} from '@/lib/knowledge-retrieval';
 
 export const dynamic = 'force-dynamic';
 export const fetchCache = 'force-no-store';
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
 
-const SYSTEM_PROMPT = `You are Alex, The NextGen Healthcare Marketing's friendly marketing assistant. You're helpful, human, and genuinely interested in helping healthcare providers grow their practices.
+/* ─── System Prompt (RAG-powered) ─── */
+function buildSystemPrompt(retrievedContext: string, language: 'en' | 'es' = 'en'): string {
+  const langInstructions =
+    language === 'es'
+      ? '\nIMPORTANT: Respond in Spanish. The user is speaking Spanish.'
+      : '';
 
-ABOUT THE COMPANY:
-- The NextGen Healthcare Marketing: specialized digital healthcare marketing for providers
-- Located at 3811 Turtle Creek Blvd, Suite 600, Dallas, TX 75219
-- Email: info@thenextgenhealth.com
-- We serve ERs, urgent care centers, MedSpas, wellness clinics, dental offices, and other healthcare providers
-- Google Partner & Meta Certified with HIPAA-aware practices
+  return `You are Nex, a friendly and knowledgeable AI assistant for The NextGen Healthcare Marketing (thenextgenhealth.com). You help visitors learn about our healthcare marketing services, pricing, dashboard, and approach.
 
-SERVICES WE OFFER:
-- SEO & Local Search Optimization
-- Google Ads (PPC) Management  
-- Meta/Facebook & Instagram Ads
-- Website Design & Development (HIPAA-aware)
-- Social Media Marketing
-- Content & Copywriting
-- Email Drip Campaigns
-- Google Business Profile Optimization
-- Brand Identity & Logo Design
-- Brochure & Print Design
-- Analytics & Reporting
-- Strategy & Planning
-- Marketing Automation with AI
+PERSONALITY:
+- Warm, conversational, and genuinely helpful — not robotic
+- Use simple, natural language — sound like a real person who cares
+- Keep answers concise (2-4 sentences) unless the user asks for detail
+- Ask a brief follow-up question when it helps guide the conversation
+- Use the user's language style to shape your tone (casual → casual, professional → professional)
+${langInstructions}
 
-PRICING TIERS:
-- Starter: Starting at $1,500/mo — solo practitioners, includes SEO, GBP, basic social
-- Growth: Starting at $3,500/mo — multi-location practices, adds PPC, content, email
-- Enterprise: Custom pricing — hospital systems & large groups, full-service with dedicated team
+KNOWLEDGE RULES:
+1. Answer ONLY from the RETRIEVED WEBSITE CONTENT below. Do NOT make up information.
+2. If the retrieved content contains the answer, give a clear, helpful response and cite the source page URL.
+3. If the retrieved content does NOT contain the answer, say: "I'm not fully sure from our site content yet, but I can guide you to the right page. Try visiting https://thenextgenhealth.com/contact or ask me something else!"
+4. Never fabricate pricing, service details, features, or statistics.
+5. When mentioning pages from our site, include the full URL (e.g., https://thenextgenhealth.com/pricing).
 
-OUR DASHBOARD:
-- One unified dashboard with real data and real results
-- Built for non-technical clients (no need to juggle multiple tools)
-- Combines Google Ads, Meta, SEO, Google Business Profile, and patient metrics
-- Real-time reporting and insights
-- Mobile-friendly access
-- Dramatically simplifies reporting and strategy decisions
+LEAD HANDLING:
+- When users ask about pricing, services, setup, or demos → guide them to:
+  • Book a free strategy call: https://thenextgenhealth.com/contact
+  • View pricing: https://thenextgenhealth.com/pricing
+  • Learn about services: https://thenextgenhealth.com/services
+- When users ask about the dashboard → explain it simply: "Our dashboard puts all your marketing data — Google Ads, SEO, social, patient metrics — in one place so you can see what's working without juggling tools."
+- When users mention competitors or tools they use → acknowledge and pivot to our strengths
 
-KEY DIFFERENTIATORS:
-- Proven results: 340%+ avg increase in patient inquiries
-- Specialized exclusively in healthcare
-- HIPAA-aware and compliant
-- Bilingual support (English & Spanish)
-- All analytics in one place — no more switching between tools
+OFF-TOPIC HANDLING:
+- If the question is completely unrelated to our business, politely redirect: "Great question! That's outside my area though. I'm here to help with healthcare marketing — things like SEO, ads, social media, and analytics. What can I help you with on that front?"
 
-TONE & CONVERSATION STYLE:
-- Be warm, conversational, and genuinely helpful
-- Use simple, natural language — sound like a real person
-- Ask follow-up questions to understand their needs (e.g., "What's your biggest marketing challenge right now?")
-- Give substantive answers (NOT short robotic replies)
-- When relevant, mention how our dashboard simplifies reporting and gives them one place for all data
-- Promote the dashboard when discussing analytics, reporting, or multiple marketing channels
-- Suggest booking a free strategy call for detailed recommendations
-- Direct scheduling inquiries to /contact
-- For interested prospects, recommend a demo of our dashboard
+FORMAT:
+- Keep it natural and conversational
+- When mentioning our pages, use markdown links: [Page Name](url)
+- Use bullet points for lists
+- Bold key terms with **term**
 
-WHEN TO MENTION THE DASHBOARD:
-- User asks about analytics or reporting
-- User mentions using multiple tools or platforms
-- User asks about getting visibility into marketing performance
-- User seems interested in simplifying their marketing stack
-
-GUIDELINES:
-- Be concise but substantive (2-4 sentences typical)
-- Always be helpful and suggest next steps
-- If someone asks something outside healthcare marketing, gently redirect to what you can help with
-- Never make specific guarantees, but feel free to reference our 340%+ track record
-- Use examples from healthcare (ERs, urgent care, MedSpas, dental, wellness) when helpful
-- If unsure, suggest they contact the team or book a demo
-- End with a natural follow-up question or CTA when appropriate`;
+${retrievedContext}`.trim();
+}
 
 interface Message {
   role: 'user' | 'assistant';
@@ -94,45 +74,43 @@ function fallbackReply(input: string, language: 'en' | 'es' = 'en'): string {
 
   if (q.includes('price') || q.includes('pricing') || q.includes('cost') || q.includes('precio')) {
     return isEs
-      ? 'Nuestros planes comienzan en $1,500/mes (Starter), $3,500/mes (Growth) y Enterprise personalizado. Cada plan crece contigo. ¿Qué tipo de centro tienes? Así veo cuál se adapta mejor.'
-      : 'Our plans start at $1,500/mo (Starter), $3,500/mo (Growth), and custom Enterprise pricing. Each tier grows with you. What type of practice do you have? I can suggest the best fit.';
+      ? 'Nuestros planes comienzan en $5,000/mes (Starter Care) y $10,000/mes (Growth Pro), con opciones Enterprise personalizadas. ¿Te gustaría ver el desglose completo? 👉 https://thenextgenhealth.com/pricing'
+      : "We offer two core plans: **Starter Care** starting at $5,000/mo and **Growth Pro** at $10,000/mo, plus custom Enterprise options. Check out the full breakdown here: https://thenextgenhealth.com/pricing — or tell me what kind of practice you have and I'll suggest the best fit!";
   }
 
   if (q.includes('service') || q.includes('offer') || q.includes('servicio')) {
     return isEs
-      ? 'Ofrecemos SEO local, Google/Meta Ads, diseño web HIPAA, redes sociales, contenido, email marketing, automatización y un dashboard unificado. Especializados 100% en healthcare. ¿Cuál de estos es tu mayor reto ahora?'
-      : 'We handle local SEO, Google/Meta Ads, HIPAA-compliant web design, social media, content, email campaigns, marketing automation, and our unified dashboard. We\'re 100% specialized in healthcare. What\'s your biggest challenge right now?';
+      ? 'Ofrecemos SEO local, Google/Meta Ads, diseño web HIPAA, redes sociales, contenido, email marketing, automatización con IA y un dashboard unificado. Todo especializado en healthcare. Más detalles en https://thenextgenhealth.com/services'
+      : "We handle **SEO**, **Google & Meta Ads**, **website design**, **social media**, **content**, **email campaigns**, **automation**, and more — all specialized in healthcare. See the full list: https://thenextgenhealth.com/services. What's your biggest marketing challenge right now?";
   }
 
-  if (q.includes('book') || q.includes('consult') || q.includes('schedule') || q.includes('consulta') || q.includes('agendar')) {
+  if (q.includes('book') || q.includes('consult') || q.includes('schedule') || q.includes('demo') || q.includes('consulta') || q.includes('agendar')) {
     return isEs
-      ? 'Perfecto. Puedes agendar una consulta estratégica gratuita en /contact, o si prefieres ver primero nuestro dashboard, también podemos hacer una demo. ¿Qué te interesa más?'
-      : 'Perfect! You can book a free strategy call at /contact, or if you\'d like to see our dashboard first, we can do a demo. What works better for you?';
+      ? 'Puedes agendar una consulta estratégica gratuita aquí 👉 https://thenextgenhealth.com/contact. ¡Estaremos felices de ayudarte!'
+      : "You can book a **free strategy call** right here: https://thenextgenhealth.com/contact. We'd love to learn about your practice and show you how we can help!";
+  }
+
+  if (q.includes('dashboard') || q.includes('analytics') || q.includes('reporting') || q.includes('data')) {
+    return isEs
+      ? 'Nuestro dashboard unificado te muestra datos reales de Google Ads, Meta, SEO y pacientes en un solo lugar. ¡Pide una demo! https://thenextgenhealth.com/contact'
+      : "Our **unified dashboard** puts all your marketing data in one place — Google Ads, Meta, SEO, patient metrics. No more juggling tools! Want to see it in action? Book a demo: https://thenextgenhealth.com/contact";
   }
 
   if (q.includes('urgent care') || q.includes('er') || q.includes('medspa') || q.includes('clinic') || q.includes('dental') || q.includes('clínica')) {
     return isEs
-      ? 'Sí, trabajamos con urgent cares, ERs, MedSpas, consultórios dentales, clínicas de bienestar. Adaptamos todo por especialidad. Muchos clientes nuestros pasaban de saltar entre 5-6 herramientas a usar nuestro dashboard. ¿Te gustaría ver cómo funciona?'
-      : 'Yes, we work with urgent care centers, ERs, MedSpas, dental offices, wellness clinics — all healthcare specialties. Many of our clients went from juggling 5-6 marketing tools to using our all-in-one dashboard. Would that help you?';
+      ? 'Sí, trabajamos con urgent cares, ERs, MedSpas, consultorios dentales y clínicas de bienestar. Adaptamos todo por especialidad. Más info: https://thenextgenhealth.com/industries'
+      : "Absolutely! We specialize in **urgent care, ERs, MedSpas, dental offices, and wellness clinics**. Each strategy is tailored to your specialty. Learn more: https://thenextgenhealth.com/industries";
   }
 
-  // Dashboard & Analytics Keywords
-  if (q.includes('dashboard') || q.includes('analytics') || q.includes('reporting') || q.includes('data')) {
+  if (q.includes('result') || q.includes('patient') || q.includes('growth')) {
     return isEs
-      ? 'Exacto, ese es nuestro punto fuerte. 📊 Tenemos un dashboard unificado que te muestra datos reales de Google Ads, Meta, SEO y Google Business Profile todo en un lugar. No más saltar entre múltiples herramientas. ¿Te gustaría ver una demo?'
-      : 'That\'s exactly where we shine! 📊 Our dashboard puts all your marketing data in one place — Google Ads, Meta, SEO, patient metrics, everything. No more juggling multiple tools. Would you like to see a demo?';
-  }
-
-  // Results & Performance Keywords
-  if (q.includes('result') || q.includes('patient') || q.includes('inquir') || q.includes('growth')) {
-    return isEs
-      ? 'Nuestros clientes ven un aumento promedio del 340% en consultas de pacientes. Con nuestro dashboard, tienes total visibility en qué funciona y dónde enfocar presupuesto. ¿Tienes un objetivo de crecimiento específico?'
-      : 'Our clients see an average 340%+ increase in patient inquiries. With our dashboard, you get complete visibility into what\'s working. Do you have a specific growth target in mind?';
+      ? 'Nuestros clientes ven un aumento promedio del 340%+ en consultas de pacientes. Mira nuestros resultados: https://thenextgenhealth.com/proven-results'
+      : "Our clients see an average **340%+ increase** in patient inquiries. Check out our proven results: https://thenextgenhealth.com/proven-results. What growth goals do you have in mind?";
   }
 
   return isEs
-    ? 'Gracias por tu pregunta. Puedo ayudarte con servicios, precios, o cómo nuestro dashboard centraliza todo tu marketing. ¿Hay algo específico en lo que pueda asistirte?'
-    : 'Thanks for reaching out! I can help with services, pricing, or how our dashboard puts all your marketing in one place. What matters most to you right now?';
+    ? 'Soy Nex, tu asistente de marketing médico. Puedo ayudarte con servicios, precios, nuestro dashboard y más. ¿Qué te gustaría saber? 😊'
+    : "I'm Nex, your healthcare marketing assistant! I can help with services, pricing, our dashboard, and more. What would you like to know? 😊";
 }
 
 function summarizeConversation(messages: Message[], language: 'en' | 'es' = 'en') {
@@ -213,13 +191,36 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // ── RAG: Retrieve relevant website content ──
+    let retrievedChunks: Awaited<ReturnType<typeof retrieveContext>> = [];
+    let sources: { url: string; title: string }[] = [];
+    let isUnanswered = false;
+
+    try {
+      retrievedChunks = await retrieveContext(latestUserMessage, 5);
+      if (retrievedChunks.length === 0) {
+        // Fallback to keyword search
+        retrievedChunks = keywordSearch(latestUserMessage, 3);
+      }
+      sources = extractSources(retrievedChunks);
+      if (retrievedChunks.length === 0) {
+        isUnanswered = true;
+        console.log('[Chat API] No relevant content found for:', latestUserMessage.substring(0, 80));
+      }
+    } catch (ragError) {
+      console.error('[Chat API] RAG retrieval failed, continuing without context:', ragError);
+    }
+
+    const retrievedContext = formatContextForPrompt(retrievedChunks);
+    const systemPrompt = buildSystemPrompt(retrievedContext, currentLanguage);
+
     // Keep only last 10 messages to control context length
     const recentMessages = messages.slice(-10);
 
-    // Build Gemini conversation contents
+    // Build Gemini conversation contents with RAG context
     const contents = [
-      { role: 'user', parts: [{ text: SYSTEM_PROMPT }] },
-      { role: 'model', parts: [{ text: 'Understood. I will act as The NextGen Healthcare Marketing\'s AI assistant and follow all the guidelines provided.' }] },
+      { role: 'user', parts: [{ text: systemPrompt }] },
+      { role: 'model', parts: [{ text: 'Understood. I\'m Nex, The NextGen Healthcare Marketing assistant. I\'ll answer using the retrieved website content and follow all guidelines.' }] },
       ...recentMessages.map((m) => ({
         role: m.role === 'user' ? 'user' : 'model',
         parts: [{ text: m.content }],
@@ -231,13 +232,13 @@ export async function POST(req: NextRequest) {
 
     // Check if API key is properly configured
     if (!GEMINI_API_KEY || GEMINI_API_KEY.trim() === '') {
-      console.error('[Chat API] GEMINI_API_KEY is not configured. Please set it in environment variables.');
+      console.error('[Chat API] GEMINI_API_KEY is not configured.');
       usedFallback = true;
       reply = fallbackReply(latestUserMessage, currentLanguage);
     } else {
       try {
-        console.log('[Chat API] Calling Gemini API with', recentMessages.length, 'messages');
-        
+        console.log('[Chat API] Calling Gemini with', recentMessages.length, 'messages and', retrievedChunks.length, 'RAG chunks');
+
         const response = await fetch(
           `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`,
           {
@@ -247,7 +248,7 @@ export async function POST(req: NextRequest) {
             body: JSON.stringify({
               contents,
               generationConfig: {
-                maxOutputTokens: 512,
+                maxOutputTokens: 600,
                 temperature: 0.7,
               },
             }),
@@ -261,23 +262,35 @@ export async function POST(req: NextRequest) {
           reply = fallbackReply(latestUserMessage, currentLanguage);
         } else {
           const data = await response.json();
-          console.log('[Chat API] Gemini API response received:', data.candidates?.[0]?.content?.parts?.[0]?.text?.substring(0, 100));
-          
           const generatedText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-          
+
           if (!generatedText || generatedText.trim() === '') {
             console.warn('[Chat API] Gemini returned empty response, using fallback');
             usedFallback = true;
             reply = fallbackReply(latestUserMessage, currentLanguage);
           } else {
             reply = generatedText;
-            console.log('[Chat API] Using Gemini-generated response');
+            console.log('[Chat API] Gemini response OK (%d RAG chunks used)', retrievedChunks.length);
           }
         }
       } catch (error) {
         console.error('[Chat API] Gemini API call failed:', error);
         usedFallback = true;
         reply = fallbackReply(latestUserMessage, currentLanguage);
+      }
+    }
+
+    // Log unanswered questions for review
+    if (isUnanswered && latestUserMessage.length > 5) {
+      try {
+        await prisma.unansweredQuestion.create({
+          data: {
+            question: latestUserMessage.substring(0, 500),
+            sessionId: session?.id,
+          },
+        });
+      } catch (dbError) {
+        console.error('Unanswered question logging skipped:', dbError);
       }
     }
 
@@ -309,9 +322,9 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    return NextResponse.json({ reply, fallback: usedFallback });
+    return NextResponse.json({ reply, sources, fallback: usedFallback, unanswered: isUnanswered });
   } catch (error) {
     console.error('Chat API error:', error);
-    return NextResponse.json({ reply: 'Sorry, I had a temporary issue. Please try again, or contact us via /contact.' });
+    return NextResponse.json({ reply: "Oops, I hit a small snag! Please try again, or reach out to us at https://thenextgenhealth.com/contact. I'm Nex, and I'm here whenever you're ready! 😊", sources: [], fallback: true, unanswered: false });
   }
 }
