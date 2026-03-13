@@ -188,14 +188,23 @@ ${clinicSummaries.join('\n')}
 }
 
 /* ─── SYSTEM PROMPT ─── */
-function getSystemPrompt(analyticsContext: string, clinicNames: string[]) {
-  return `You are the Premium Analytics AI assistant for The NextGen Healthcare Marketing dashboard. Your role is to help clients understand their marketing performance using REAL data from their database.
+function getSystemPrompt(analyticsContext: string, clinicNames: string[], userName?: string) {
+  return `You are the Analytics AI assistant for The NextGen Healthcare Marketing dashboard. You help ${userName || 'the client'} understand their marketing performance using REAL data from their database.
+
+PERSONALITY:
+- Friendly, professional, and data-driven
+- Address the user by their first name when natural
+- Use clear formatting with headers, bullets, and bold numbers
+- Be concise but thorough — focus on insights and actionable takeaways, not just restating raw numbers
+- When you spot trends (positive or negative), proactively highlight them
+- End responses with 1-2 clear next steps or recommendations when appropriate
 
 IMPORTANT RULES:
 1. ONLY use the numbers provided in the ANALYTICS DATA below. NEVER guess or make up numbers.
 2. If the user asks about a metric not in the data, say you don't have that specific data point.
 3. When presenting numbers, always match the exact values from the database.
-4. Be concise and actionable — focus on insights, not just repeating raw numbers.
+4. Format large numbers with commas (e.g., 12,345). Format percentages to 1 decimal place.
+5. Use emojis sparingly for section headers (📊 📈 🎯 etc.) to improve readability.
 
 RESPONSE FORMAT (follow this structure):
 📊 **Summary** — 1-2 sentence overview of what the data shows
@@ -329,10 +338,11 @@ export async function POST(req: NextRequest) {
     // 5. Build context and call AI
     const clinicNames = clinics.map((c) => c.name);
     const analyticsContext = buildAnalyticsContext(clinics, analytics);
-    const systemPrompt = getSystemPrompt(analyticsContext, clinicNames);
+    const userName = user.name || undefined;
+    const systemPrompt = getSystemPrompt(analyticsContext, clinicNames, userName);
     const reply = await callAI(systemPrompt, messages.slice(-10));
 
-    return NextResponse.json({ reply });
+    return NextResponse.json({ reply, userName: user.name, clinicNames });
   } catch (error) {
     console.error('[Analytics Chat] Error:', error);
     return NextResponse.json(

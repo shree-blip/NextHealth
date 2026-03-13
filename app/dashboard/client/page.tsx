@@ -725,7 +725,7 @@ function ClientDashboard() {
               exit={{ opacity: 0, y: -10 }}
             >
               {isPremiumClient ? (
-                <PremiumAnalyticsChat defaultExpanded />
+                <PremiumAnalyticsChat defaultExpanded userName={user.name} clinicNames={myClinics.map((c: any) => c.name)} />
               ) : (
                 <div className="rounded-3xl p-8 border border-slate-200 dark:border-slate-700 bg-gradient-to-r from-slate-50 to-violet-50 dark:from-slate-900 dark:to-violet-950/30">
                   <div className="flex items-start gap-4">
