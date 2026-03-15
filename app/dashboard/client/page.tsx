@@ -41,7 +41,6 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import ClientAnalyticsView from '@/components/ClientAnalyticsView';
 import GoogleAnalyticsView from '@/components/GoogleAnalyticsView';
 import GA4AnalyticsTab from '@/components/GA4AnalyticsTab';
 import SearchConsoleTab from '@/components/SearchConsoleTab';
@@ -467,7 +466,7 @@ function ClientDashboard() {
       <aside className="w-64 border-r border-slate-200/60 dark:border-slate-800/60 hidden px-4 py-6 lg:flex lg:flex-col bg-white/40 dark:bg-slate-900/40 backdrop-blur-sm">
         <nav className="space-y-1 flex-grow mt-4">
           <NavItem icon={BarChart3} label="Overview" active={activeView === 'overview'} onClick={() => setActiveView('overview')} />
-          <NavItem icon={TrendingUp} label="Analytics" active={activeView === 'analytics'} onClick={() => { setAnalyticsTabLoading(true); setActiveView('analytics'); }} />
+          <NavItem icon={TrendingUp} label="Analytics" active={activeView === 'analytics'} onClick={() => setActiveView('analytics')} />
           <NavItem icon={Activity} label="GA4 Analytics" active={activeView === 'ga4-analytics'} onClick={() => setActiveView('ga4-analytics')} />
           <NavItem icon={Globe} label="Search Console" active={activeView === 'search-console'} onClick={() => setActiveView('search-console')} />
           <NavItem icon={Users} label="Patient Leads" badge="Coming Soon" onClick={() => {}} />
@@ -661,12 +660,38 @@ function ClientDashboard() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
             >
-              <ClientErrorBoundary title="Analytics Error" description="Something went wrong loading your analytics. Click below to try again.">
-                <ClientAnalyticsView
-                  refreshTrigger={analyticsRefreshKey}
-                  onLoadingStateChange={setAnalyticsTabLoading}
-                />
-              </ClientErrorBoundary>
+              {myClinics.length > 1 && (
+                <div className="mb-6">
+                  <label className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider mb-2.5 text-slate-500 dark:text-slate-400">
+                    <Building2 className="h-3.5 w-3.5" /> Select Clinic
+                  </label>
+                  <div className="relative max-w-sm">
+                    <select
+                      value={selectedGoogleClinicId}
+                      onChange={(e) => setSelectedGoogleClinicId(e.target.value)}
+                      className="w-full appearance-none rounded-2xl border border-slate-200/60 dark:border-slate-700/60 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm py-3 pl-4 pr-10 text-sm font-semibold text-slate-900 dark:text-slate-200 shadow-sm transition-all hover:shadow-md focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-500/10"
+                    >
+                      {myClinics.map((c: any) => (
+                        <option key={c.id} value={c.id}>{c.name}</option>
+                      ))}
+                    </select>
+                    <MapPin className="absolute right-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+                  </div>
+                </div>
+              )}
+              {selectedGoogleClinicId ? (
+                <ClientErrorBoundary title="Search Console Error" description="Something went wrong loading Search Console data. Click below to try again.">
+                  <SearchConsoleTab clinicId={selectedGoogleClinicId} />
+                </ClientErrorBoundary>
+              ) : myClinics.length === 0 ? (
+                <div className="rounded-3xl p-10 border border-slate-200/60 dark:border-slate-700/60 text-center bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm">
+                  <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-purple-400 to-indigo-500 flex items-center justify-center mx-auto mb-5 shadow-lg shadow-purple-500/20">
+                    <Globe className="h-8 w-8 text-white" />
+                  </div>
+                  <p className="text-lg font-extrabold text-slate-900 dark:text-white mb-2">No Clinics Found</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 max-w-sm mx-auto">You need to be assigned to a clinic to view Search Console data.</p>
+                </div>
+              ) : null}
             </motion.div>
           ) : activeView === 'ga4-analytics' ? (
             <motion.div
