@@ -13,7 +13,6 @@ import {
   LogOut,
   Bell,
   Search,
-  Activity,
   CreditCard,
   Check,
   ArrowUpRight,
@@ -41,8 +40,6 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import GoogleAnalyticsView from '@/components/GoogleAnalyticsView';
-import GA4AnalyticsTab from '@/components/GA4AnalyticsTab';
 import SearchConsoleTab from '@/components/SearchConsoleTab';
 import ClientErrorBoundary from '@/components/ClientErrorBoundary';
 import PremiumAnalyticsChat from '@/components/PremiumAnalyticsChat';
@@ -152,14 +149,13 @@ function ClientDashboard() {
 
   const router = useRouter();
   const searchParams = useSearchParams();
-  const CLIENT_VIEWS = ['overview', 'membership', 'analytics', 'ga4-analytics', 'search-console', 'ai-chat', 'profile', 'settings', 'billing'] as const;
+  const CLIENT_VIEWS = ['overview', 'membership', 'analytics', 'patient-count', 'ai-chat', 'profile', 'settings', 'billing'] as const;
   type ClientView = typeof CLIENT_VIEWS[number];
   const [user, setUser] = useState<any>(null);
   const [myClinics, setMyClinics] = useState<any[]>([]);
   const [activeView, setActiveView] = useState<ClientView>('overview');
   const [authLoading, setAuthLoading] = useState(true);
   const [clinicsLoading, setClinicsLoading] = useState(false);
-  const [analyticsTabLoading, setAnalyticsTabLoading] = useState(false);
   const [selectedGoogleClinicId, setSelectedGoogleClinicId] = useState('');
   const [selectedPlanForBilling, setSelectedPlanForBilling] = useState<{ id: string; name: string; price: number } | null>(null);
 
@@ -297,12 +293,6 @@ function ClientDashboard() {
   }, [user]);
 
   useEffect(() => {
-    if (activeView !== 'analytics') {
-      setAnalyticsTabLoading(false);
-    }
-  }, [activeView]);
-
-  useEffect(() => {
     const currentPlanIdRaw = subStatus?.planId || null;
     const currentPlanId = currentPlanIdRaw === 'platinum' ? 'premium' : currentPlanIdRaw;
     const fallbackPlanId = String(user?.planId || '').toLowerCase();
@@ -420,17 +410,15 @@ function ClientDashboard() {
       ? 'Your Clinic Snapshot'
       : activeView === 'membership'
         ? 'Membership & Billing'
-        : activeView === 'ga4-analytics'
-          ? 'GA4 Analytics'
-          : activeView === 'search-console'
-            ? 'Search Console'
-            : activeView === 'ai-chat'
-              ? 'AI Analytics Assistant'
-              : activeView === 'profile'
-                ? 'My Profile'
-                : activeView === 'settings'
-                  ? 'Account Settings'
-                  : 'Performance Analytics';
+        : activeView === 'patient-count'
+          ? 'Patient Count Report'
+          : activeView === 'ai-chat'
+            ? 'AI Analytics Assistant'
+            : activeView === 'profile'
+              ? 'My Profile'
+              : activeView === 'settings'
+                ? 'Account Settings'
+                : 'Performance Analytics';
 
   const dashboardSubtitle =
     activeView === 'overview'
@@ -440,8 +428,7 @@ function ClientDashboard() {
   const showGlobalLoader =
     authLoading ||
     (activeView === 'overview' && clinicsLoading) ||
-    (activeView === 'membership' && loadingSub) ||
-    (activeView === 'analytics' && analyticsTabLoading);
+    (activeView === 'membership' && loadingSub);
 
   return (
     <>
@@ -467,10 +454,6 @@ function ClientDashboard() {
         <nav className="space-y-1 flex-grow mt-4">
           <NavItem icon={BarChart3} label="Overview" active={activeView === 'overview'} onClick={() => setActiveView('overview')} />
           <NavItem icon={TrendingUp} label="Analytics" active={activeView === 'analytics'} onClick={() => setActiveView('analytics')} />
-          <NavItem icon={Activity} label="GA4 Analytics" active={activeView === 'ga4-analytics'} onClick={() => setActiveView('ga4-analytics')} />
-          <NavItem icon={Globe} label="Search Console" active={activeView === 'search-console'} onClick={() => setActiveView('search-console')} />
-          <NavItem icon={Users} label="Patient Leads" badge="Coming Soon" onClick={() => {}} />
-          <NavItem icon={Calendar} label="Patient Count" badge="Coming Soon" onClick={() => {}} />
           {hasPaidPlan && (
             <NavItem
               icon={MessageSquare}
@@ -479,6 +462,7 @@ function ClientDashboard() {
               onClick={() => setActiveView('ai-chat')}
             />
           )}
+          <NavItem icon={Calendar} label="Patient Count" active={activeView === 'patient-count'} onClick={() => setActiveView('patient-count')} />
           <NavItem
             icon={CreditCard}
             label="Membership"
@@ -492,6 +476,7 @@ function ClientDashboard() {
           />
           <NavItem icon={User} label="Profile" active={activeView === 'profile'} onClick={() => setActiveView('profile')} />
           <NavItem icon={Settings} label="Settings" active={activeView === 'settings'} onClick={() => setActiveView('settings')} />
+          <NavItem icon={Users} label="Patient Leads" badge="Coming Soon" onClick={() => {}} />
         </nav>
       </aside>
 
@@ -693,85 +678,18 @@ function ClientDashboard() {
                 </div>
               ) : null}
             </motion.div>
-          ) : activeView === 'ga4-analytics' ? (
+          ) : activeView === 'patient-count' ? (
             <motion.div
-              key="ga4-analytics"
+              key="patient-count"
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
             >
-              {myClinics.length > 1 && (
-                <div className="mb-6">
-                  <label className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider mb-2.5 text-slate-500 dark:text-slate-400">
-                    <Building2 className="h-3.5 w-3.5" /> Select Clinic
-                  </label>
-                  <div className="relative max-w-sm">
-                    <select
-                      value={selectedGoogleClinicId}
-                      onChange={(e) => setSelectedGoogleClinicId(e.target.value)}
-                      className="w-full appearance-none rounded-2xl border border-slate-200/60 dark:border-slate-700/60 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm py-3 pl-4 pr-10 text-sm font-semibold text-slate-900 dark:text-slate-200 shadow-sm transition-all hover:shadow-md focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/10"
-                    >
-                      {myClinics.map((c: any) => (
-                        <option key={c.id} value={c.id}>{c.name}</option>
-                      ))}
-                    </select>
-                    <MapPin className="absolute right-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
-                  </div>
-                </div>
-              )}
-              {selectedGoogleClinicId ? (
-                <ClientErrorBoundary title="GA4 Analytics Error" description="Something went wrong loading GA4 data. Click below to try again.">
-                  <GA4AnalyticsTab clinicId={selectedGoogleClinicId} />
-                </ClientErrorBoundary>
-              ) : myClinics.length === 0 ? (
-                <div className="rounded-3xl p-10 border border-slate-200/60 dark:border-slate-700/60 text-center bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm">
-                  <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-orange-400 to-amber-500 flex items-center justify-center mx-auto mb-5 shadow-lg shadow-orange-500/20">
-                    <Activity className="h-8 w-8 text-white" />
-                  </div>
-                  <p className="text-lg font-extrabold text-slate-900 dark:text-white mb-2">No Clinics Found</p>
-                  <p className="text-sm text-slate-500 dark:text-slate-400 max-w-sm mx-auto">You need to be assigned to a clinic to view GA4 data.</p>
-                </div>
-              ) : null}
-            </motion.div>
-          ) : activeView === 'search-console' ? (
-            <motion.div
-              key="search-console"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-            >
-              {myClinics.length > 1 && (
-                <div className="mb-6">
-                  <label className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider mb-2.5 text-slate-500 dark:text-slate-400">
-                    <Building2 className="h-3.5 w-3.5" /> Select Clinic
-                  </label>
-                  <div className="relative max-w-sm">
-                    <select
-                      value={selectedGoogleClinicId}
-                      onChange={(e) => setSelectedGoogleClinicId(e.target.value)}
-                      className="w-full appearance-none rounded-2xl border border-slate-200/60 dark:border-slate-700/60 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm py-3 pl-4 pr-10 text-sm font-semibold text-slate-900 dark:text-slate-200 shadow-sm transition-all hover:shadow-md focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-500/10"
-                    >
-                      {myClinics.map((c: any) => (
-                        <option key={c.id} value={c.id}>{c.name}</option>
-                      ))}
-                    </select>
-                    <MapPin className="absolute right-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
-                  </div>
-                </div>
-              )}
-              {selectedGoogleClinicId ? (
-                <ClientErrorBoundary title="Search Console Error" description="Something went wrong loading Search Console data. Click below to try again.">
-                  <SearchConsoleTab clinicId={selectedGoogleClinicId} />
-                </ClientErrorBoundary>
-              ) : myClinics.length === 0 ? (
-                <div className="rounded-3xl p-10 border border-slate-200/60 dark:border-slate-700/60 text-center bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm">
-                  <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-purple-400 to-indigo-500 flex items-center justify-center mx-auto mb-5 shadow-lg shadow-purple-500/20">
-                    <Globe className="h-8 w-8 text-white" />
-                  </div>
-                  <p className="text-lg font-extrabold text-slate-900 dark:text-white mb-2">No Clinics Found</p>
-                  <p className="text-sm text-slate-500 dark:text-slate-400 max-w-sm mx-auto">You need to be assigned to a clinic to view Search Console data.</p>
-                </div>
-              ) : null}
+              <OverviewView
+                myClinics={myClinics}
+                currentPlanId={currentPlanId}
+                onUpgradeClick={() => setActiveView('membership')}
+              />
             </motion.div>
           ) : activeView === 'ai-chat' ? (
             <motion.div
