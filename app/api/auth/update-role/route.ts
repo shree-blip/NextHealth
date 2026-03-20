@@ -70,9 +70,8 @@ export async function PATCH(req: NextRequest) {
     });
   } catch (error) {
     console.error('Update user role error:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown server error';
     return NextResponse.json(
-      { error: `Failed to update user role: ${errorMessage}` },
+      { error: 'Failed to update user role' },
       { status: 500 }
     );
   }

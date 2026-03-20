@@ -167,6 +167,6 @@ export async function GET(req: NextRequest) {
     });
   } catch (error: any) {
     console.error('Client analytics data fetch error:', error);
-    return NextResponse.json({ error: error?.message || 'Failed to fetch analytics data' }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to fetch analytics data' }, { status: 500 });
   }
 }

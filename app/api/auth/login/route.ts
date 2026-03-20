@@ -21,44 +21,42 @@ function isAdminEmail(email: string): boolean {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { email, password, name: providedName, role: providedRole } = body;
+    const { email: rawEmail, password, name: providedName } = body;
 
-    if (!email) {
+    if (!rawEmail || typeof rawEmail !== 'string') {
       return NextResponse.json({ error: 'Email is required' }, { status: 400 });
     }
 
-    if (!password) {
+    const email = rawEmail.trim().toLowerCase().slice(0, 254);
+
+    // Basic email format check
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return NextResponse.json({ error: 'Invalid email format' }, { status: 400 });
+    }
+
+    if (!password || typeof password !== 'string') {
       return NextResponse.json({ error: 'Password is required' }, { status: 400 });
     }
 
-    // Auto-detect role from email if not explicitly provided
-    const role = providedRole || (isAdminEmail(email) ? 'admin' : 'client');
+    // Cap password length to prevent bcrypt DoS (72 byte limit anyway)
+    if (password.length > 128) {
+      return NextResponse.json({ error: 'Password too long' }, { status: 400 });
+    }
+
+    // Role is NEVER accepted from the client — always server-determined
+    const role: string = isAdminEmail(email) ? 'admin' : 'client';
 
     // Try to find or create user in database
     let user;
     try {
-      console.log(`[LOGIN] Attempting login for: ${email}`);
+      // Avoid logging emails in production
+      if (process.env.NODE_ENV !== 'production') console.log(`[LOGIN] Attempting login for: ${email}`);
       user = await prisma.user.findUnique({ where: { email } });
 
       if (!user) {
-        console.log(`[LOGIN] User not found: ${email}`);
-        // No account exists — only auto-create if signing up (role explicitly provided)
-        if (providedRole) {
-          console.log(`[LOGIN] Creating new user: ${email} with role: ${role}`);
-          const hashedPw = await hashPassword(password);
-          user = await prisma.user.create({
-            data: {
-              email,
-              password: hashedPw,
-              name: providedName || email.split('@')[0],
-              role,
-            },
-          });
-          console.log(`[LOGIN] User created successfully: ${user.id}`);
-        } else {
-          console.log(`[LOGIN] No providedRole, returning no account error`);
-          return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
-        }
+        // No account exists — login endpoint does not auto-create accounts.
+        // Users must sign up via the signup page or OAuth.
+        return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
       } else {
         console.log(`[LOGIN] User found: ${user.id}, verifying password`);
         // User exists — verify password (supports both bcrypt and legacy plaintext)

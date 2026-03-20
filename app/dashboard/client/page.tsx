@@ -152,7 +152,14 @@ function ClientDashboard() {
   type ClientView = typeof CLIENT_VIEWS[number];
   const [user, setUser] = useState<any>(null);
   const [myClinics, setMyClinics] = useState<any[]>([]);
-  const [activeView, setActiveView] = useState<ClientView>('overview');
+  const [activeView, setActiveView] = useState<ClientView>(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const v = params.get('view');
+      if (v && (CLIENT_VIEWS as readonly string[]).includes(v)) return v as ClientView;
+    }
+    return 'overview';
+  });
   const [authLoading, setAuthLoading] = useState(true);
   const [clinicsLoading, setClinicsLoading] = useState(false);
   const [selectedGoogleClinicId, setSelectedGoogleClinicId] = useState('');

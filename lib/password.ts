@@ -18,12 +18,13 @@ export async function verifyPassword(
   plaintext: string,
   storedHash: string
 ): Promise<boolean> {
-  // bcrypt hashes always start with $2a$ or $2b$
+  // Only accept bcrypt hashes — reject unhashed / legacy plaintext passwords
   if (storedHash.startsWith('$2a$') || storedHash.startsWith('$2b$')) {
     return bcrypt.compare(plaintext, storedHash);
   }
-  // Legacy plaintext comparison (migration path)
-  return plaintext === storedHash;
+  // Legacy plaintext passwords are no longer accepted.
+  // Users with unhashed passwords must reset via admin or OAuth.
+  return false;
 }
 
 /**

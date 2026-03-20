@@ -43,6 +43,9 @@ if (typeof setInterval !== 'undefined') {
 const RATE_LIMITS: Record<string, { limit: number; windowMs: number }> = {
   '/api/auth/login':           { limit: 10,  windowMs: 15 * 60 * 1000 }, // 10 req / 15 min
   '/api/auth/callback':        { limit: 10,  windowMs: 15 * 60 * 1000 },
+  '/api/auth/password':        { limit: 5,   windowMs: 15 * 60 * 1000 }, // 5 / 15 min
+  '/api/auth/token-login':     { limit: 5,   windowMs: 15 * 60 * 1000 },
+  '/api/auth/update-role':     { limit: 5,   windowMs: 60 * 1000 },
   '/api/contact-lead':         { limit: 5,   windowMs: 60 * 1000 },      // 5 / min
   '/api/newsletter':           { limit: 5,   windowMs: 60 * 1000 },
   '/api/chat':                 { limit: 20,  windowMs: 60 * 1000 },      // 20 / min
@@ -83,6 +86,23 @@ export function middleware(request: NextRequest) {
   const response = NextResponse.next();
 
   // ── Security headers ─────────────────────────────────────────────
+  // Content-Security-Policy — primary XSS defence
+  response.headers.set(
+    'Content-Security-Policy',
+    [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://apis.google.com https://js.stripe.com https://www.googletagmanager.com https://www.google-analytics.com",
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+      "img-src 'self' data: blob: https: http:",
+      "font-src 'self' https://fonts.gstatic.com",
+      "connect-src 'self' https://accounts.google.com https://oauth2.googleapis.com https://api.stripe.com https://www.google-analytics.com https://region1.google-analytics.com https://*.vercel.app wss:",
+      "frame-src 'self' https://accounts.google.com https://js.stripe.com",
+      "object-src 'none'",
+      "base-uri 'self'",
+      "form-action 'self'",
+    ].join('; ')
+  );
+
   // Prevent click-jacking
   response.headers.set('X-Frame-Options', 'DENY');
 

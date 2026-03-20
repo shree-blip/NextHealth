@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 import prisma from '@/lib/prisma';
+import { hashPassword } from '@/lib/password';
 
 const APP_URL = process.env.APP_URL || 'http://localhost:3000';
 
@@ -83,21 +85,11 @@ function htmlResponse(messageType: 'OAUTH_AUTH_SUCCESS' | 'OAUTH_AUTH_ERROR', pa
                 
                 // Fallback: If message is an error, try again with wildcard origin as a recovery
               } catch (err) {
-                console.warn('[OAuth Callback] Strict origin postMessage failed, trying wildcard origin:', err);
-                try {
-                  window.opener.postMessage(parsed, '*');
-                  console.log('[OAuth Callback] postMessage sent with wildcard origin');
-                  updateStatus('Connected! You can close this window...');
-                  setTimeout(function() {
-                    attemptClose();
-                  }, 500);
-                } catch (err2) {
-                  console.error('[OAuth Callback] Both postMessage attempts failed:', err2);
-                  updateStatus('Authentication complete. Please close this window.');
-                  setTimeout(function() {
-                    attemptClose();
-                  }, 1000);
-                }
+                console.warn('[OAuth Callback] Strict origin postMessage failed:', err);
+                updateStatus('Authentication complete. Please close this window.');
+                setTimeout(function() {
+                  attemptClose();
+                }, 1000);
               }
             } else {
               console.warn('[OAuth Callback] No window.opener available');
@@ -154,6 +146,16 @@ export async function GET(req: NextRequest) {
     );
   }
 
+  // Validate OAuth state parameter to prevent CSRF
+  const returnedState = req.nextUrl.searchParams.get('state');
+  const storedState = req.cookies.get('oauth_state')?.value;
+  if (!returnedState || !storedState || returnedState !== storedState) {
+    return new NextResponse(
+      htmlResponse('OAUTH_AUTH_ERROR', { error: 'Invalid OAuth state. Please try again.' }),
+      { status: 403, headers: { 'Content-Type': 'text/html; charset=utf-8' } }
+    );
+  }
+
   try {
     const clientId = process.env.GOOGLE_CLIENT_ID;
     const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
@@ -197,6 +199,7 @@ export async function GET(req: NextRequest) {
       : 'client';
 
     const existing = await prisma.user.findUnique({ where: { email } });
+    const randomPw = await hashPassword(crypto.randomBytes(32).toString('hex'));
     const user = existing
       ? existing
       : await prisma.user.create({
@@ -204,7 +207,7 @@ export async function GET(req: NextRequest) {
             email,
             name,
             role: inferredRole,
-            password: `oauth_${Date.now()}`,
+            password: randomPw,
           },
         });
 
@@ -237,10 +240,13 @@ export async function GET(req: NextRequest) {
       path: '/',
     });
 
+    // Clear OAuth state cookie
+    response.cookies.set('oauth_state', '', { maxAge: 0, path: '/' });
+
     return response;
   } catch (error) {
     console.error('Google OAuth callback error:', error);
-    const message = error instanceof Error ? error.message : 'Authentication failed';
+    const message = 'Authentication failed';
     return new NextResponse(
       htmlResponse('OAUTH_AUTH_ERROR', { error: message }),
       { status: 500, headers: { 'Content-Type': 'text/html; charset=utf-8' } }

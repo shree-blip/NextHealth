@@ -43,13 +43,29 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: 'No fields to update' }, { status: 400 });
     }
 
+    // Sanitize name: trim, cap length, strip HTML
+    if (name !== undefined) {
+      if (typeof name !== 'string' || name.trim().length === 0 || name.trim().length > 100) {
+        return NextResponse.json({ error: 'Name must be 1–100 characters' }, { status: 400 });
+      }
+    }
+
+    // Validate avatar as URL if provided
+    if (avatar !== undefined && avatar !== null && avatar !== '') {
+      if (typeof avatar !== 'string' || avatar.length > 2048 || !/^https?:\/\//i.test(avatar)) {
+        return NextResponse.json({ error: 'Avatar must be a valid HTTP(S) URL' }, { status: 400 });
+      }
+    }
+
+    const safeName = name ? name.trim().replace(/<[^>]*>/g, '').slice(0, 100) : undefined;
+
     // Update user in database
     try {
       const updatedUser = await prisma.user.update({
         where: { id: currentUser.id },
         data: {
-          ...(name && { name }),
-          ...(avatar !== undefined && { avatar }),
+          ...(safeName && { name: safeName }),
+          ...(avatar !== undefined && { avatar: avatar || null }),
         },
       });
 
