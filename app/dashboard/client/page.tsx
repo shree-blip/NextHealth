@@ -51,7 +51,6 @@ import { useSitePreferences } from '@/components/SitePreferencesProvider';
 import PricingCard from '@/components/PricingCard';
 import BillingView from '@/components/BillingView';
 import ManageBillingModal from '@/components/ManageBillingModal';
-import WeeklyOngoingWork from '@/components/WeeklyOngoingWork';
 
 /* ─── Plan Definitions ─── */
 const PLANS = [
@@ -1102,10 +1101,6 @@ function OverviewView({
             <StatCard label="Total Traffic" value={totalTraffic.toLocaleString()} change={fmtChange(totalTraffic, totalPrevTraffic)} negative={totalTraffic < totalPrevTraffic} />
             <StatCard label="GMB Calls" value={totalCalls.toLocaleString()} change={fmtChange(totalCalls, totalPrevCalls)} negative={totalCalls < totalPrevCalls} />
             <StatCard label="Active Locations" value={myClinics.length.toString()} change="" />
-          </div>
-
-          <div className="mb-12">
-            <WeeklyOngoingWork />
           </div>
 
           {/* Assigned Clinics Cards */}
