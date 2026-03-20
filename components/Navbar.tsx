@@ -58,6 +58,7 @@ export default function Navbar({ forceSolid = false }: NavbarProps) {
       services: 'Services',
       caseStudies: 'Case Studies',
       automation: 'Automation',
+      contactUs: 'Contact Us',
       industries: 'Industries',
       about: 'About',
       blog: 'Blog',
@@ -75,6 +76,7 @@ export default function Navbar({ forceSolid = false }: NavbarProps) {
       services: 'Servicios',
       caseStudies: 'Casos',
       automation: 'Automatización',
+      contactUs: 'Contáctanos',
       industries: 'Industrias',
       about: 'Nosotros',
       blog: 'Blog',
@@ -131,9 +133,9 @@ export default function Navbar({ forceSolid = false }: NavbarProps) {
           {/* Desktop Nav */}
           <div className="hidden md:flex items-center gap-6">
             <Link href="/services" className={`font-medium transition-colors ${desktopLinkClass}`}>{text.services}</Link>
-            <Link href="/automation" className={`font-medium transition-colors ${desktopLinkClass}`}>{text.automation}</Link>
             <Link href="/industries" className={`font-medium transition-colors ${desktopLinkClass}`}>{text.industries}</Link>
             <Link href="/about" className={`font-medium transition-colors ${desktopLinkClass}`}>{text.about}</Link>
+            <Link href="/contact" className={`font-medium transition-colors ${desktopLinkClass}`}>{text.contactUs}</Link>
             
             {/* Resources Dropdown */}
             <div className="relative group" ref={resourcesRef}>
@@ -190,6 +192,17 @@ export default function Navbar({ forceSolid = false }: NavbarProps) {
                       onClick={() => setResourcesOpen(false)}
                     >
                       {text.healthcareNews}
+                    </Link>
+                    <Link
+                      href="/automation"
+                      className={`block px-4 py-3 font-medium transition-colors border-t ${
+                        theme === 'dark'
+                          ? 'border-slate-700 text-slate-300 hover:bg-slate-700 hover:text-white'
+                          : 'border-slate-200 text-slate-700 hover:bg-slate-100 hover:text-slate-900'
+                      }`}
+                      onClick={() => setResourcesOpen(false)}
+                    >
+                      {text.automation}
                     </Link>
                     <Link
                       href={user ? (user.role === 'admin' ? '/dashboard/admin' : '/dashboard/client?view=membership') : '/pricing'}
@@ -493,10 +506,12 @@ export default function Navbar({ forceSolid = false }: NavbarProps) {
         >
           <Link href="/services" className={`block font-medium ${theme === 'dark' ? 'text-slate-200 hover:text-emerald-400' : 'text-slate-600 hover:text-emerald-600'}`}>{text.services}</Link>
           <Link href="/case-studies" className={`block font-medium ${theme === 'dark' ? 'text-slate-200 hover:text-emerald-400' : 'text-slate-600 hover:text-emerald-600'}`}>{text.caseStudies}</Link>
-          <Link href="/automation" className={`block font-medium ${theme === 'dark' ? 'text-slate-200 hover:text-emerald-400' : 'text-slate-600 hover:text-emerald-600'}`}>{text.automation}</Link>
           <Link href="/industries" className={`block font-medium ${theme === 'dark' ? 'text-slate-200 hover:text-emerald-400' : 'text-slate-600 hover:text-emerald-600'}`}>{text.industries}</Link>
           <Link href="/about" className={`block font-medium ${theme === 'dark' ? 'text-slate-200 hover:text-emerald-400' : 'text-slate-600 hover:text-emerald-600'}`}>{text.about}</Link>
+          <Link href="/contact" className={`block font-medium ${theme === 'dark' ? 'text-slate-200 hover:text-emerald-400' : 'text-slate-600 hover:text-emerald-600'}`}>{text.contactUs}</Link>
           <Link href="/blog" className={`block font-medium ${theme === 'dark' ? 'text-slate-200 hover:text-emerald-400' : 'text-slate-600 hover:text-emerald-600'}`}>{text.blog}</Link>
+          <Link href="/news" className={`block font-medium ${theme === 'dark' ? 'text-slate-200 hover:text-emerald-400' : 'text-slate-600 hover:text-emerald-600'}`}>{text.healthcareNews}</Link>
+          <Link href="/automation" className={`block font-medium ${theme === 'dark' ? 'text-slate-200 hover:text-emerald-400' : 'text-slate-600 hover:text-emerald-600'}`}>{text.automation}</Link>
           <Link 
             href={user ? (user.role === 'admin' ? '/dashboard/admin' : '/dashboard/client?view=membership') : '/pricing'} 
             className={`block font-medium ${theme === 'dark' ? 'text-slate-200 hover:text-emerald-400' : 'text-slate-600 hover:text-emerald-600'}`}
