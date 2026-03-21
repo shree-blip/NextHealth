@@ -33,7 +33,7 @@ export default function BookADemoPage() {
               width="100%"
               height={600}
               frameBorder={0}
-              loading="lazy"
+              loading="eager"
             />
             {/* end Google Calendar Appointment Scheduling */}
           </div>
