@@ -17,8 +17,7 @@ const BlogInsights   = dynamic(() => import('@/components/landing/BlogInsights')
 const NewsInsights   = dynamic(() => import('@/components/landing/NewsInsights'));
 const FAQ            = dynamic(() => import('@/components/FAQ'));
 const CtaContactForm = dynamic(() => import('@/components/landing/CtaContactForm'));
-// MapSection is an iframe — skip SSR to avoid unnecessary server-side work.
-const MapSection     = dynamic(() => import('@/components/MapSection'), { ssr: false });
+const MapSection     = dynamic(() => import('@/components/MapSection'));
 
 // Revalidate homepage every 60 s so new posts appear quickly without a full rebuild
 export const revalidate = 60;
