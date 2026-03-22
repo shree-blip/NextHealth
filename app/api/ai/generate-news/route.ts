@@ -6,6 +6,7 @@ import prisma from '@/lib/prisma';
 import { persistImage } from '@/lib/persist-image';
 import { generateSocialMeta } from '@/lib/seo-validation';
 import { runHealthcareNewsValidation, buildHealthcareFixPrompt, type HealthcareNewsValidationReport } from '@/lib/news-validation';
+import { pickNewsScene } from '@/lib/image-scenes';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300; // Extra time for SEO validation retry loop
@@ -131,14 +132,14 @@ Return this exact JSON structure:
  * - Professional photojournalistic / editorial style.
  * - Alt text must include the focus keyword.
  */
-async function generateNewsImage(focusKeyword: string, title: string): Promise<string | null> {
+async function generateNewsImage(focusKeyword: string, title: string, scene: string): Promise<string | null> {
   if (!process.env.REPLICATE_API_TOKEN) return null;
 
   try {
     const replicate = new Replicate({ auth: process.env.REPLICATE_API_TOKEN });
     const output = (await replicate.run('black-forest-labs/flux-schnell', {
       input: {
-        prompt: `Professional photojournalistic photograph for a healthcare industry news article about "${title}". Hospital corridor, health policy conference, medical technology lab, or healthcare executives in discussion. Realistic people in authentic settings, natural documentary-style lighting, realistic skin tones. High-end photojournalism similar to Reuters Health or STAT News. No cartoons, no digital art, no illustrated style, no text overlays, no logos.`,
+        prompt: `Professional photojournalistic photograph for a healthcare industry news article titled "${title}". Scene: ${scene}. Realistic people in authentic settings, natural documentary-style lighting, realistic skin tones. High-end photojournalism similar to Reuters Health or STAT News. No cartoons, no digital art, no illustrated style, no text overlays, no logos.`,
         aspect_ratio: '16:9',
         num_outputs: 1,
         output_format: 'webp',
@@ -496,8 +497,12 @@ STANDARD SEO REQUIREMENTS:
     console.log(`[Healthcare News] All checks passed ✓ Score: ${validationReport.totalScore}/100`);
   }
 
-  // ── STEP 5: Generate the cover image (real photo, no cartoons) ──────
-  const imageUrl = await generateNewsImage(seo.focusKeyword, seo.headline);
+  // ── STEP 5: Generate the cover image (unique scene rotation, no cartoons) ──
+  // Count existing articles so each new one gets the NEXT scene in the rotation,
+  // preventing consecutive news covers from sharing the same visual setting.
+  const articleCount = await prisma.newsArticle.count();
+  const newsScene = pickNewsScene(articleCount);
+  const imageUrl = await generateNewsImage(seo.focusKeyword, seo.headline, newsScene);
 
   // The cover image is saved to the article's coverImage field and rendered by
   // SinglePostLayout as a hero image above the article — do NOT embed it again

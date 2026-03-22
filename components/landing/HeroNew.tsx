@@ -43,8 +43,8 @@ export default function HeroNew() {
       {/* Theme-aware gradient background */}
       <div className={`absolute inset-0 ${isDark ? 'bg-gradient-to-br from-emerald-900 via-slate-900 to-emerald-800' : 'bg-gradient-to-br from-slate-50 via-slate-100 to-slate-50'}`} />
 
-      {/* Social icon rain animation */}
-      <div className="absolute inset-x-0 top-0 h-[420vh] z-30 pointer-events-none overflow-visible" aria-hidden="true">
+      {/* Social icon rain animation — hidden on mobile to save GPU compositing layers */}
+      <div className="absolute inset-x-0 top-0 h-[200vh] z-30 pointer-events-none overflow-visible hidden sm:block" aria-hidden="true">
         {socialRainIcons.map(({ Icon, color, left, delay, duration, size, sway }, idx) => (
           <div
             key={`${left}-${idx}`}
@@ -68,8 +68,9 @@ export default function HeroNew() {
       
       <div className="relative z-20 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+          {/* LCP element: starts fully visible — no opacity:0 initial to not delay paint */}
           <motion.div
-            initial={{ opacity: 0, y: 30 }}
+            initial={{ opacity: 1, y: 0 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7 }}
           >
@@ -114,9 +115,9 @@ export default function HeroNew() {
             </div>
           </motion.div>
 
-          {/* Hero Image */}
+          {/* Hero Image: starts fully visible so the priority image is never hidden from LCP */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
+            initial={{ opacity: 1, scale: 1 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.8, delay: 0.2 }}
             className="relative"
@@ -185,13 +186,13 @@ export default function HeroNew() {
 
         .social-rain-icon-inner {
           transition: transform 220ms ease, filter 220ms ease;
-          will-change: transform, filter;
+          /* will-change omitted here — parent already promotes to own layer */
           animation: socialIconFloat 2.2s ease-in-out infinite;
           background: color-mix(in srgb, var(--brand-color) 20%, transparent);
           border: 1px solid color-mix(in srgb, var(--brand-color) 45%, white 15%);
           border-radius: 9999px;
           padding: 8px;
-          backdrop-filter: blur(3px);
+          /* backdrop-filter removed — very expensive GPU op on mobile */
         }
 
         .social-rain-icon:hover {
@@ -215,19 +216,11 @@ export default function HeroNew() {
           10% {
             opacity: 0.55;
           }
-          35% {
-            transform: translate3d(calc(var(--sway-distance) * -1), 120vh, 0) rotate(130deg);
+          40% {
+            transform: translate3d(calc(var(--sway-distance) * -1), 45vh, 0) rotate(130deg);
           }
-          65% {
-            transform: translate3d(var(--sway-distance), 230vh, 0) rotate(250deg);
-          }
-          90% {
-            opacity: 0.55;
-          }
-          100% {
-            transform: translate3d(0, 390vh, 0) rotate(360deg);
-            opacity: 0;
-          }
+          70% {
+            transform: translate3d(var(--sway-distance), 80vh, 0) rotate(250deg);
         }
 
         @keyframes socialIconFloat {

@@ -5,6 +5,7 @@ import Replicate from 'replicate';
 import prisma from '@/lib/prisma';
 import { persistImage } from '@/lib/persist-image';
 import { generateSocialMeta } from '@/lib/seo-validation';
+import { pickNewsScene } from '@/lib/image-scenes';
 import { runHealthcareNewsValidation, type HealthcareNewsValidationReport } from '@/lib/news-validation';
 
 export const dynamic = 'force-dynamic';
@@ -56,13 +57,13 @@ const NEWS_SOURCES = [
 /**
  * Generate a cover image using Replicate flux-schnell.
  */
-async function generateNewsImage(focusKeyword: string, title: string): Promise<string | null> {
+async function generateNewsImage(focusKeyword: string, title: string, scene: string): Promise<string | null> {
   if (!process.env.REPLICATE_API_TOKEN) return null;
   try {
     const replicate = new Replicate({ auth: process.env.REPLICATE_API_TOKEN });
     const output = (await replicate.run('black-forest-labs/flux-schnell', {
       input: {
-        prompt: `Professional photojournalistic photograph for a healthcare industry news article about "${title}". Hospital corridor, health policy conference, medical technology lab, or healthcare executives in discussion. Realistic people in authentic settings, natural documentary-style lighting, realistic skin tones. High-end photojournalism similar to Reuters Health or STAT News. No cartoons, no digital art, no illustrated style, no text overlays, no logos.`,
+        prompt: `Professional photojournalistic photograph for a healthcare industry news article titled "${title}". Scene: ${scene}. Realistic people in authentic settings, natural documentary-style lighting, realistic skin tones. High-end photojournalism similar to Reuters Health or STAT News. No cartoons, no digital art, no illustrated style, no text overlays, no logos.`,
         aspect_ratio: '16:9',
         num_outputs: 1,
         output_format: 'webp',
@@ -296,8 +297,10 @@ JSON RESPONSE FORMAT (return exactly this)
 
   console.log(`[News One-Shot] Score: ${validationReport.totalScore}/100 | Passed: ${validationReport.passed}`, validationReport.failures);
 
-  // Generate image
-  const imageUrl = await generateNewsImage(parsed.focusKeyword, parsed.headline);
+  // Generate image (unique scene rotation so consecutive articles never share the same visual)
+  const articleCount = await prisma.newsArticle.count();
+  const newsScene = pickNewsScene(articleCount);
+  const imageUrl = await generateNewsImage(parsed.focusKeyword, parsed.headline, newsScene);
 
   // Generate social metadata
   const socialMeta = generateSocialMeta({

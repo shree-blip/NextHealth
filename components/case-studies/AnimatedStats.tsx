@@ -71,12 +71,12 @@ function AnimatedStat({ stat, duration = 2 }: AnimatedStatProps) {
         transform: isInView ? 'translateY(0)' : 'translateY(20px)',
       }}
     >
-      <div className="text-5xl font-black text-emerald-400 mb-2">
+      <div className="text-5xl font-black text-white mb-2">
         {stat.prefix}
         {count.toLocaleString()}
         {stat.suffix}
       </div>
-      <p className="text-slate-400">{stat.label}</p>
+      <p className="text-emerald-100">{stat.label}</p>
     </div>
   );
 }

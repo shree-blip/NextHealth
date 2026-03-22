@@ -5,16 +5,20 @@ import WhoWeServe from '@/components/landing/WhoWeServe';
 import ServicesSection from '@/components/landing/ServicesSection';
 import NexHealthApproach from '@/components/landing/NexHealthApproach';
 import RealResults from '@/components/landing/RealResults';
-import TrustedBy from '@/components/landing/TrustedBy';
-import PricingPlans from '@/components/landing/PricingPlans';
-import CtaContactForm from '@/components/landing/CtaContactForm';
-import BlogInsights from '@/components/landing/BlogInsights';
-import NewsInsights from '@/components/landing/NewsInsights';
-import FAQ from '@/components/FAQ';
-import MapSection from '@/components/MapSection';
 import prisma from '@/lib/prisma';
-
+import dynamic from 'next/dynamic';
 import { Metadata } from 'next';
+
+// Below-fold sections: code-split so they don't inflate the initial JS bundle.
+// SSR stays enabled (default) so SEO-relevant text remains in the HTML.
+const TrustedBy      = dynamic(() => import('@/components/landing/TrustedBy'));
+const PricingPlans   = dynamic(() => import('@/components/landing/PricingPlans'));
+const BlogInsights   = dynamic(() => import('@/components/landing/BlogInsights'));
+const NewsInsights   = dynamic(() => import('@/components/landing/NewsInsights'));
+const FAQ            = dynamic(() => import('@/components/FAQ'));
+const CtaContactForm = dynamic(() => import('@/components/landing/CtaContactForm'));
+// MapSection is an iframe — skip SSR to avoid unnecessary server-side work.
+const MapSection     = dynamic(() => import('@/components/MapSection'), { ssr: false });
 
 // Revalidate homepage every 60 s so new posts appear quickly without a full rebuild
 export const revalidate = 60;

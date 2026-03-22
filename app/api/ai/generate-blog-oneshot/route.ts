@@ -5,6 +5,7 @@ import Replicate from 'replicate';
 import prisma from '@/lib/prisma';
 import { persistImage } from '@/lib/persist-image';
 import { runSeoChecks, generateSocialMeta, type SeoCheckResult } from '@/lib/seo-validation';
+import { pickBlogScene } from '@/lib/image-scenes';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300;
@@ -55,13 +56,13 @@ const EXTERNAL_SOURCES = [
 /**
  * Generate a cover image using Replicate flux-schnell.
  */
-async function generateBlogImage(focusKeyword: string, title: string): Promise<string | null> {
+async function generateBlogImage(focusKeyword: string, title: string, scene: string): Promise<string | null> {
   if (!process.env.REPLICATE_API_TOKEN) return null;
   try {
     const replicate = new Replicate({ auth: process.env.REPLICATE_API_TOKEN });
     const output = (await replicate.run('black-forest-labs/flux-schnell', {
       input: {
-        prompt: `Professional photorealistic editorial photograph for a healthcare marketing blog article about "${title}". Modern healthcare clinic interior or hospital corridor, realistic medical professionals in lab coats or scrubs, natural window light, shallow depth of field, authentic medical equipment visible. High-end editorial photography style similar to Harvard Business Review or JAMA. No cartoons, no digital art, no illustrated style, no text overlays, no logos.`,
+        prompt: `Professional photorealistic editorial photograph for a healthcare marketing blog article titled "${title}". Scene: ${scene}. Realistic lighting, authentic medical environment, no text overlays, no logos, no cartoons, no digital art, no illustrated style. High-end editorial photography style similar to Harvard Business Review or JAMA.`,
         aspect_ratio: '16:9',
         num_outputs: 1,
         output_format: 'webp',
@@ -253,8 +254,10 @@ JSON RESPONSE FORMAT (return exactly this)
 
   console.log(`[Blog One-Shot] Score: ${seoCheck.totalScore}/100 | Passed: ${seoCheck.passed}`, seoCheck.failures);
 
-  // Generate image
-  const imageUrl = await generateBlogImage(parsed.focusKeyword, parsed.blogTitle);
+  // Generate image (unique scene rotation so consecutive posts never share the same visual)
+  const postCount = await prisma.post.count();
+  const blogScene = pickBlogScene(postCount);
+  const imageUrl = await generateBlogImage(parsed.focusKeyword, parsed.blogTitle, blogScene);
 
   // Generate social metadata
   const socialMeta = generateSocialMeta({

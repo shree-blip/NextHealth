@@ -5,6 +5,7 @@ import Replicate from 'replicate';
 import prisma from '@/lib/prisma';
 import { persistImage } from '@/lib/persist-image';
 import { runSeoChecks, buildFixPrompt, generateSocialMeta, type SeoCheckResult } from '@/lib/seo-validation';
+import { pickBlogScene } from '@/lib/image-scenes';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300; // Extra time for SEO validation retry loop
@@ -127,14 +128,14 @@ Return this exact JSON structure:
  * - Professional editorial photography style.
  * - Alt text must include the focus keyword.
  */
-async function generateBlogImage(focusKeyword: string, title: string): Promise<string | null> {
+async function generateBlogImage(focusKeyword: string, title: string, scene: string): Promise<string | null> {
   if (!process.env.REPLICATE_API_TOKEN) return null;
 
   try {
     const replicate = new Replicate({ auth: process.env.REPLICATE_API_TOKEN });
     const output = (await replicate.run('black-forest-labs/flux-schnell', {
       input: {
-        prompt: `Professional photorealistic editorial photograph for a healthcare marketing blog article about "${title}". Modern healthcare clinic interior or hospital corridor, realistic medical professionals in lab coats or scrubs, natural window light, shallow depth of field, authentic medical equipment visible. High-end editorial photography style similar to Harvard Business Review or JAMA. No cartoons, no digital art, no illustrated style, no text overlays, no logos.`,
+        prompt: `Professional photorealistic editorial photograph for a healthcare marketing blog article titled "${title}". Scene: ${scene}. Realistic lighting, authentic medical environment, no text overlays, no logos, no cartoons, no digital art, no illustrated style. High-end editorial photography style similar to Harvard Business Review or JAMA.`,
         aspect_ratio: '16:9',
         num_outputs: 1,
         output_format: 'webp',
@@ -382,8 +383,12 @@ CRITICAL RULES:
     console.log(`[Blog SEO] All checks passed ✓ Score: ${seoCheck.totalScore}/100`, seoCheck.metrics);
   }
 
-  // ── STEP 5: Generate the cover image (real photo, no cartoons) ──────
-  const imageUrl = await generateBlogImage(seo.focusKeyword, seo.blogTitle);
+  // ── STEP 5: Generate the cover image (unique scene rotation, no cartoons) ──
+  // Count existing posts so each new post gets the NEXT scene in the rotation,
+  // preventing consecutive covers from sharing the same visual setting.
+  const postCount = await prisma.post.count();
+  const blogScene = pickBlogScene(postCount);
+  const imageUrl = await generateBlogImage(seo.focusKeyword, seo.blogTitle, blogScene);
 
   // The cover image is saved to the post's coverImage field and rendered by
   // SinglePostLayout as a hero image above the article — do NOT embed it again
