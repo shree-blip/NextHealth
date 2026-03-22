@@ -96,7 +96,7 @@ export function middleware(request: NextRequest) {
       "img-src 'self' data: blob: https: http:",
       "font-src 'self' https://fonts.gstatic.com",
       "connect-src 'self' https://accounts.google.com https://oauth2.googleapis.com https://api.stripe.com https://www.google-analytics.com https://region1.google-analytics.com https://*.vercel.app wss:",
-      "frame-src 'self' https://accounts.google.com https://js.stripe.com https://calendar.google.com",
+      "frame-src 'self' https://accounts.google.com https://js.stripe.com https://calendar.google.com https://www.openstreetmap.org",
       "object-src 'none'",
       "base-uri 'self'",
       "form-action 'self'",
