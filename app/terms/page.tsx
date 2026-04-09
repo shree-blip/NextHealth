@@ -1,19 +1,28 @@
 import Navbar from '@/components/Navbar';
 import Hero from '@/components/Hero';
 import Footer from '@/components/Footer';
+import Breadcrumbs from '@/components/Breadcrumbs';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Terms of Service | The NextGen Healthcare Marketing',
-  description: 'Review the terms of service for The NextGen Healthcare Marketing. These terms govern your use of our healthcare marketing platform, website, and professional services.',
+  title: 'Terms of Service | NextGen Health',
+  description: 'NextGen Health terms of service. Read our terms and conditions governing the use of our website and marketing services.',
   alternates: {
     canonical: 'https://thenextgenhealth.com/terms',
+  },
+  openGraph: {
+    title: 'Terms of Service | NextGen Health',
+    description: 'NextGen Health terms of service. Read our terms and conditions governing the use of our website and marketing services.',
+    url: 'https://thenextgenhealth.com/terms',
+    siteName: 'NextGen Health',
+    type: 'website',
   },
 };
 
 export default function TermsOfService() {
   return (
     <main className="min-h-screen bg-slate-50">
+      <Breadcrumbs />
       <Navbar />
       
       <Hero

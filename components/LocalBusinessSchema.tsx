@@ -5,26 +5,27 @@ export default function LocalBusinessSchema() {
     '@context': 'https://schema.org',
     '@type': 'LocalBusiness',
     '@id': `${SITE_URL}/#organization`,
-    name: 'The NextGen Healthcare Marketing',
+    name: 'NextGen Health',
     alternateName: 'The NextGen Healthcare Marketing',
     description:
-      'Specialized digital healthcare marketing firm for healthcare providers — ERs, urgent care, MedSpas, and wellness clinics. Services include SEO, Google Ads, Meta Ads, web design, and AI-powered marketing automation.',
+      'Full-service healthcare marketing agency for clinics, ERs, urgent care, MedSpas, and wellness practices. Services include SEO, Google Ads, Meta Ads, web design, and AI-powered marketing automation.',
     url: SITE_URL,
     logo: `${SITE_URL}/Client-review-image/nexhealth_logo.png`,
     image: `${SITE_URL}/Client-review-image/nexhealth_logo.png`,
-    email: 'info@thenextgenhealth.com',
+    email: 'hello@thenextgenhealth.com',
+    telephone: '+1-972-848-1153',
     address: {
       '@type': 'PostalAddress',
-      streetAddress: '3811 Turtle Creek Blvd, Suite 600',
-      addressLocality: 'Dallas',
+      streetAddress: '3001 Skyway Circle N',
+      addressLocality: 'Irving',
       addressRegion: 'TX',
-      postalCode: '75219',
+      postalCode: '75038',
       addressCountry: 'US',
     },
     geo: {
       '@type': 'GeoCoordinates',
-      latitude: 32.8085,
-      longitude: -96.8029,
+      latitude: 32.8612,
+      longitude: -96.9702,
     },
     openingHoursSpecification: [
       {
@@ -97,7 +98,7 @@ export default function LocalBusinessSchema() {
   const websiteSchema = {
     '@context': 'https://schema.org',
     '@type': 'WebSite',
-    name: 'The NextGen Healthcare Marketing',
+    name: 'NextGen Health',
     url: SITE_URL,
     potentialAction: {
       '@type': 'SearchAction',

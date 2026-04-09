@@ -1,18 +1,27 @@
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import Breadcrumbs from '@/components/Breadcrumbs';
 import Hero from '@/components/Hero';
 import FadeIn from '@/components/FadeIn';
 import DashboardImages from '@/components/case-studies/DashboardImages';
 import AnimatedStats from '@/components/case-studies/AnimatedStats';
 import WhoWeServe from '@/components/landing/WhoWeServe';
+import Link from 'next/link';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Healthcare Marketing Case Studies | Real Client Results',
-  description: 'Explore real case studies from healthcare practices we have helped grow across Texas. See measurable results in patient acquisition, revenue growth, and local search rankings for ERs and clinics.',
+  title: 'Healthcare Marketing Case Studies | NextGen Health',
+  description: 'See proven results from our healthcare marketing clients. Case studies covering SEO, Google Ads, social media, and website design for Texas clinics.',
   alternates: {
     canonical: 'https://thenextgenhealth.com/case-studies',
-  }
+  },
+  openGraph: {
+    title: 'Healthcare Marketing Case Studies | NextGen Health',
+    description: 'See proven results from our healthcare marketing clients. Case studies covering SEO, Google Ads, social media, and website design for Texas clinics.',
+    url: 'https://thenextgenhealth.com/case-studies',
+    siteName: 'NextGen Health',
+    type: 'website',
+  },
 };
 
 type CaseStudyCategory = 'ER' | 'MedSpa' | 'UrgentCare';
@@ -22,6 +31,7 @@ export default async function CaseStudiesPage({ searchParams }: { searchParams?:
   const category = resolvedSearchParams?.category;
   const caseStudies = [
     {
+      slug: 'er-network-patient-growth',
       category: 'ER' as CaseStudyCategory,
       title: 'Emergency Room - 45% Patient Increase',
       description: 'Freestanding ER in Dallas Metro',
@@ -31,6 +41,7 @@ export default async function CaseStudiesPage({ searchParams }: { searchParams?:
       icon: '🏥'
     },
     {
+      slug: 'urgent-care-patient-acquisition',
       category: 'UrgentCare' as CaseStudyCategory,
       title: 'Urgent Care - 3x Patient Acquisition',
       description: 'Multi-location urgent care in Houston',
@@ -40,6 +51,7 @@ export default async function CaseStudiesPage({ searchParams }: { searchParams?:
       icon: '⚡'
     },
     {
+      slug: 'cosmetic-surgery-lead-growth',
       category: 'MedSpa' as CaseStudyCategory,
       title: 'Cosmetic Surgery - 120% Lead Growth',
       description: 'Aesthetic clinic in Austin',
@@ -49,6 +61,7 @@ export default async function CaseStudiesPage({ searchParams }: { searchParams?:
       icon: '✨'
     },
     {
+      slug: 'primary-care-seo-roi',
       category: 'UrgentCare' as CaseStudyCategory,
       title: 'Primary Care - 500% ROI from SEO',
       description: 'Family medicine practice in San Antonio',
@@ -58,6 +71,7 @@ export default async function CaseStudiesPage({ searchParams }: { searchParams?:
       icon: '👨‍⚕️'
     },
     {
+      slug: 'mental-health-patient-retention',
       category: 'MedSpa' as CaseStudyCategory,
       title: 'Mental Health Clinic - 2x Patient Retention',
       description: 'Therapy practice in Dallas',
@@ -67,6 +81,7 @@ export default async function CaseStudiesPage({ searchParams }: { searchParams?:
       icon: '🧠'
     },
     {
+      slug: 'dental-practice-local-pack',
       category: 'ER' as CaseStudyCategory,
       title: 'Dental Practice - Local Pack #1',
       description: 'General dentistry in Irving',
@@ -84,6 +99,7 @@ export default async function CaseStudiesPage({ searchParams }: { searchParams?:
 
   return (
     <main className="min-h-screen bg-slate-50">
+      <Breadcrumbs />
       <Navbar />
 
       {/* Hero Section */}
@@ -113,6 +129,7 @@ export default async function CaseStudiesPage({ searchParams }: { searchParams?:
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {filteredCaseStudies.map((study, idx) => (
               <FadeIn key={idx} delay={idx * 0.1}>
+                <Link href={`/case-studies/${study.slug}`} className="block h-full">
                 <div className="bg-white rounded-3xl border border-slate-200 p-8 hover:shadow-xl transition-all hover:-translate-y-1 h-full">
                   <div className="text-5xl mb-4">{study.icon}</div>
                   <h3 className="text-2xl font-bold text-slate-900 mb-2">{study.title}</h3>
@@ -132,7 +149,12 @@ export default async function CaseStudiesPage({ searchParams }: { searchParams?:
                       <p className="text-slate-900 font-bold text-lg">{study.results}</p>
                     </div>
                   </div>
+                  <p className="mt-6 text-sm font-semibold text-emerald-600 flex items-center gap-1">
+                    Read Full Case Study
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                  </p>
                 </div>
+                </Link>
               </FadeIn>
             ))}
           </div>

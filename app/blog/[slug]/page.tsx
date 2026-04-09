@@ -67,7 +67,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     const { slug } = await params;
     const post = await prisma.post.findUnique({
       where: { slug },
-      select: { title: true, metaDesc: true, excerpt: true, seoTitle: true }
+      select: { title: true, metaDesc: true, excerpt: true, seoTitle: true, coverImage: true }
     });
     
     if (!post) {
@@ -83,12 +83,22 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
       finalTitle = finalTitle.substring(0, 67) + '...';
     }
 
+    const description = post.metaDesc || post.excerpt || 'Read our latest blog post.';
+
     return {
       title: finalTitle,
-      description: post.metaDesc || post.excerpt || 'Read our latest blog post.',
+      description,
       alternates: {
         canonical: `${SITE_URL}/blog/${slug}`,
-      }
+      },
+      openGraph: {
+        title: finalTitle,
+        description,
+        url: `https://thenextgenhealth.com/blog/${slug}`,
+        siteName: 'NextGen Health',
+        type: 'article',
+        ...(post.coverImage ? { images: [{ url: post.coverImage }] } : {}),
+      },
     };
   } catch (e) {
     return {

@@ -1,19 +1,28 @@
 import Navbar from '@/components/Navbar';
 import Hero from '@/components/Hero';
 import Footer from '@/components/Footer';
+import Breadcrumbs from '@/components/Breadcrumbs';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Privacy Policy | The NextGen Healthcare Marketing',
-  description: 'Read the privacy policy for The NextGen Healthcare Marketing. Learn how we collect, use, store, and protect your personal information across our healthcare marketing platform and services.',
+  title: 'Privacy Policy | NextGen Health',
+  description: 'NextGen Health privacy policy. Learn how we collect, use, store, and protect your personal information across our healthcare marketing platform.',
   alternates: {
     canonical: 'https://thenextgenhealth.com/privacy',
+  },
+  openGraph: {
+    title: 'Privacy Policy | NextGen Health',
+    description: 'NextGen Health privacy policy. Learn how we collect, use, store, and protect your personal information across our healthcare marketing platform.',
+    url: 'https://thenextgenhealth.com/privacy',
+    siteName: 'NextGen Health',
+    type: 'website',
   },
 };
 
 export default function PrivacyPolicy() {
   return (
     <main className="min-h-screen bg-slate-50">
+      <Breadcrumbs />
       <Navbar />
       
       <Hero

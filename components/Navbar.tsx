@@ -9,6 +9,7 @@ import { useSitePreferences } from '@/components/SitePreferencesProvider';
 import { useAuth } from '@/components/AuthProvider';
 import { useRouter } from 'next/navigation';
 import { usePathname } from 'next/navigation';
+import Breadcrumbs from '@/components/Breadcrumbs';
 import Logo from '@/components/Logo';
 
 interface NavbarProps {
@@ -119,6 +120,7 @@ export default function Navbar({ forceSolid = false }: NavbarProps) {
   }, []);
 
   return (
+    <>
     <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${navClass}`}>
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-20 items-center justify-between">
@@ -662,5 +664,8 @@ export default function Navbar({ forceSolid = false }: NavbarProps) {
         </motion.div>
       )}
     </nav>
+    {/* Breadcrumbs — renders below fixed nav on non-home pages */}
+    <Breadcrumbs />
+    </>
   );
 }

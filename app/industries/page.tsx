@@ -1,20 +1,30 @@
 import Navbar from '@/components/Navbar';
 import Hero from '@/components/Hero';
 import Footer from '@/components/Footer';
+import Breadcrumbs from '@/components/Breadcrumbs';
 import dynamic from 'next/dynamic';
 import WhoWeServe from '@/components/landing/WhoWeServe';
+import Link from 'next/link';
+import { industries } from '@/lib/industry-data';
 
 const FadeIn = dynamic(() => import('@/components/FadeIn'));
 const FAQ = dynamic(() => import('@/components/FAQ'));
-import { HeartPulse, Stethoscope, Activity, ShieldPlus, Target, TrendingUp, Users, MapPin } from 'lucide-react';
+import { HeartPulse, Stethoscope, Activity, ShieldPlus, Target, TrendingUp, Users, MapPin, ArrowRight } from 'lucide-react';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Healthcare Industries We Serve | ERs, Urgent Care & Wellness Clinics',
-  description: 'Specialized healthcare marketing for freestanding ERs, urgent care centers, dental clinics, and wellness facilities across Texas. Industry-specific strategies that drive qualified patient acquisition.',
+  title: 'Industries We Serve | NextGen Health',
+  description: 'Specialist healthcare marketing for ERs, urgent care, dental, med spa, chiropractic, and mental health. Industry-specific strategies that drive patient growth.',
   alternates: {
     canonical: 'https://thenextgenhealth.com/industries',
-  }
+  },
+  openGraph: {
+    title: 'Industries We Serve | NextGen Health',
+    description: 'Specialist healthcare marketing for ERs, urgent care, dental, med spa, chiropractic, and mental health. Industry-specific strategies that drive patient growth.',
+    url: 'https://thenextgenhealth.com/industries',
+    siteName: 'NextGen Health',
+    type: 'website',
+  },
 };
 
 const schema = {
@@ -59,10 +69,22 @@ const faqs = [
   }
 ];
 
+const faqSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: faqs.map((faq) => ({
+    '@type': 'Question',
+    name: faq.q,
+    acceptedAnswer: { '@type': 'Answer', text: faq.a },
+  })),
+};
+
 export default function IndustriesPage() {
   return (
     <main className="min-h-screen bg-slate-50">
+      <Breadcrumbs />
       <script type="application/ld+json" dangerouslySetInnerHTML={{__html: JSON.stringify(schema)}} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{__html: JSON.stringify(faqSchema)}} />
       <Navbar />
       
       {/* Hero Section */}
@@ -229,8 +251,34 @@ export default function IndustriesPage() {
         </div>
       </section>
 
-      {/* FAQ Section */}
+      {/* Explore All Industries */}
       <section className="py-24 border-t border-slate-200 bg-white">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <FadeIn className="text-center mb-16">
+            <h2 className="text-3xl sm:text-4xl font-bold mb-6">Explore All Industries We Serve</h2>
+            <p className="text-xl text-slate-600 max-w-2xl mx-auto">
+              Deep-dive into our tailored marketing strategies for each healthcare specialty.
+            </p>
+          </FadeIn>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+            {industries.map((ind) => (
+              <FadeIn key={ind.slug}>
+                <Link
+                  href={`/industries/${ind.slug}`}
+                  className="group flex items-center gap-3 p-4 rounded-2xl border border-slate-200 bg-slate-50 hover:bg-emerald-50 hover:border-emerald-200 transition-all hover:-translate-y-0.5"
+                >
+                  <span className="text-2xl">{ind.icon}</span>
+                  <span className="font-semibold text-slate-900 group-hover:text-emerald-700 transition-colors text-sm">{ind.h1.split(' — ')[0].replace('Marketing', '').trim()}</span>
+                  <ArrowRight className="h-4 w-4 ml-auto text-slate-400 group-hover:text-emerald-500 transition-colors" />
+                </Link>
+              </FadeIn>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ Section */}
+      <section className="py-24 border-t border-slate-200 bg-slate-50">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <FadeIn className="text-center mb-16">
             <h2 className="h2 font-bold mb-6">Industry FAQ</h2>

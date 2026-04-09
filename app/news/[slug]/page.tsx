@@ -60,7 +60,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     const { slug } = await params;
     const article = await prisma.newsArticle.findUnique({
       where: { slug },
-      select: { title: true, source: true, excerpt: true }
+      select: { title: true, source: true, excerpt: true, coverImage: true }
     });
     
     if (!article) {
@@ -70,12 +70,22 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
       };
     }
 
+    const description = article.excerpt || 'Read our latest news article.';
+
     return {
       title: article.title,
-      description: article.excerpt,
+      description,
       alternates: {
         canonical: `${SITE_URL}/news/${slug}`,
-      }
+      },
+      openGraph: {
+        title: article.title,
+        description,
+        url: `https://thenextgenhealth.com/news/${slug}`,
+        siteName: 'NextGen Health',
+        type: 'article',
+        ...(article.coverImage ? { images: [{ url: article.coverImage }] } : {}),
+      },
     };
   } catch (e) {
     return {
@@ -176,15 +186,20 @@ export default async function NewsArticlePage({ params }: { params: Promise<{ sl
           </div>
         }
         headerMeta={
-          article.publishedAt ? (
-            <time className="inline-flex items-center rounded-full bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 px-3 py-1 font-medium text-sm">
-              {new Date(article.publishedAt).toLocaleDateString('en-US', {
-                month: 'long',
-                day: 'numeric',
-                year: 'numeric',
-              })}
-            </time>
-          ) : undefined
+          <div className="flex flex-wrap items-center gap-2 text-sm">
+            <Link href="/team" className="inline-flex items-center rounded-full bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 px-3 py-1 font-medium hover:bg-emerald-50 dark:hover:bg-emerald-900 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors">
+              By NextGen Health Team
+            </Link>
+            {article.publishedAt && (
+              <time className="inline-flex items-center rounded-full bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 px-3 py-1 font-medium">
+                {new Date(article.publishedAt).toLocaleDateString('en-US', {
+                  month: 'long',
+                  day: 'numeric',
+                  year: 'numeric',
+                })}
+              </time>
+            )}
+          </div>
         }
         coverImage={article.coverImage}
         coverAlt={article.title}

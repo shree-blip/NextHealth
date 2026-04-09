@@ -1,5 +1,9 @@
 import { MetadataRoute } from 'next';
 import prisma from '@/lib/prisma';
+import { getAllIndustrySlugs } from '@/lib/industry-data';
+import { getAllAutomationSlugs } from '@/lib/automation-data';
+import { getAllCaseStudySlugs } from '@/lib/case-study-data';
+import { getAllLocationSlugs } from '@/lib/location-data';
 
 // Never cache the sitemap at the CDN level — revalidatePath('/sitemap.xml') will
 // flush it whenever a post is published or unpublished.
@@ -190,6 +194,54 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: 'yearly',
       priority: 0.3,
     },
+    {
+      url: `${SITE_URL}/faq`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.7,
+    },
+    {
+      url: `${SITE_URL}/careers`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.6,
+    },
+    {
+      url: `${SITE_URL}/accessibility`,
+      lastModified: new Date(),
+      changeFrequency: 'yearly',
+      priority: 0.4,
+    },
+    {
+      url: `${SITE_URL}/sitemap-html`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.5,
+    },
+    {
+      url: `${SITE_URL}/glossary`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.6,
+    },
+    {
+      url: `${SITE_URL}/services/healthcare-seo-guide`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.8,
+    },
+    {
+      url: `${SITE_URL}/automation/healthcare-automation-guide`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.8,
+    },
+    {
+      url: `${SITE_URL}/resources`,
+      lastModified: new Date(),
+      changeFrequency: 'weekly',
+      priority: 0.8,
+    },
   ];
 
   // Dynamically add published blog posts
@@ -230,5 +282,37 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     console.error('Sitemap news articles fetch error:', error);
   }
 
-  return [...staticPages, ...blogPosts, ...newsArticles];
+  // Industry sub-pages
+  const industryPages: MetadataRoute.Sitemap = getAllIndustrySlugs().map((slug) => ({
+    url: `${SITE_URL}/industries/${slug}`,
+    lastModified: new Date(),
+    changeFrequency: 'monthly' as const,
+    priority: 0.8,
+  }));
+
+  // Automation sub-pages
+  const automationPages: MetadataRoute.Sitemap = getAllAutomationSlugs().map((slug) => ({
+    url: `${SITE_URL}/automation/${slug}`,
+    lastModified: new Date(),
+    changeFrequency: 'monthly' as const,
+    priority: 0.8,
+  }));
+
+  // Case study detail pages
+  const caseStudyPages: MetadataRoute.Sitemap = getAllCaseStudySlugs().map((slug) => ({
+    url: `${SITE_URL}/case-studies/${slug}`,
+    lastModified: new Date(),
+    changeFrequency: 'monthly' as const,
+    priority: 0.8,
+  }));
+
+  // Location city pages
+  const locationPages: MetadataRoute.Sitemap = getAllLocationSlugs().map((slug) => ({
+    url: `${SITE_URL}/locations/${slug}`,
+    lastModified: new Date(),
+    changeFrequency: 'monthly' as const,
+    priority: 0.8,
+  }));
+
+  return [...staticPages, ...industryPages, ...automationPages, ...caseStudyPages, ...locationPages, ...blogPosts, ...newsArticles];
 }

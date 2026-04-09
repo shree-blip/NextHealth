@@ -2,6 +2,7 @@
 
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import Breadcrumbs from '@/components/Breadcrumbs';
 import { motion } from 'framer-motion';
 import { ArrowRight, Building2, DollarSign, Target, Activity, Zap } from 'lucide-react';
 import { useState } from 'react';
@@ -66,6 +67,7 @@ export default function ContactPage() {
 
   return (
     <main className="min-h-screen bg-slate-50">
+      <Breadcrumbs />
       <Navbar />
       
       {/* Hero Section */}

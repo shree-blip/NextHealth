@@ -3,41 +3,21 @@ import { MetadataRoute } from 'next';
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://thenextgenhealth.com';
 
 export default function robots(): MetadataRoute.Robots {
+  const commonDisallow = [
+    '/dashboard/',
+    '/api/',
+    '/login',
+    '/signup',
+    '/profile/',
+    '/applet/',
+  ];
+
   return {
     rules: [
       {
         userAgent: '*',
-        allow: ['/', '/blog/', '/news/'],
-        disallow: [
-          '/dashboard/',
-          '/api/',
-          '/login',
-          '/signup',
-          '/profile/',
-          '/applet/',
-        ],
-      },
-      {
-        userAgent: 'Googlebot',
-        allow: ['/', '/blog/', '/news/'],
-        disallow: [
-          '/dashboard/',
-          '/api/',
-          '/login',
-          '/signup',
-          '/profile/',
-          '/applet/',
-        ],
-      },
-      {
-        userAgent: 'Bingbot',
-        allow: ['/', '/blog/', '/news/', '/login', '/signup'],
-        disallow: [
-          '/dashboard/',
-          '/api/',
-          '/profile/',
-          '/applet/',
-        ],
+        allow: '/',
+        disallow: commonDisallow,
       },
     ],
     sitemap: `${SITE_URL}/sitemap.xml`,

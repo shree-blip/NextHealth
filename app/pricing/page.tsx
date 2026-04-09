@@ -1,20 +1,29 @@
 import Navbar from '@/components/Navbar';
 import Hero from '@/components/Hero';
 import Footer from '@/components/Footer';
+import Breadcrumbs from '@/components/Breadcrumbs';
 import dynamic from 'next/dynamic';
 import PricingCard from '@/components/PricingCard';
+import Link from 'next/link';
 
 const FadeIn = dynamic(() => import('@/components/FadeIn'));
 const FAQ = dynamic(() => import('@/components/FAQ'));
-import { Check, BarChart, Clock, Users, ShieldCheck } from 'lucide-react';
+import { Check, BarChart, Clock, Users, ShieldCheck, CheckCircle2 } from 'lucide-react';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Healthcare Marketing Pricing | Transparent Plans & Retainers',
-  description: 'View transparent pricing and retainer plans for healthcare marketing services. Predictable monthly plans for wellness clinics, urgent cares, and ERs in Texas with no hidden fees or long-term contracts.',
+  title: 'Healthcare Marketing Pricing & Plans | NextGen Health',
+  description: 'Transparent pricing for healthcare marketing services. Choose from SEO, Google Ads, social media, and automation packages tailored for clinics.',
   alternates: {
     canonical: 'https://thenextgenhealth.com/pricing',
-  }
+  },
+  openGraph: {
+    title: 'Healthcare Marketing Pricing & Plans | NextGen Health',
+    description: 'Transparent pricing for healthcare marketing services. Choose from SEO, Google Ads, social media, and automation packages tailored for clinics.',
+    url: 'https://thenextgenhealth.com/pricing',
+    siteName: 'NextGen Health',
+    type: 'website',
+  },
 };
 
 const schema = {
@@ -123,6 +132,7 @@ export default function PricingPage() {
     <main className="min-h-screen bg-slate-50">
       <script type="application/ld+json" dangerouslySetInnerHTML={{__html: JSON.stringify(schema)}} />
       <Navbar />
+      <Breadcrumbs />
       
       {/* Hero Section */}
       <Hero
@@ -152,6 +162,88 @@ export default function PricingPage() {
                 delay={index * 0.1}
               />
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Feature Comparison Table */}
+      <section className="py-24 border-b border-slate-200 bg-white">
+        <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+          <FadeIn className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-slate-900 mb-4">Detailed Feature Comparison</h2>
+            <p className="text-xl text-slate-600 max-w-2xl mx-auto">See exactly what&apos;s included in each plan so you can choose the right fit for your practice.</p>
+          </FadeIn>
+          <FadeIn delay={0.1}>
+            <div className="overflow-x-auto rounded-2xl border border-slate-200">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="bg-slate-50">
+                    <th className="px-6 py-4 text-sm font-bold text-slate-900 border-b border-slate-200">Feature</th>
+                    <th className="px-6 py-4 text-sm font-bold text-slate-900 text-center border-b border-slate-200">Starter Care</th>
+                    <th className="px-6 py-4 text-sm font-bold text-slate-900 text-center border-b border-slate-200 bg-emerald-50">Growth Pro</th>
+                    <th className="px-6 py-4 text-sm font-bold text-slate-900 text-center border-b border-slate-200">Scale Elite</th>
+                  </tr>
+                </thead>
+                <tbody className="text-sm text-slate-700">
+                  {[
+                    ['SEO & Local Search', true, true, true],
+                    ['Google My Business Management', true, true, true],
+                    ['Google Ads Management', true, true, true],
+                    ['Meta / Facebook Ads', true, true, true],
+                    ['Social Media Content', true, true, true],
+                    ['Content & Copywriting', true, true, true],
+                    ['AI Chatbot Setup', true, true, true],
+                    ['Monthly Strategy Reports', true, true, true],
+                    ['Advanced AI Call Handling', false, true, true],
+                    ['Insurance Verification Bots', false, true, true],
+                    ['Multi-Location Campaigns', false, true, true],
+                    ['24/7 Performance Monitoring', false, true, true],
+                    ['Dedicated Account Manager', false, true, true],
+                    ['Priority SLA Response', false, true, true],
+                    ['Custom Software Development', false, false, true],
+                    ['HIPAA-Compliant API Integrations', false, false, true],
+                    ['Multi-State Network Management', false, false, true],
+                    ['Advanced BI Dashboards', false, false, true],
+                    ['Dedicated Development Team', false, false, true],
+                    ['White-Glove Onboarding', false, false, true],
+                  ].map(([feature, starter, growth, elite], idx) => (
+                    <tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}>
+                      <td className="px-6 py-3 font-medium border-b border-slate-100">{feature as string}</td>
+                      <td className="px-6 py-3 text-center border-b border-slate-100">
+                        {starter ? <CheckCircle2 className="h-5 w-5 text-emerald-500 mx-auto" /> : <span className="text-slate-300">—</span>}
+                      </td>
+                      <td className="px-6 py-3 text-center border-b border-slate-100 bg-emerald-50/30">
+                        {growth ? <CheckCircle2 className="h-5 w-5 text-emerald-500 mx-auto" /> : <span className="text-slate-300">—</span>}
+                      </td>
+                      <td className="px-6 py-3 text-center border-b border-slate-100">
+                        {elite ? <CheckCircle2 className="h-5 w-5 text-emerald-500 mx-auto" /> : <span className="text-slate-300">—</span>}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </FadeIn>
+        </div>
+      </section>
+
+      {/* What Your Investment Includes */}
+      <section className="py-24 border-b border-slate-200">
+        <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+          <FadeIn className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-slate-900 mb-4">What Your Investment Includes</h2>
+            <p className="text-xl text-slate-600 max-w-3xl mx-auto">Unlike traditional agencies, our retainers cover a full-stack growth team — not just isolated services.</p>
+          </FadeIn>
+          <div className="prose prose-lg max-w-none text-slate-700 space-y-5">
+            <p>
+              When you invest in a NextGen Health retainer, you are integrating an entire department of specialized medical growth experts into your clinic. This includes a dedicated <Link href="/services/google-ads" className="text-emerald-600 underline hover:text-emerald-700">Ads Manager</Link>, an <Link href="/services/seo-local-search" className="text-emerald-600 underline hover:text-emerald-700">SEO Strategist</Link>, a <Link href="/services/content-copywriting" className="text-emerald-600 underline hover:text-emerald-700">Medical Content Writer</Link>, a <Link href="/services/social-media-marketing" className="text-emerald-600 underline hover:text-emerald-700">Social Media Manager</Link>, and access to our development and <Link href="/services/analytics-reporting" className="text-emerald-600 underline hover:text-emerald-700">analytics</Link> infrastructure.
+            </p>
+            <p>
+              Every retainer includes our 30-Day Launch Sprint — a structured onboarding process that includes a comprehensive technical audit, CRM/EHR integration, HIPAA-compliant <Link href="/automation/call-tracking" className="text-emerald-600 underline hover:text-emerald-700">call tracking</Link> setup, initial <Link href="/automation/ai-chatbots" className="text-emerald-600 underline hover:text-emerald-700">AI chatbot</Link> deployment, and the first wave of campaign launches. You will see tangible operational improvements within the first 30 days.
+            </p>
+            <p>
+              All <Link href="/hipaa" className="text-emerald-600 underline hover:text-emerald-700">HIPAA compliance</Link> infrastructure is included — we sign BAAs, utilize encrypted servers, and implement secure data routing. There are no hidden fees for compliance. Review our <Link href="/case-studies" className="text-emerald-600 underline hover:text-emerald-700">case studies</Link> to see results from practices similar to yours, or <Link href="/contact" className="text-emerald-600 underline hover:text-emerald-700">schedule a consultation</Link> to discuss your specific needs.
+            </p>
           </div>
         </div>
       </section>

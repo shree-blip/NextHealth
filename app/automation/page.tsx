@@ -14,6 +14,7 @@ import {
   MessageSquare, Mail, BarChart3, Shield, Cpu,
   ChevronRight, ExternalLink
 } from 'lucide-react';
+import { automations } from '@/lib/automation-data';
 
 const FadeIn = dynamic(() => import('@/components/FadeIn'));
 const FAQ = dynamic(() => import('@/components/FAQ'));
@@ -772,6 +773,42 @@ export default function AutomationPage() {
               ))}
             </div>
           </FadeIn>
+        </div>
+      </section>
+
+      {/* ───── Explore All Automations ───── */}
+      <section className={`py-24 border-b ${isDark ? 'border-slate-800 bg-slate-900' : 'border-slate-200 bg-white'}`}>
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <FadeIn className="text-center mb-12">
+            <h2 className={`text-3xl sm:text-4xl font-bold mb-4 ${isDark ? 'text-white' : 'text-slate-900'}`}>
+              {isEs ? 'Explore Todas las Automatizaciones' : 'Explore All Automation Solutions'}
+            </h2>
+            <p className={`text-lg max-w-2xl mx-auto ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+              {isEs ? 'Guías detalladas para cada flujo de trabajo de automatización.' : 'Detailed guides for each automation workflow we offer.'}
+            </p>
+          </FadeIn>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {automations.map((auto) => (
+              <FadeIn key={auto.slug}>
+                <Link
+                  href={`/automation/${auto.slug}`}
+                  className={`group flex items-center gap-3 p-4 rounded-2xl border transition-all hover:-translate-y-0.5 ${
+                    isDark
+                      ? 'border-slate-700 bg-slate-800 hover:bg-emerald-900/30 hover:border-emerald-700'
+                      : 'border-slate-200 bg-slate-50 hover:bg-emerald-50 hover:border-emerald-200'
+                  }`}
+                >
+                  <span className="text-2xl">{auto.icon}</span>
+                  <span className={`font-semibold text-sm transition-colors ${
+                    isDark ? 'text-white group-hover:text-emerald-400' : 'text-slate-900 group-hover:text-emerald-700'
+                  }`}>{auto.h1.split(' — ')[0].replace('Healthcare ', '').replace(' for Healthcare', '')}</span>
+                  <ArrowRight className={`h-4 w-4 ml-auto transition-colors ${
+                    isDark ? 'text-slate-500 group-hover:text-emerald-400' : 'text-slate-400 group-hover:text-emerald-500'
+                  }`} />
+                </Link>
+              </FadeIn>
+            ))}
+          </div>
         </div>
       </section>
 

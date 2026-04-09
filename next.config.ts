@@ -69,6 +69,21 @@ const nextConfig: NextConfig = {
     ],
   },
   transpilePackages: ['motion'],
+  async redirects() {
+    return [
+      // Evergreen slug redirects — removed "2023" from news article URLs
+      {
+        source: '/news/telehealth-marketing-strategies-2023',
+        destination: '/news/telehealth-marketing-strategies',
+        permanent: true,
+      },
+      {
+        source: '/news/healthcare-seo-trends-2023',
+        destination: '/news/healthcare-seo-trends',
+        permanent: true,
+      },
+    ];
+  },
   webpack: (config, {dev}) => {
     // HMR is disabled in AI Studio via DISABLE_HMR env var.
     // Do not modifyâfile watching is disabled to prevent flickering during agent edits.

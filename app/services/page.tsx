@@ -1,6 +1,7 @@
 import Navbar from '@/components/Navbar';
 import Hero from '@/components/Hero';
 import Footer from '@/components/Footer';
+import Breadcrumbs from '@/components/Breadcrumbs';
 import FadeIn from '@/components/FadeIn';
 import FAQ from '@/components/FAQ';
 import Services from '@/components/Services';
@@ -9,11 +10,18 @@ import { Search, Megaphone, ShieldCheck, Globe, MessageSquare, Activity, MapPin,
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Healthcare Marketing Services | SEO, Ads & Automation for Clinics',
-  description: 'Explore our full suite of healthcare marketing services including local SEO, Google Ads, Meta Ads, website design, content marketing, and AI-powered automation for ERs, urgent cares, and clinics in Texas.',
+  title: 'Healthcare Marketing Services | NextGen Health',
+  description: 'Full-service healthcare marketing: SEO, Google Ads, social media, website design, content marketing, and HIPAA-compliant automation for clinics in Texas.',
   alternates: {
     canonical: 'https://thenextgenhealth.com/services',
-  }
+  },
+  openGraph: {
+    title: 'Healthcare Marketing Services | NextGen Health',
+    description: 'Full-service healthcare marketing: SEO, Google Ads, social media, website design, content marketing, and HIPAA-compliant automation for clinics in Texas.',
+    url: 'https://thenextgenhealth.com/services',
+    siteName: 'NextGen Health',
+    type: 'website',
+  },
 };
 
 const schema = {
@@ -105,6 +113,7 @@ const teamMembers = [
 export default function ServicesPage() {
   return (
     <main className="min-h-screen bg-slate-50">
+      <Breadcrumbs />
       <script type="application/ld+json" dangerouslySetInnerHTML={{__html: JSON.stringify(schema)}} />
       <Navbar />
       

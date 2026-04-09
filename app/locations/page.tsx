@@ -1,6 +1,7 @@
 import Navbar from '@/components/Navbar';
 import Hero from '@/components/Hero';
 import Footer from '@/components/Footer';
+import Breadcrumbs from '@/components/Breadcrumbs';
 import dynamic from 'next/dynamic';
 
 const FadeIn = dynamic(() => import('@/components/FadeIn'));
@@ -8,13 +9,21 @@ const FAQ = dynamic(() => import('@/components/FAQ'));
 import { MapPin, ArrowRight, Building2, TrendingUp, Navigation, Target } from 'lucide-react';
 import Link from 'next/link';
 import { Metadata } from 'next';
+import { locations as cityLocations } from '@/lib/location-data';
 
 export const metadata: Metadata = {
-  title: 'Healthcare Marketing Locations in Texas | Dallas, Houston & Austin',
-  description: 'Hyper-local healthcare marketing across Texas including Dallas, Houston, Austin, San Antonio, and Irving. Location-specific SEO and patient acquisition strategies for medical clinics.',
+  title: 'Healthcare Marketing Across Texas | NextGen Health',
+  description: 'NextGen Health serves healthcare practices across Texas — Dallas, Houston, Austin, San Antonio, and beyond. Location-specific SEO and patient growth.',
   alternates: {
     canonical: 'https://thenextgenhealth.com/locations',
-  }
+  },
+  openGraph: {
+    title: 'Healthcare Marketing Across Texas | NextGen Health',
+    description: 'NextGen Health serves healthcare practices across Texas — Dallas, Houston, Austin, San Antonio, and beyond. Location-specific SEO and patient growth.',
+    url: 'https://thenextgenhealth.com/locations',
+    siteName: 'NextGen Health',
+    type: 'website',
+  },
 };
 
 const schema = {
@@ -81,6 +90,7 @@ const faqs = [
 export default function LocationsPage() {
   return (
     <main className="min-h-screen bg-slate-50">
+      <Breadcrumbs />
       <script type="application/ld+json" dangerouslySetInnerHTML={{__html: JSON.stringify(schema)}} />
       <Navbar />
       
@@ -185,6 +195,36 @@ export default function LocationsPage() {
               Claim Your Territory <ArrowRight className="h-5 w-5" />
             </Link>
           </FadeIn>
+        </div>
+      </section>
+
+      {/* Major City Pages */}
+      <section className="py-24 border-b border-slate-200 bg-white">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <FadeIn className="text-center mb-16">
+            <h2 className="text-3xl font-bold mb-4">Explore Our Major Markets</h2>
+            <p className="text-xl text-slate-600 max-w-2xl mx-auto">
+              Deep-dive into the healthcare marketing landscape for each major Texas city we serve.
+            </p>
+          </FadeIn>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+            {cityLocations.map((city, i) => (
+              <FadeIn key={city.slug} delay={i * 0.1}>
+                <Link
+                  href={`/locations/${city.slug}`}
+                  className="group block rounded-2xl border border-slate-200 p-6 hover:shadow-lg hover:border-blue-300 transition-all text-center"
+                >
+                  <MapPin className="h-8 w-8 text-blue-500 mx-auto mb-3" />
+                  <h3 className="text-lg font-bold text-slate-900 group-hover:text-blue-600 transition-colors">{city.city}, TX</h3>
+                  <p className="text-sm text-slate-500 mt-1">{city.population} residents</p>
+                  <p className="text-xs text-slate-400 mt-2 leading-relaxed">{city.marketHighlight}</p>
+                  <span className="inline-flex items-center gap-1 mt-3 text-sm font-semibold text-blue-600">
+                    Learn More <ArrowRight className="h-3 w-3" />
+                  </span>
+                </Link>
+              </FadeIn>
+            ))}
+          </div>
         </div>
       </section>
 

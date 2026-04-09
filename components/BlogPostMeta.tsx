@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useSitePreferences } from '@/components/SitePreferencesProvider';
 
 interface BlogPostMetaProps {
@@ -22,9 +23,9 @@ export default function BlogPostMeta({ authorName, publishedAt }: BlogPostMetaPr
   return (
     <div className="flex flex-wrap items-center gap-2 text-sm">
       {authorName && (
-        <span className="inline-flex items-center rounded-full bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-100 px-3 py-1 font-medium">
+        <Link href="/team" className="inline-flex items-center rounded-full bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-100 px-3 py-1 font-medium hover:bg-emerald-50 dark:hover:bg-emerald-900 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors">
           {t('By')} {authorName}
-        </span>
+        </Link>
       )}
       {formattedDate && (
         <time className="inline-flex items-center rounded-full bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-100 px-3 py-1 font-medium">

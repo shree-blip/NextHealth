@@ -6,6 +6,7 @@ import ScrollToTop from '@/components/ScrollToTop';
 import { SitePreferencesProvider } from '@/components/SitePreferencesProvider';
 import { AuthProvider } from '@/components/AuthProvider';
 import LocalBusinessSchema from '@/components/LocalBusinessSchema';
+import OrganizationSchema from '@/components/OrganizationSchema';
 import GlobalEnhancements from '@/components/GlobalEnhancements';
 
 const inter = Inter({
@@ -19,12 +20,25 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'The NextGen Healthcare Marketing | Healthcare Growth & Automation',
-  description: 'The Operating System for Clinical Growth. Specialized in ER, Urgent Care, and Wellness clinic marketing automation.',
+  title: {
+    default: 'NextGen Health — Healthcare Marketing Agency',
+    template: '%s',
+  },
+  description:
+    'NextGen Health is a full-service healthcare marketing agency. SEO, Google Ads, social media, website design, and HIPAA-compliant automation for clinics.',
+  metadataBase: new URL('https://thenextgenhealth.com'),
   icons: {
     icon: '/favicon.svg',
     shortcut: '/favicon.svg',
     apple: '/favicon.svg',
+  },
+  openGraph: {
+    siteName: 'NextGen Health',
+    locale: 'en_US',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
   },
 };
 
@@ -52,6 +66,7 @@ export default function RootLayout({children}: {children: React.ReactNode}) {
       </head>
       <body suppressHydrationWarning className="antialiased selection:bg-emerald-500/30 overflow-x-hidden">
         <LocalBusinessSchema />
+        <OrganizationSchema />
         <SitePreferencesProvider>
           <AuthProvider>
             <ScrollToTop />

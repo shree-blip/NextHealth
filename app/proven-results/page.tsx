@@ -1,20 +1,29 @@
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import Breadcrumbs from '@/components/Breadcrumbs';
 import ProvenResultsContent from '@/components/proven-results/ProvenResultsContent';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Proven Results | Healthcare Marketing Growth Data',
-  description: 'See proven results from The NextGen Healthcare Marketing. Our healthcare clients achieve 100-300% growth in qualified leads, revenue, and patient volume through data-driven strategies.',
+  title: 'Proven Results — Healthcare Marketing | NextGen Health',
+  description: 'Verified results from NextGen Health clients. See real data on traffic growth, lead generation, and ROI from our healthcare marketing campaigns.',
   alternates: {
     canonical: 'https://thenextgenhealth.com/proven-results',
-  }
+  },
+  openGraph: {
+    title: 'Proven Results — Healthcare Marketing | NextGen Health',
+    description: 'Verified results from NextGen Health clients. See real data on traffic growth, lead generation, and ROI from our healthcare marketing campaigns.',
+    url: 'https://thenextgenhealth.com/proven-results',
+    siteName: 'NextGen Health',
+    type: 'website',
+  },
 };
 
 export default function ProvenResultsPage() {
   return (
     <main className="min-h-screen bg-transparent">
       <Navbar />
+      <Breadcrumbs />
       <ProvenResultsContent />
       <Footer />
     </main>

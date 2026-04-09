@@ -1,13 +1,21 @@
 import Navbar from '@/components/Navbar';
 import Hero from '@/components/Hero';
 import Footer from '@/components/Footer';
+import Breadcrumbs from '@/components/Breadcrumbs';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'HIPAA Compliance | The NextGen Healthcare Marketing',
-  description: 'Learn how The NextGen Healthcare Marketing maintains strict HIPAA compliance across all marketing campaigns, patient data handling, automation workflows, and digital advertising for healthcare providers.',
+  title: 'HIPAA-Compliant Marketing for Healthcare | NextGen Health',
+  description: 'Learn how NextGen Health ensures HIPAA compliance across all marketing activities. Secure, compliant digital marketing for healthcare practices.',
   alternates: {
     canonical: 'https://thenextgenhealth.com/hipaa',
+  },
+  openGraph: {
+    title: 'HIPAA-Compliant Marketing for Healthcare | NextGen Health',
+    description: 'Learn how NextGen Health ensures HIPAA compliance across all marketing activities. Secure, compliant digital marketing for healthcare practices.',
+    url: 'https://thenextgenhealth.com/hipaa',
+    siteName: 'NextGen Health',
+    type: 'website',
   },
 };
 
@@ -15,6 +23,7 @@ export default function HIPAACompliance() {
   return (
     <main className="min-h-screen bg-slate-50">
       <Navbar />
+      <Breadcrumbs />
       
       <Hero
         heading="HIPAA Compliance Statement"
