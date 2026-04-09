@@ -21,6 +21,11 @@ export const metadata: Metadata = {
     siteName: 'NextGen Health',
     type: 'website',
   },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Healthcare Marketing Automation Guide | NextGen Health',
+    description: 'Comprehensive guide to healthcare marketing automation covering patient intake, AI chatbots, review collection, email campaigns, scheduling, and analytics.',
+  },
 };
 
 const schema = {

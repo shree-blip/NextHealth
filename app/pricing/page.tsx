@@ -24,6 +24,11 @@ export const metadata: Metadata = {
     siteName: 'NextGen Health',
     type: 'website',
   },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Healthcare Marketing Pricing & Plans | NextGen Health',
+    description: 'Transparent pricing for healthcare marketing services. Choose from SEO, Google Ads, social media, and automation packages tailored for clinics.',
+  },
 };
 
 const schema = {

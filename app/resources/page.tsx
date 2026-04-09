@@ -18,6 +18,11 @@ export const metadata: Metadata = {
     siteName: 'NextGen Health',
     type: 'website',
   },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Healthcare Marketing Resources & Guides | NextGen Health',
+    description: 'Free healthcare marketing resources: SEO guides, automation playbooks, case studies, glossary, and expert blog posts to grow your medical practice.',
+  },
 };
 
 const resourceCategories = [

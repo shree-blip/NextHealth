@@ -17,6 +17,11 @@ export const metadata: Metadata = {
     siteName: 'NextGen Health',
     type: 'website',
   },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Healthcare Marketing Careers | NextGen Health',
+    description: 'Join NextGen Health and reshape healthcare marketing. We are hiring SEO specialists, ad managers, developers, and content writers.',
+  },
 };
 
 const openings = [

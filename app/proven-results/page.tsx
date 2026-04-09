@@ -17,6 +17,11 @@ export const metadata: Metadata = {
     siteName: 'NextGen Health',
     type: 'website',
   },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Proven Results — Healthcare Marketing | NextGen Health',
+    description: 'Verified results from NextGen Health clients. See real data on traffic growth, lead generation, and ROI from our healthcare marketing campaigns.',
+  },
 };
 
 export default function ProvenResultsPage() {

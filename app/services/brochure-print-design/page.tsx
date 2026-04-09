@@ -17,6 +17,11 @@ export const metadata: Metadata = {
     siteName: 'NextGen Health',
     type: 'website',
   },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Brochure & Print Design for Healthcare | NextGen Health',
+    description: 'Professional brochure and print design for medical practices. Premium materials that elevate your practice and extend your branding to offline touchpoints.',
+  },
 };
 
 export default function BrochurePrintDesignPage() {

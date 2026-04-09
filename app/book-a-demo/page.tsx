@@ -17,6 +17,11 @@ export const metadata: Metadata = {
     siteName: 'NextGen Health',
     type: 'website',
   },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Book a Free Healthcare Marketing Demo | NextGen Health',
+    description: 'Schedule a free demo to see how NextGen Health can grow your clinic. We\'ll show you our SEO, ads, and automation solutions tailored for healthcare.',
+  },
 };
 
 export default function BookADemoPage() {

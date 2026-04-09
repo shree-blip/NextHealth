@@ -17,6 +17,11 @@ export const metadata: Metadata = {
     siteName: 'NextGen Health',
     type: 'website',
   },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'On-Site Field Marketing for Healthcare | NextGen Health',
+    description: 'On-site field marketing for healthcare practices through local events and community activations. Drive qualified walk-ins and patient appointments.',
+  },
 };
 
 const schema = {

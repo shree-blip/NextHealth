@@ -21,6 +21,11 @@ export const metadata: Metadata = {
     siteName: 'NextGen Health',
     type: 'website',
   },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'The Complete Guide to Healthcare SEO | NextGen Health',
+    description: 'Comprehensive guide to healthcare SEO covering technical optimization, local search, content strategy, E-E-A-T, link building, analytics, and emerging trends.',
+  },
 };
 
 const schema = {

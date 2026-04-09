@@ -17,6 +17,11 @@ export const metadata: Metadata = {
     siteName: 'NextGen Health',
     type: 'website',
   },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Healthcare Web Design & Development',
+    description: 'Fast, beautiful, conversion-optimized websites for medical practices. HIPAA-compliant healthcare web design that turns visitors into appointments.',
+  },
 };
 
 export default function WebsiteDesignDevPage() {

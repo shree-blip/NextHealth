@@ -4,6 +4,7 @@ import { getAllIndustrySlugs } from '@/lib/industry-data';
 import { getAllAutomationSlugs } from '@/lib/automation-data';
 import { getAllCaseStudySlugs } from '@/lib/case-study-data';
 import { getAllLocationSlugs } from '@/lib/location-data';
+import { getAllTeamSlugs } from '@/lib/team-data';
 
 // Never cache the sitemap at the CDN level — revalidatePath('/sitemap.xml') will
 // flush it whenever a post is published or unpublished.
@@ -314,5 +315,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.8,
   }));
 
-  return [...staticPages, ...industryPages, ...automationPages, ...caseStudyPages, ...locationPages, ...blogPosts, ...newsArticles];
+  // Team member profile pages
+  const teamPages: MetadataRoute.Sitemap = getAllTeamSlugs().map((slug) => ({
+    url: `${SITE_URL}/team/${slug}`,
+    lastModified: new Date(),
+    changeFrequency: 'monthly' as const,
+    priority: 0.7,
+  }));
+
+  return [...staticPages, ...industryPages, ...automationPages, ...caseStudyPages, ...locationPages, ...teamPages, ...blogPosts, ...newsArticles];
 }

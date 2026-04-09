@@ -20,6 +20,11 @@ export const metadata: Metadata = {
     siteName: 'NextGen Health',
     type: 'website',
   },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Sitemap — All Pages | NextGen Health',
+    description: 'A complete directory of all pages on the NextGen Health website. Browse our services, industries, locations, case studies, and more.',
+  },
 };
 
 export default function HTMLSitemapPage() {

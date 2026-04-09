@@ -17,6 +17,11 @@ export const metadata: Metadata = {
     siteName: 'NextGen Health',
     type: 'website',
   },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Healthcare Content & Copywriting | NextGen Health',
+    description: 'Healthcare content and copywriting that educates, engages, and converts. E-E-A-T optimized medical content building trust and authority.',
+  },
 };
 
 export default function ContentCopywritingPage() {

@@ -17,6 +17,11 @@ export const metadata: Metadata = {
     siteName: 'NextGen Health',
     type: 'website',
   },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Healthcare Marketing FAQ | NextGen Health',
+    description: 'Answers to common questions about healthcare marketing, SEO, Google Ads, HIPAA compliance, and patient acquisition. NextGen Health helps clinics grow.',
+  },
 };
 
 const faqCategories = [

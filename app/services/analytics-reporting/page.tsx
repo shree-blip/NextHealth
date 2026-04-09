@@ -17,6 +17,11 @@ export const metadata: Metadata = {
     siteName: 'NextGen Health',
     type: 'website',
   },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Healthcare Analytics & Reporting | NextGen Health',
+    description: 'Real-time marketing analytics dashboards for healthcare practices. Know exactly what\'s working—appointments booked, revenue driven, and patient acquisition.',
+  },
 };
 
 export default function AnalyticsReportingPage() {

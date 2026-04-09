@@ -17,6 +17,11 @@ export const metadata: Metadata = {
     siteName: 'NextGen Health',
     type: 'website',
   },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Terms of Service | NextGen Health',
+    description: 'NextGen Health terms of service. Read our terms and conditions governing the use of our website and marketing services.',
+  },
 };
 
 export default function TermsOfService() {

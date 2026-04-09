@@ -18,6 +18,11 @@ export const metadata: Metadata = {
     siteName: 'NextGen Health',
     type: 'website',
   },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Healthcare Marketing Glossary | NextGen Health',
+    description: 'Comprehensive glossary of healthcare marketing terms including SEO, HIPAA compliance, Google Ads, patient acquisition, and medical practice growth terminology.',
+  },
 };
 
 const schema = {

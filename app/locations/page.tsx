@@ -24,6 +24,11 @@ export const metadata: Metadata = {
     siteName: 'NextGen Health',
     type: 'website',
   },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Healthcare Marketing Across Texas | NextGen Health',
+    description: 'NextGen Health serves healthcare practices across Texas — Dallas, Houston, Austin, San Antonio, and beyond. Location-specific SEO and patient growth.',
+  },
 };
 
 const schema = {

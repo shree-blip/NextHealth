@@ -24,6 +24,11 @@ export const metadata: Metadata = {
     siteName: 'NextGen Health',
     type: 'website',
   },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'About Us — Healthcare Marketing | NextGen Health',
+    description: 'Healthcare-only growth agency in Irving, TX. We build HIPAA-compliant patient acquisition systems for ERs, urgent cares, and clinics.',
+  },
 };
 
 const schema = {

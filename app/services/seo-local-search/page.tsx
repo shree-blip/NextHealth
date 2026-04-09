@@ -17,6 +17,11 @@ export const metadata: Metadata = {
     siteName: 'NextGen Health',
     type: 'website',
   },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'SEO & Local Search for Healthcare | Dominate Local Results',
+    description: 'Expert medical SEO and local search optimization. Rank #1 on Google Maps for your service area and drive organic patient traffic to your healthcare practice.',
+  },
 };
 
 const schema = {

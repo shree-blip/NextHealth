@@ -73,10 +73,32 @@ export default async function AutomationPage({ params }: Props) {
     })),
   };
 
+  // SoftwareApplication schema for the automation tool
+  const softwareSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'SoftwareApplication',
+    name: data.h1,
+    description: data.metaDescription,
+    applicationCategory: 'HealthApplication',
+    operatingSystem: 'Web',
+    offers: {
+      '@type': 'Offer',
+      price: '0',
+      priceCurrency: 'USD',
+      description: 'Included with NextGen Health marketing plans',
+    },
+    provider: {
+      '@type': 'Organization',
+      name: 'NextGen Health',
+      url: 'https://thenextgenhealth.com',
+    },
+  };
+
   return (
     <main>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(howToSchema) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareSchema) }} />
       <Navbar />
       <AutomationPageTemplate data={data} />
       <Footer />

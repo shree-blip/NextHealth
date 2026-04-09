@@ -17,6 +17,11 @@ export const metadata: Metadata = {
     siteName: 'NextGen Health',
     type: 'website',
   },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Google Business Profile for Healthcare | NextGen Health',
+    description: 'Expert Google Business Profile optimization for healthcare practices. Dominate your local market and be the top choice patients find on Google Maps.',
+  },
 };
 
 export default function GoogleBusinessProfilePage() {

@@ -17,6 +17,11 @@ export const metadata: Metadata = {
     siteName: 'NextGen Health',
     type: 'website',
   },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Healthcare Strategy & Planning | Marketing Roadmaps',
+    description: 'Strategic healthcare marketing planning and custom roadmaps aligned with your clinic growth goals. Data-driven strategy for sustainable patient acquisition.',
+  },
 };
 
 const schema = {

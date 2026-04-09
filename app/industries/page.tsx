@@ -25,6 +25,11 @@ export const metadata: Metadata = {
     siteName: 'NextGen Health',
     type: 'website',
   },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Industries We Serve | NextGen Health',
+    description: 'Specialist healthcare marketing for ERs, urgent care, dental, med spa, chiropractic, and mental health. Industry-specific strategies that drive patient growth.',
+  },
 };
 
 const schema = {

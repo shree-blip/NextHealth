@@ -129,9 +129,12 @@ export default function TeamPage() {
                     <Link href="#" className="text-white hover:text-emerald-400 transition-colors"><Mail className="h-5 w-5" /></Link>
                   </div>
                 </div>
-                <h3 className="text-2xl font-bold text-slate-900 mb-1">{member.name}</h3>
+                <Link href={`/team/${member.name.toLowerCase().replace(/\s+/g, '-')}`}>
+                  <h3 className="text-2xl font-bold text-slate-900 mb-1 group-hover:text-emerald-600 transition-colors">{member.name}</h3>
+                </Link>
                 <div className="text-emerald-600 text-sm font-bold uppercase tracking-widest mb-4">{member.role}</div>
                 <p className="text-slate-600 text-sm leading-relaxed">{member.bio}</p>
+                <Link href={`/team/${member.name.toLowerCase().replace(/\s+/g, '-')}`} className="inline-block mt-3 text-emerald-600 text-sm font-semibold hover:text-emerald-700 transition-colors">View Full Profile &rarr;</Link>
                 {member.credentials && (
                   <div className="mt-4 flex flex-wrap gap-2">
                     {member.credentials.map((cred, i) => (

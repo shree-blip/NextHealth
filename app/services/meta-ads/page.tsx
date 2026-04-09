@@ -17,6 +17,11 @@ export const metadata: Metadata = {
     siteName: 'NextGen Health',
     type: 'website',
   },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Meta Ads for Healthcare | Facebook & Instagram Advertising',
+    description: 'Targeted Facebook and Instagram ads that convert scrollers into patients. Strategic Meta advertising campaigns designed specifically for healthcare practices.',
+  },
 };
 
 const schema = {

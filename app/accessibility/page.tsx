@@ -17,6 +17,11 @@ export const metadata: Metadata = {
     siteName: 'NextGen Health',
     type: 'website',
   },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Accessibility Statement | NextGen Health',
+    description: 'NextGen Health is committed to digital accessibility. Learn about our accessibility standards, compliance efforts, and how to report accessibility issues.',
+  },
 };
 
 export default function AccessibilityPage() {

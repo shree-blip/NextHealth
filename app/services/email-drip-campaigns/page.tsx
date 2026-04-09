@@ -17,6 +17,11 @@ export const metadata: Metadata = {
     siteName: 'NextGen Health',
     type: 'website',
   },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Email & Drip Campaigns for Healthcare | NextGen Health',
+    description: 'HIPAA-compliant email marketing and drip campaigns for healthcare. Nurture leads and keep patients coming back with strategic email automation.',
+  },
 };
 
 const schema = {

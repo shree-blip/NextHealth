@@ -17,6 +17,11 @@ export const metadata: Metadata = {
     siteName: 'NextGen Health',
     type: 'website',
   },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Privacy Policy | NextGen Health',
+    description: 'NextGen Health privacy policy. Learn how we collect, use, store, and protect your personal information across our healthcare marketing platform.',
+  },
 };
 
 export default function PrivacyPolicy() {

@@ -17,6 +17,11 @@ export const metadata: Metadata = {
     siteName: 'NextGen Health',
     type: 'website',
   },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Healthcare Social Media Marketing | NextGen Health',
+    description: 'Strategic social media marketing for healthcare practices across Instagram, TikTok, Facebook, and LinkedIn. Build trust and drive patient acquisition.',
+  },
 };
 
 const schema = {

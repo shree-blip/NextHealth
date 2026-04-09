@@ -17,6 +17,11 @@ export const metadata: Metadata = {
     siteName: 'NextGen Health',
     type: 'website',
   },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'HIPAA-Compliant Marketing for Healthcare | NextGen Health',
+    description: 'Learn how NextGen Health ensures HIPAA compliance across all marketing activities. Secure, compliant digital marketing for healthcare practices.',
+  },
 };
 
 export default function HIPAACompliance() {

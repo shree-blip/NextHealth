@@ -78,6 +78,15 @@ const ROUTE_LABELS: Record<string, string> = {
   'recall-campaigns': 'Recall Campaigns',
   'social-media-scheduling': 'Social Media Scheduling',
   'reporting-dashboards': 'Reporting Dashboards',
+  // Team member slugs
+  'shree-gauli': 'Shree Gauli',
+  'bikash-neupane': 'Bikash Neupane',
+  'sonu-sagar-dongol': 'Sonu Sagar Dongol',
+  'bijesh-khadgi': 'Bijesh Khadgi',
+  'sumit-sharma': 'Sumit Sharma',
+  'rahul-roy': 'Rahul Roy',
+  'bidhitsha-khadka': 'Bidhitsha Khadka',
+  'sagar-timalsina': 'Sagar Timalsina',
 };
 
 function labelForSegment(segment: string): string {

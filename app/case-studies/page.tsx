@@ -22,6 +22,11 @@ export const metadata: Metadata = {
     siteName: 'NextGen Health',
     type: 'website',
   },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Healthcare Marketing Case Studies | NextGen Health',
+    description: 'See proven results from our healthcare marketing clients. Case studies covering SEO, Google Ads, social media, and website design for Texas clinics.',
+  },
 };
 
 type CaseStudyCategory = 'ER' | 'MedSpa' | 'UrgentCare';

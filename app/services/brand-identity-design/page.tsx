@@ -17,6 +17,11 @@ export const metadata: Metadata = {
     siteName: 'NextGen Health',
     type: 'website',
   },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Healthcare Brand Identity & Logo Design | NextGen Health',
+    description: 'Professional brand identity design for healthcare practices. Creating logos and brands that build instant patient trust and differentiate you from competitors.',
+  },
 };
 
 const schema = {

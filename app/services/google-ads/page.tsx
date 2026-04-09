@@ -17,6 +17,11 @@ export const metadata: Metadata = {
     siteName: 'NextGen Health',
     type: 'website',
   },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Google Ads & PPC for Healthcare | NextGen Health',
+    description: 'Expert Google Ads for healthcare practices. High-converting PPC campaigns that fill your waiting room with qualified patients ready to book.',
+  },
 };
 
 const schema = {

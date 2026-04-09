@@ -22,6 +22,11 @@ export const metadata: Metadata = {
     siteName: 'NextGen Health',
     type: 'website',
   },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Healthcare Marketing Services | NextGen Health',
+    description: 'Full-service healthcare marketing: SEO, Google Ads, social media, website design, content marketing, and HIPAA-compliant automation for clinics in Texas.',
+  },
 };
 
 const schema = {
