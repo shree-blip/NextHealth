@@ -152,7 +152,7 @@ export default function Footer() {
             <ul className="space-y-4">
               <li className={`flex items-start gap-3 text-sm ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
                 <MapPin className="h-4 w-4 text-emerald-500 shrink-0 mt-0.5" />
-                <span>3001 Skyway Circle N<br />Irving, TX 75038</span>
+                <span>5800 Campus Cir Dr<br />Suite: 200A<br />Irving, TX 75063</span>
               </li>
               <li className={`flex items-center gap-3 text-sm ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
                 <Mail className="h-4 w-4 text-emerald-500 shrink-0" />
